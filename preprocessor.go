@@ -2,14 +2,15 @@ package vfmd
 
 import (
 	"bytes"
+	"io"
 	"unicode/utf8"
 )
-import "io"
 
 type Preprocessor struct {
 	Chunks  []Chunk
 	Pending []byte
 	state   int
+	column  int
 }
 
 // Preprocessor states
@@ -30,6 +31,7 @@ const (
 	ChunkIgnoredBOM ChunkType = iota
 	ChunkUnchangedRunes
 	ChunkNormalizedCRLF
+	ChunkExpandedTab
 )
 
 // statically ensure that certain interfaces are implemented by Preprocessor
@@ -61,12 +63,7 @@ func (p *Preprocessor) WriteByte(b byte) error {
 			p.Write(buf)
 			return nil
 		case len(p.Pending) == len(BOM):
-			p.Chunks = append(p.Chunks, Chunk{
-				Bytes: p.Pending,
-				Type:  ChunkIgnoredBOM,
-			})
-			p.Pending = nil
-			p.state = preproNormal
+			p.otherChunk(ChunkIgnoredBOM, p.Pending...)
 			return nil
 		default: // still not sure
 			return nil
@@ -76,11 +73,7 @@ func (p *Preprocessor) WriteByte(b byte) error {
 	if p.state == preproCR {
 		if b == LF {
 			// CRLF detected
-			p.state = preproNormal
-			p.Chunks = append(p.Chunks, Chunk{
-				Bytes: []byte{LF},
-				Type:  ChunkNormalizedCRLF,
-			})
+			p.otherChunk(ChunkNormalizedCRLF, LF)
 			return nil
 		}
 		// Flush the pending CR
@@ -124,20 +117,46 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		return nil
 	}
 
-	// TODO(akavel): expand tabs to spaces [#lines]
+	// Expand tabs to spaces. [#lines]
+	// TODO(akavel): add tests
+	if b == '\t' {
+		spaces := 4 - (p.column % 4)
+		bufSpaces := []byte("    ")
+		p.otherChunk(ChunkExpandedTab, bufSpaces[:spaces]...)
+		return nil
+	}
 
-	// TODO(akavel): WIP
 	p.normalChunk(b)
 	return nil
 }
 
 func (p *Preprocessor) normalChunk(b ...byte) {
+	p.calcColumn(b)
 	n := len(p.Chunks)
 	if n == 0 || p.Chunks[n-1].Type != ChunkUnchangedRunes {
 		p.Chunks = append(p.Chunks, Chunk{Type: ChunkUnchangedRunes})
 		n++
 	}
 	p.Chunks[n-1].Bytes = append(p.Chunks[n-1].Bytes, b...)
+}
+
+func (p *Preprocessor) otherChunk(typ ChunkType, b ...byte) {
+	p.calcColumn(b)
+	p.Chunks = append(p.Chunks, Chunk{
+		Bytes: b,
+		Type:  typ,
+	})
+	p.Pending = nil
+	p.state = preproNormal
+}
+
+func (p *Preprocessor) calcColumn(added []byte) {
+	i := bytes.LastIndex(added, []byte{'\n'})
+	if i >= 0 {
+		p.column = 0
+		added = added[i:]
+	}
+	p.column += utf8.RuneCount(added)
 }
 
 func iso2utf(buf ...byte) []byte {
