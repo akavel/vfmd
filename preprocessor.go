@@ -16,6 +16,7 @@ type Preprocessor struct {
 const (
 	preproMaybeBOM = iota
 	preproNormal
+	preproCR
 )
 
 type Chunk struct {
@@ -41,6 +42,11 @@ func (p *Preprocessor) Write(buf []byte) (int, error) {
 }
 
 func (p *Preprocessor) WriteByte(b byte) error {
+	const (
+		CR = '\r'
+		LF = '\n'
+	)
+
 	// ignore Byte-Order-Mark [#document]
 	// TODO(akavel): add more tests
 	if p.state == preproMaybeBOM {
@@ -66,6 +72,12 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		}
 	}
 
+	// Flush old state if pending
+	if b != LF && p.state == preproCR {
+		p.state = preproNormal
+		p.normalChunk(CR)
+	}
+
 	// Detect invalid UTF-8 and assume it's ISO-8859-1 then. [#document]
 	// TODO(akavel): add tests
 	if b > utf8.RuneSelf {
@@ -87,7 +99,30 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		}
 		return nil
 	}
+	// If any bytes are pending, they failed to build a complete UTF-8 rune; flush them
+	if len(p.Pending) > 0 {
+		buf := p.Pending
+		p.Pending = nil
+		// TODO(akavel): add chunk marking start of invalid utf8
+		p.Write(iso2utf(buf...))
+		// TODO(akavel): add chunk marking end of invalid utf8
+	}
+
 	// TODO(akavel): convert CRLF to LF [#characters]
+	switch {
+	case b == LF && p.state == preproCR:
+		// CRLF detected
+		p.state = preproNormal
+		p.Chunks = append(p.Chunks, Chunk{
+			Bytes: []byte{LF},
+			Type:  ChunkNormalizedCRLF,
+		})
+		return nil
+	case b == CR:
+		p.state = preproCR
+		return nil
+	}
+
 	// TODO(akavel): expand tabs to spaces [#lines]
 
 	// TODO(akavel): WIP
