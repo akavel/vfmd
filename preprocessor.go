@@ -29,6 +29,7 @@ type ChunkType int
 const (
 	ChunkIgnoredBOM ChunkType = iota
 	ChunkUnchangedRunes
+	ChunkNormalizedCRLF
 )
 
 // statically ensure that certain interfaces are implemented by Preprocessor
@@ -72,8 +73,17 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		}
 	}
 
-	// Flush old state if pending
-	if b != LF && p.state == preproCR {
+	if p.state == preproCR {
+		if b == LF {
+			// CRLF detected
+			p.state = preproNormal
+			p.Chunks = append(p.Chunks, Chunk{
+				Bytes: []byte{LF},
+				Type:  ChunkNormalizedCRLF,
+			})
+			return nil
+		}
+		// Flush the pending CR
 		p.state = preproNormal
 		p.normalChunk(CR)
 	}
@@ -108,17 +118,8 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		// TODO(akavel): add chunk marking end of invalid utf8
 	}
 
-	// TODO(akavel): convert CRLF to LF [#characters]
-	switch {
-	case b == LF && p.state == preproCR:
-		// CRLF detected
-		p.state = preproNormal
-		p.Chunks = append(p.Chunks, Chunk{
-			Bytes: []byte{LF},
-			Type:  ChunkNormalizedCRLF,
-		})
-		return nil
-	case b == CR:
+	// Convert CRLF to LF. [#characters]
+	if b == CR {
 		p.state = preproCR
 		return nil
 	}
