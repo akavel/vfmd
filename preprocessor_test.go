@@ -1,12 +1,12 @@
 package vfmd
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
 )
 
 func bb(bytes ...byte) []byte { return bytes }
+func bs(s string) []byte      { return []byte(s) }
 
 func TestBOM(test *testing.T) {
 	BOM := bb(0xEF, 0xBB, 0xBF)
@@ -16,20 +16,24 @@ func TestBOM(test *testing.T) {
 		pending  []byte
 	}{{
 		input:    BOM,
-		expected: []Chunk{{BOM, ChunkIgnoredBOM}},
+		expected: []Chunk{{ChunkIgnoredBOM, BOM}},
 		pending:  nil,
 	}, {
 		input:    bb('a', 0xEF, 0xBB, 0xBF),
-		expected: []Chunk{{bb('a', 0xEF, 0xBB, 0xBF), ChunkUnchangedRunes}},
+		expected: []Chunk{{ChunkUnchangedRunes, bb('a', 0xEF, 0xBB, 0xBF)}},
 		pending:  nil,
 	}, {
 		input:    bb(0xEF, 0xBB),
 		expected: nil,
 		pending:  bb(0xEF, 0xBB),
 	}, {
-		input:    bb(0xEF, 0xFF),
-		expected: []Chunk{{iso2utf(0xEF, 0xFF), ChunkUnchangedRunes}},
-		pending:  nil,
+		input: bb(0xEF, 0xFF),
+		expected: []Chunk{
+			{ChunkStartISO8859_1, nil},
+			{ChunkUnchangedRunes, bs("\u00ef\u00ff")},
+			{ChunkEndISO8859_1, nil},
+		},
+		pending: nil,
 	}}
 
 	for _, c := range cases {
@@ -46,18 +50,30 @@ func TestBOM(test *testing.T) {
 	}
 }
 
-func TestIso2utf(test *testing.T) {
+func TestISO8859_1(test *testing.T) {
 	cases := []struct{ input, output []byte }{
-		{bb(0x80), []byte("\u0080")},
-		{bb(0xFF), []byte("\u00FF")},
-		{bb(0xAA, 0xBB), []byte("\u00AA\u00BB")},
-		{bb(0x01), []byte("\u0001")},
+		{bb(0x80), bs("\u0080")},
+		{bb(0xFF), bs("\u00FF")},
+		{bb(0xAA, 0xBB), bs("\u00AA\u00BB")},
 	}
 	for _, c := range cases {
-		output := iso2utf(c.input...)
-		if !bytes.Equal(c.output, output) {
-			test.Errorf("case '%c' expected '% 2x' got '% 2x'",
-				c.input, c.output, output)
+		p := Preprocessor{}
+		p.Write(c.input)
+		p.Close()
+
+		chunks := []Chunk{
+			{ChunkStartISO8859_1, nil},
+			{ChunkUnchangedRunes, c.output},
+			{ChunkEndISO8859_1, nil},
+		}
+		if !reflect.DeepEqual(chunks, p.Chunks) {
+			test.Errorf("case '% 2x' expected % 2x got % 2x",
+				c.input, chunks, p.Chunks)
+		}
+
+		if len(p.Pending) > 0 {
+			test.Errorf("case '% 2x' expected pending nil, got '% 2x'",
+				c.input, p.Pending)
 		}
 	}
 }
