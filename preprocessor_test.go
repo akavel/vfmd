@@ -51,24 +51,98 @@ func TestBOM(test *testing.T) {
 }
 
 func TestISO8859_1(test *testing.T) {
-	cases := []struct{ input, output []byte }{
-		{bb(0x80), bs("\u0080")},
-		{bb(0xFF), bs("\u00FF")},
-		{bb(0xAA, 0xBB), bs("\u00AA\u00BB")},
+	wrapISO := func(bytes []byte) []Chunk {
+		return []Chunk{
+			{ChunkStartISO8859_1, nil},
+			{ChunkUnchangedRunes, bytes},
+			{ChunkEndISO8859_1, nil},
+		}
+	}
+	cases := []struct {
+		input  []byte
+		chunks []Chunk
+	}{
+		// Invalid UTF-8 should be converted as if it was ISO8859-1
+		{bb(0x80), wrapISO(bs("\u0080"))},
+		{bb(0xFF), wrapISO(bs("\u00FF"))},
+		{bb(0xAA, 0xBB), wrapISO(bs("\u00AA\u00BB"))},
+		// Correctly encoded UTF-8 should pass through unchanged
+		{bs("żął"), []Chunk{{ChunkUnchangedRunes, bs("żął")}}},
+		{bs("halo"), []Chunk{{ChunkUnchangedRunes, bs("halo")}}},
+		// Mixed
+		{append([]byte("ż"), 0xFF, 'a'), []Chunk{
+			{ChunkUnchangedRunes, bs("ż")},
+			{ChunkStartISO8859_1, nil},
+			{ChunkUnchangedRunes, bs("\u00FF")},
+			{ChunkEndISO8859_1, nil},
+			{ChunkUnchangedRunes, bb('a')},
+		}},
 	}
 	for _, c := range cases {
 		p := Preprocessor{}
 		p.Write(c.input)
 		p.Close()
 
-		chunks := []Chunk{
-			{ChunkStartISO8859_1, nil},
-			{ChunkUnchangedRunes, c.output},
-			{ChunkEndISO8859_1, nil},
-		}
-		if !reflect.DeepEqual(chunks, p.Chunks) {
+		if !reflect.DeepEqual(c.chunks, p.Chunks) {
 			test.Errorf("case '% 2x' expected % 2x got % 2x",
-				c.input, chunks, p.Chunks)
+				c.input, c.chunks, p.Chunks)
+		}
+
+		if len(p.Pending) > 0 {
+			test.Errorf("case '% 2x' expected pending nil, got '% 2x'",
+				c.input, p.Pending)
+		}
+	}
+}
+
+func TestTabExpansion(test *testing.T) {
+	cases := []struct {
+		input  []byte
+		chunks []Chunk
+	}{
+		{bs("\t"), []Chunk{
+			{ChunkExpandedTab, bs("    ")},
+		}},
+		{bs("\t\t"), []Chunk{
+			{ChunkExpandedTab, bs("    ")},
+			{ChunkExpandedTab, bs("    ")},
+		}},
+
+		{bs("a\t"), []Chunk{
+			{ChunkUnchangedRunes, bs("a")},
+			{ChunkExpandedTab, bs("   ")},
+		}},
+		{bs("ab\t"), []Chunk{
+			{ChunkUnchangedRunes, bs("ab")},
+			{ChunkExpandedTab, bs("  ")},
+		}},
+		{bs("abc\t"), []Chunk{
+			{ChunkUnchangedRunes, bs("abc")},
+			{ChunkExpandedTab, bs(" ")},
+		}},
+		{bs("abcd\t"), []Chunk{
+			{ChunkUnchangedRunes, bs("abcd")},
+			{ChunkExpandedTab, bs("    ")},
+		}},
+
+		{bs("ż\t"), []Chunk{
+			{ChunkUnchangedRunes, bs("ż")},
+			{ChunkExpandedTab, bs("   ")},
+		}},
+		{bb(0x80, '\t'), []Chunk{
+			{ChunkStartISO8859_1, nil},
+			{ChunkUnchangedRunes, bs("\u0080")},
+			{ChunkEndISO8859_1, nil},
+			{ChunkExpandedTab, bs("   ")},
+		}},
+	}
+	for _, c := range cases {
+		p := Preprocessor{}
+		p.Write(c.input)
+
+		if !reflect.DeepEqual(p.Chunks, c.chunks) {
+			test.Errorf("case %q expected % 2x got % 2x",
+				c.input, c.chunks, p.Chunks)
 		}
 
 		if len(p.Pending) > 0 {
