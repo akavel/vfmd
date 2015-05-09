@@ -84,7 +84,6 @@ func (p *Preprocessor) WriteByte(b byte) error {
 	}
 
 	// Detect invalid UTF-8 and assume it's ISO-8859-1 then. [#document]
-	// TODO(akavel): add tests
 	if b >= utf8.RuneSelf {
 		// May be an UTF-8 encoded rune; or assume ISO-8859-1 if invalid.
 		p.Pending = append(p.Pending, b)
@@ -116,7 +115,6 @@ func (p *Preprocessor) WriteByte(b byte) error {
 	}
 
 	// Expand tabs to spaces. [#lines]
-	// TODO(akavel): add tests
 	if b == '\t' {
 		spaces := 4 - (p.column % 4)
 		bufSpaces := []byte("    ")
