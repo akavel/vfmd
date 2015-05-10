@@ -2,6 +2,7 @@ package vfmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"unicode/utf8"
 )
@@ -24,6 +25,24 @@ const (
 type Chunk struct {
 	Type  ChunkType
 	Bytes []byte
+}
+
+// SourceLength returns length of the byte slice in the original stream that
+// was converted into this Chunk.
+func (c Chunk) SourceLength() int {
+	switch c.Type {
+	case ChunkIgnoredBOM:
+		return 3
+	case ChunkUnchangedRunes:
+		return len(c.Bytes)
+	case ChunkNormalizedCRLF:
+		return 2
+	case ChunkExpandedTab:
+		return 1
+	case ChunkConvertedISO8859_1:
+		return utf8.RuneCount(c.Bytes)
+	}
+	panic(fmt.Sprintf("unknown vfmd.Chunk type %d [%q]", c.Type, c.Bytes))
 }
 
 type ChunkType int
