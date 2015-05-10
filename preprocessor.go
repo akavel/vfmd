@@ -73,6 +73,7 @@ func (p *Preprocessor) WriteByte(b byte) error {
 	}
 
 	if p.state == preproCR {
+		p.Pending = nil
 		if b == _LF {
 			// CRLF detected
 			p.otherChunk(ChunkNormalizedCRLF, _LF)
@@ -111,6 +112,9 @@ func (p *Preprocessor) WriteByte(b byte) error {
 	// Convert CRLF to LF. [#characters]
 	if b == _CR {
 		p.state = preproCR
+		// Show to user that there's a byte pending, so processing is
+		// not fully completed.
+		p.Pending = []byte{_CR}
 		return nil
 	}
 
@@ -129,6 +133,7 @@ func (p *Preprocessor) WriteByte(b byte) error {
 func (p *Preprocessor) Close() error {
 	// TODO(akavel): change to preproClosed state and panic on any later action
 	if p.state == preproCR {
+		p.Pending = nil
 		p.normalChunk(_CR)
 		return nil
 	}

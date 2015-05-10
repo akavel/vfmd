@@ -1,6 +1,7 @@
 package vfmd
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 )
@@ -150,4 +151,36 @@ func TestTabExpansion(test *testing.T) {
 				c.input, p.Pending)
 		}
 	}
+}
+
+func TestCRLFPending(test *testing.T) {
+	cases := []struct {
+		input   []byte
+		output  []Chunk
+		pending []byte
+	}{{
+		input:   bs("\r"),
+		output:  nil,
+		pending: bs("\r"),
+	}, {
+		input:   bs("\r\n"),
+		output:  []Chunk{{ChunkNormalizedCRLF, bs("\n")}},
+		pending: nil,
+	}}
+
+	for _, c := range cases {
+		p := Preprocessor{}
+		p.Write(c.input)
+
+		if !reflect.DeepEqual(p.Chunks, c.output) {
+			test.Errorf("case '% 2x' expected '% 2x' got '% 2x'",
+				c.input, c.output, p.Chunks)
+		}
+		if !bytes.Equal(p.Pending, c.pending) {
+			test.Errorf("case '% 2x' expected pending '% 2x' got '% 2x'",
+				c.input, c.pending, p.Pending)
+		}
+
+	}
+
 }
