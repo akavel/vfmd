@@ -18,6 +18,7 @@ const (
 	preproMaybeBOM = iota
 	preproNormal
 	preproCR
+	preproISO8859_1
 )
 
 type Chunk struct {
@@ -32,8 +33,7 @@ const (
 	ChunkUnchangedRunes
 	ChunkNormalizedCRLF
 	ChunkExpandedTab
-	ChunkStartISO8859_1
-	ChunkEndISO8859_1
+	ChunkConvertedISO8859_1
 )
 
 // statically ensure that certain interfaces are implemented by Preprocessor
@@ -146,10 +146,15 @@ func (p *Preprocessor) Close() error {
 }
 
 func (p *Preprocessor) normalChunk(b ...byte) {
+	typ := ChunkUnchangedRunes
+	if p.state == preproISO8859_1 {
+		typ = ChunkConvertedISO8859_1
+	}
+
 	p.calcColumn(b)
 	n := len(p.Chunks)
-	if n == 0 || p.Chunks[n-1].Type != ChunkUnchangedRunes {
-		p.Chunks = append(p.Chunks, Chunk{Type: ChunkUnchangedRunes})
+	if n == 0 || p.Chunks[n-1].Type != typ {
+		p.Chunks = append(p.Chunks, Chunk{Type: typ})
 		n++
 	}
 	p.Chunks[n-1].Bytes = append(p.Chunks[n-1].Bytes, b...)
@@ -175,13 +180,7 @@ func (p *Preprocessor) calcColumn(added []byte) {
 }
 
 func (p *Preprocessor) writeAsISO8859_1(bytes ...byte) {
-	n := len(p.Chunks)
-	if n > 0 && p.Chunks[n-1].Type == ChunkEndISO8859_1 {
-		// Delete the closing chunk - extend the "block"
-		p.Chunks = p.Chunks[:n-1]
-	} else {
-		p.otherChunk(ChunkStartISO8859_1)
-	}
+	p.state = preproISO8859_1
 
 	// Unicode codepoints U+0000 to U+00ff correspond to ISO 8859-1, and
 	// result in 1-2 bytes when encoded as UTF-8
@@ -193,5 +192,5 @@ func (p *Preprocessor) writeAsISO8859_1(bytes ...byte) {
 		p.Write(buf)
 	}
 
-	p.otherChunk(ChunkEndISO8859_1)
+	p.state = preproNormal
 }

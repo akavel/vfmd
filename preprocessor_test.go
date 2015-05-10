@@ -30,9 +30,7 @@ func TestBOM(test *testing.T) {
 	}, {
 		input: bb(0xEF, 0xFF),
 		expected: []Chunk{
-			{ChunkStartISO8859_1, nil},
-			{ChunkUnchangedRunes, bs("\u00ef\u00ff")},
-			{ChunkEndISO8859_1, nil},
+			{ChunkConvertedISO8859_1, bs("\u00ef\u00ff")},
 		},
 		pending: nil,
 	}}
@@ -54,9 +52,7 @@ func TestBOM(test *testing.T) {
 func TestISO8859_1(test *testing.T) {
 	wrapISO := func(bytes []byte) []Chunk {
 		return []Chunk{
-			{ChunkStartISO8859_1, nil},
-			{ChunkUnchangedRunes, bytes},
-			{ChunkEndISO8859_1, nil},
+			{ChunkConvertedISO8859_1, bytes},
 		}
 	}
 	cases := []struct {
@@ -73,9 +69,7 @@ func TestISO8859_1(test *testing.T) {
 		// Mixed
 		{append([]byte("ż"), 0xFF, 'a'), []Chunk{
 			{ChunkUnchangedRunes, bs("ż")},
-			{ChunkStartISO8859_1, nil},
-			{ChunkUnchangedRunes, bs("\u00FF")},
-			{ChunkEndISO8859_1, nil},
+			{ChunkConvertedISO8859_1, bs("\u00FF")},
 			{ChunkUnchangedRunes, bb('a')},
 		}},
 	}
@@ -131,9 +125,7 @@ func TestTabExpansion(test *testing.T) {
 			{ChunkExpandedTab, bs("   ")},
 		}},
 		{bb(0x80, '\t'), []Chunk{
-			{ChunkStartISO8859_1, nil},
-			{ChunkUnchangedRunes, bs("\u0080")},
-			{ChunkEndISO8859_1, nil},
+			{ChunkConvertedISO8859_1, bs("\u0080")},
 			{ChunkExpandedTab, bs("   ")},
 		}},
 	}
