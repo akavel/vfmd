@@ -53,6 +53,12 @@ func isBlank(line []byte) bool {
 type BlockBase struct{ L [][]byte }
 
 func (b BlockBase) Lines() [][]byte { return b.L }
+func (b BlockBase) LastLine() []byte {
+	if len(b.L) == 0 {
+		return nil
+	}
+	return b.L[len(b.L)-1]
+}
 
 type BlockNeverContinue struct{ BlockBase }
 
@@ -70,7 +76,7 @@ var _ []Block = []Block{
 	&QuoteBlock{},
 	&HorizontalRuleBlock{},
 	&UnorderedListBlock{},
-	// &OrderedListBlock{},
+	&OrderedListBlock{},
 	// &ParagraphBlock{},
 }
 
@@ -155,7 +161,7 @@ func (b *CodeBlock) Detect(line, secondLine []byte) (consumed int) {
 }
 func (b *CodeBlock) Continue(line []byte) (reflux [][]byte) {
 	if b.maybeEnd && !bytes.HasPrefix(line, []byte("    ")) {
-		prev := b.L[len(b.L)-1]
+		prev := b.LastLine()
 		b.L = b.L[:len(b.L)-1]
 		return [][]byte{prev, line}
 	}
@@ -192,7 +198,7 @@ func (b *QuoteBlock) Continue(line []byte) (reflux [][]byte) {
 	if line == nil {
 		return [][]byte{line}
 	}
-	if isBlank(b.L[len(b.L)-1]) {
+	if isBlank(b.LastLine()) {
 		if isBlank(line) ||
 			bytes.HasPrefix(line, []byte("    ")) ||
 			bytes.TrimLeft(line, " ")[0] != '>' {
@@ -239,7 +245,7 @@ func (b *UnorderedListBlock) Continue(line []byte) (reflux [][]byte) {
 	if len(line) < prefix {
 		prefix = len(line)
 	}
-	if isBlank(b.L[len(b.L)-1]) {
+	if isBlank(b.LastLine()) {
 		if isBlank(line) {
 			return [][]byte{line}
 		}
@@ -264,5 +270,55 @@ func (b *UnorderedListBlock) Continue(line []byte) (reflux [][]byte) {
 	return nil
 }
 
-type OrderedListBlock struct{}
-type ParagraphBlock struct{}
+type OrderedListBlock struct {
+	BlockBase
+	Starter []byte
+}
+
+func (b *OrderedListBlock) Detect(line, secondLine []byte) (consumed int) {
+	m := reOrderedList.FindSubmatch(line)
+	if m == nil {
+		return 0
+	}
+	b.L = [][]byte{line}
+	b.Starter = m[1]
+	return 1
+}
+func (b *OrderedListBlock) Continue(line []byte) (reflux [][]byte) {
+	if line == nil {
+		return [][]byte{line}
+	}
+
+	prefix := len(b.Starter)
+	if len(line) < prefix {
+		prefix = len(line)
+	}
+	if isBlank(b.LastLine()) {
+		if isBlank(line) {
+			return [][]byte{line}
+		}
+		if !reOrderedList.Match(line) &&
+			// TODO(akavel): extract below pattern to hasNonSpaceInFirstChars(line, n)
+			len(bytes.Trim(line[:prefix], " ")) > 0 {
+			return [][]byte{line}
+		}
+	} else {
+		if !reOrderedList.Match(line) &&
+			len(bytes.Trim(line[:prefix], " ")) > 0 &&
+			!bytes.HasPrefix(line, []byte("    ")) {
+			if reUnorderedList.Match(line) ||
+				reHorizontalRule.Match(line) {
+				return [][]byte{line}
+			}
+		}
+	}
+	b.L = append(b.L, line)
+	return nil
+}
+
+type ParagraphBlock struct{ BlockBase }
+
+func (b *ParagraphBlock) Detect(line, secondLine []byte) (consumed int) {
+	b.L = append(b.L, line)
+	return 1
+}
