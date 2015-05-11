@@ -50,7 +50,31 @@ func isBlank(line []byte) bool {
 	return len(bytes.Trim(line, " \t")) == 0
 }
 
-type NullBlock struct{ L [][]byte }
+type BlockBase struct{ L [][]byte }
+
+func (b BlockBase) Lines() [][]byte { return b.L }
+
+type BlockNeverContinue struct{ BlockBase }
+
+func (BlockNeverContinue) Continue(line []byte) (reflux [][]byte) {
+	return [][]byte{line}
+}
+
+// static assertion of Block interface implementation by the listed types
+var _ []Block = []Block{
+	&NullBlock{},
+	&ReferenceResolutionBlock{},
+	&SetextHeaderBlock{},
+	&CodeBlock{},
+	&AtxHeaderBlock{},
+	&QuoteBlock{},
+	&HorizontalRuleBlock{},
+	&UnorderedListBlock{},
+	// &OrderedListBlock{},
+	// &ParagraphBlock{},
+}
+
+type NullBlock struct{ BlockNeverContinue }
 
 func (b *NullBlock) Detect(line, secondLine []byte) (consumed int) {
 	if isBlank(line) {
@@ -59,16 +83,13 @@ func (b *NullBlock) Detect(line, secondLine []byte) (consumed int) {
 	}
 	return 0
 }
-func (b *NullBlock) Continue(line []byte) (reflux [][]byte) {
-	return [][]byte{line}
-}
 
 type ReferenceResolutionBlock struct {
+	BlockNeverContinue
 	unprocessedReferenceID        []byte
 	refValueSequence              []byte
 	unprocessedUrl                []byte
 	refDefinitionTrailingSequence []byte
-	L                             [][]byte
 }
 
 func (b *ReferenceResolutionBlock) Detect(line, secondLine []byte) (consumed int) {
@@ -103,12 +124,9 @@ func (b *ReferenceResolutionBlock) Detect(line, secondLine []byte) (consumed int
 	}
 	return len(b.L)
 }
-func (b *ReferenceResolutionBlock) Continue(line []byte) (reflux [][]byte) {
-	return [][]byte{line}
-}
 
 type SetextHeaderBlock struct {
-	L [][]byte
+	BlockNeverContinue
 }
 
 func (b *SetextHeaderBlock) Detect(line, secondLine []byte) (consumed int) {
@@ -122,12 +140,9 @@ func (b *SetextHeaderBlock) Detect(line, secondLine []byte) (consumed int) {
 	}
 	return 0
 }
-func (b *SetextHeaderBlock) Continue(line []byte) (reflux [][]byte) {
-	return [][]byte{line}
-}
 
 type CodeBlock struct {
-	L        [][]byte
+	BlockBase
 	maybeEnd bool
 }
 
@@ -153,7 +168,7 @@ func (b *CodeBlock) Continue(line []byte) (reflux [][]byte) {
 	return nil
 }
 
-type AtxHeaderBlock struct{ L [][]byte }
+type AtxHeaderBlock struct{ BlockNeverContinue }
 
 func (b *AtxHeaderBlock) Detect(line, secondLine []byte) (consumed int) {
 	if bytes.HasPrefix(line, []byte("#")) {
@@ -162,11 +177,8 @@ func (b *AtxHeaderBlock) Detect(line, secondLine []byte) (consumed int) {
 	}
 	return 0
 }
-func (b *AtxHeaderBlock) Continue(line []byte) (reflux [][]byte) {
-	return [][]byte{line}
-}
 
-type QuoteBlock struct{ L [][]byte }
+type QuoteBlock struct{ BlockBase }
 
 func (b *QuoteBlock) Detect(line, secondLine []byte) (consumed int) {
 	ltrim := bytes.TrimLeft(line, " ")
@@ -194,7 +206,7 @@ func (b *QuoteBlock) Continue(line []byte) (reflux [][]byte) {
 	return nil
 }
 
-type HorizontalRuleBlock struct{ L [][]byte }
+type HorizontalRuleBlock struct{ BlockNeverContinue }
 
 func (b *HorizontalRuleBlock) Detect(line, secondLine []byte) (consumed int) {
 	if reHorizontalRule.Match(line) {
@@ -203,12 +215,9 @@ func (b *HorizontalRuleBlock) Detect(line, secondLine []byte) (consumed int) {
 	}
 	return 0
 }
-func (b *HorizontalRuleBlock) Continue(line []byte) (reflux [][]byte) {
-	return [][]byte{line}
-}
 
 type UnorderedListBlock struct {
-	L       [][]byte
+	BlockBase
 	Starter []byte
 }
 
