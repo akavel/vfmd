@@ -77,7 +77,7 @@ var _ []Block = []Block{
 	&HorizontalRuleBlock{},
 	&UnorderedListBlock{},
 	&OrderedListBlock{},
-	// &ParagraphBlock{},
+	&ParagraphBlock{},
 }
 
 type NullBlock struct{ BlockNeverContinue }
@@ -316,9 +316,33 @@ func (b *OrderedListBlock) Continue(line []byte) (reflux [][]byte) {
 	return nil
 }
 
-type ParagraphBlock struct{ BlockBase }
+type ParagraphBlock struct {
+	BlockBase
+	// NOTE: below fields must be set appropriately when creating a ParagraphBlock
+	IsInBlockquote bool
+	IsInList       bool
+}
 
 func (b *ParagraphBlock) Detect(line, secondLine []byte) (consumed int) {
 	b.L = append(b.L, line)
 	return 1
+}
+func (b *ParagraphBlock) Continue(line []byte) (reflux [][]byte) {
+	if line == nil {
+		return [][]byte{line}
+	}
+	// TODO(akavel): support HTML parser & related interactions [#paragraph-line-sequence]
+	if isBlank(b.LastLine()) {
+		return [][]byte{line}
+	}
+	if !bytes.HasPrefix(line, []byte("    ")) {
+		if reHorizontalRule.Match(line) ||
+			(b.IsInBlockquote && bytes.HasPrefix(bytes.TrimLeft(line, " "), []byte(">"))) ||
+			(b.IsInList && reOrderedList.Match(line)) ||
+			(b.IsInList && reUnorderedList.Match(line)) {
+			return [][]byte{line}
+		}
+	}
+	b.L = append(b.L, line)
+	return nil
 }
