@@ -49,6 +49,17 @@ var (
 func isBlank(line []byte) bool {
 	return len(bytes.Trim(line, " \t")) == 0
 }
+func hasNonSpaceInPrefix(line []byte, n int) bool {
+	for i := 0; i < n && i < len(line); i++ {
+		if line[i] != ' ' {
+			return true
+		}
+	}
+	return false
+}
+func hasFourSpacePrefix(line []byte) bool {
+	return bytes.HasPrefix(line, []byte("    "))
+}
 
 type BlockBase struct{ L [][]byte }
 
@@ -99,7 +110,7 @@ type ReferenceResolutionBlock struct {
 }
 
 func (b *ReferenceResolutionBlock) Detect(line, secondLine []byte) (consumed int) {
-	if bytes.HasPrefix(line, []byte("    ")) {
+	if hasFourSpacePrefix(line) {
 		return 0
 	}
 	// TODO(akavel): move the regexp out of function, for speed (or cache it?)
@@ -153,20 +164,20 @@ type CodeBlock struct {
 }
 
 func (b *CodeBlock) Detect(line, secondLine []byte) (consumed int) {
-	if bytes.HasPrefix(line, []byte("    ")) {
+	if hasFourSpacePrefix(line) {
 		b.L = [][]byte{line}
 		return 1
 	}
 	return 0
 }
 func (b *CodeBlock) Continue(line []byte) (reflux [][]byte) {
-	if b.maybeEnd && !bytes.HasPrefix(line, []byte("    ")) {
+	if b.maybeEnd && !hasFourSpacePrefix(line) {
 		prev := b.LastLine()
 		b.L = b.L[:len(b.L)-1]
 		return [][]byte{prev, line}
 	}
 	blank := isBlank(line)
-	if !blank && !bytes.HasPrefix(line, []byte("    ")) {
+	if !blank && !hasFourSpacePrefix(line) {
 		return [][]byte{line}
 	}
 	b.maybeEnd = blank
@@ -200,11 +211,11 @@ func (b *QuoteBlock) Continue(line []byte) (reflux [][]byte) {
 	}
 	if isBlank(b.LastLine()) {
 		if isBlank(line) ||
-			bytes.HasPrefix(line, []byte("    ")) ||
+			hasFourSpacePrefix(line) ||
 			bytes.TrimLeft(line, " ")[0] != '>' {
 			return [][]byte{line}
 		}
-	} else if !bytes.HasPrefix(line, []byte("    ")) &&
+	} else if !hasFourSpacePrefix(line) &&
 		reHorizontalRule.Match(line) {
 		return [][]byte{line}
 	}
@@ -241,10 +252,6 @@ func (b *UnorderedListBlock) Continue(line []byte) (reflux [][]byte) {
 		return [][]byte{line}
 	}
 
-	prefix := len(b.Starter)
-	if len(line) < prefix {
-		prefix = len(line)
-	}
 	if isBlank(b.LastLine()) {
 		if isBlank(line) {
 			return [][]byte{line}
@@ -252,13 +259,13 @@ func (b *UnorderedListBlock) Continue(line []byte) (reflux [][]byte) {
 		if !bytes.HasPrefix(line, b.Starter) &&
 			// FIXME(akavel): spec refers to runes ("characters"), not bytes; fix this everywhere
 			// has non-space chars in first prefix characters
-			len(bytes.Trim(line[:prefix], " ")) > 0 {
+			hasNonSpaceInPrefix(line, len(b.Starter)) {
 			return [][]byte{line}
 		}
 	} else {
 		if !bytes.HasPrefix(line, b.Starter) &&
-			len(bytes.Trim(line[:prefix], " ")) > 0 &&
-			!bytes.HasPrefix(line, []byte("    ")) {
+			hasNonSpaceInPrefix(line, len(b.Starter)) &&
+			!hasFourSpacePrefix(line) {
 			if reUnorderedList.Match(line) ||
 				reOrderedList.Match(line) ||
 				reHorizontalRule.Match(line) {
@@ -289,23 +296,19 @@ func (b *OrderedListBlock) Continue(line []byte) (reflux [][]byte) {
 		return [][]byte{line}
 	}
 
-	prefix := len(b.Starter)
-	if len(line) < prefix {
-		prefix = len(line)
-	}
 	if isBlank(b.LastLine()) {
 		if isBlank(line) {
 			return [][]byte{line}
 		}
 		if !reOrderedList.Match(line) &&
 			// TODO(akavel): extract below pattern to hasNonSpaceInFirstChars(line, n)
-			len(bytes.Trim(line[:prefix], " ")) > 0 {
+			hasNonSpaceInPrefix(line, len(b.Starter)) {
 			return [][]byte{line}
 		}
 	} else {
 		if !reOrderedList.Match(line) &&
-			len(bytes.Trim(line[:prefix], " ")) > 0 &&
-			!bytes.HasPrefix(line, []byte("    ")) {
+			hasNonSpaceInPrefix(line, len(b.Starter)) &&
+			!hasFourSpacePrefix(line) {
 			if reUnorderedList.Match(line) ||
 				reHorizontalRule.Match(line) {
 				return [][]byte{line}
@@ -335,7 +338,7 @@ func (b *ParagraphBlock) Continue(line []byte) (reflux [][]byte) {
 	if isBlank(b.LastLine()) {
 		return [][]byte{line}
 	}
-	if !bytes.HasPrefix(line, []byte("    ")) {
+	if !hasFourSpacePrefix(line) {
 		if reHorizontalRule.Match(line) ||
 			(b.IsInBlockquote && bytes.HasPrefix(bytes.TrimLeft(line, " "), []byte(">"))) ||
 			(b.IsInList && reOrderedList.Match(line)) ||
