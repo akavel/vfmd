@@ -40,10 +40,10 @@ type Block interface {
 	Lines() [][]byte
 }
 
-const (
-	reUnorderedList  = `^( *[\*\-\+] +)[^ ]`
-	reOrderedList    = `^( *([0-9]+)\. +)[^ ]`
-	reHorizontalRule = `^ *((\* *\* *\* *[\* ]*)|(\- *\- *\- *[\- ]*)|(_ *_ *_ *[_ ]*))$`
+var (
+	reUnorderedList  = regexp.MustCompile(`^( *[\*\-\+] +)[^ ]`)
+	reOrderedList    = regexp.MustCompile(`^( *([0-9]+)\. +)[^ ]`)
+	reHorizontalRule = regexp.MustCompile(`^ *((\* *\* *\* *[\* ]*)|(\- *\- *\- *[\- ]*)|(_ *_ *_ *[_ ]*))$`)
 )
 
 func isBlank(line []byte) bool {
@@ -153,9 +153,107 @@ func (b *CodeBlock) Continue(line []byte) (reflux [][]byte) {
 	return nil
 }
 
-type AtxHeaderBlock struct{}
-type QuoteBlock struct{}
-type HorizontalRuleBlock struct{}
-type UnorderedListBlock struct{}
+type AtxHeaderBlock struct{ L [][]byte }
+
+func (b *AtxHeaderBlock) Detect(line, secondLine []byte) (consumed int) {
+	if bytes.HasPrefix(line, []byte("#")) {
+		b.L = [][]byte{line}
+		return 1
+	}
+	return 0
+}
+func (b *AtxHeaderBlock) Continue(line []byte) (reflux [][]byte) {
+	return [][]byte{line}
+}
+
+type QuoteBlock struct{ L [][]byte }
+
+func (b *QuoteBlock) Detect(line, secondLine []byte) (consumed int) {
+	ltrim := bytes.TrimLeft(line, " ")
+	if len(ltrim) > 0 && ltrim[0] == '>' {
+		b.L = [][]byte{line}
+		return 1
+	}
+	return 0
+}
+func (b *QuoteBlock) Continue(line []byte) (reflux [][]byte) {
+	if line == nil {
+		return [][]byte{line}
+	}
+	if isBlank(b.L[len(b.L)-1]) {
+		if isBlank(line) ||
+			bytes.HasPrefix(line, []byte("    ")) ||
+			bytes.TrimLeft(line, " ")[0] != '>' {
+			return [][]byte{line}
+		}
+	} else if !bytes.HasPrefix(line, []byte("    ")) &&
+		reHorizontalRule.Match(line) {
+		return [][]byte{line}
+	}
+	b.L = append(b.L, line)
+	return nil
+}
+
+type HorizontalRuleBlock struct{ L [][]byte }
+
+func (b *HorizontalRuleBlock) Detect(line, secondLine []byte) (consumed int) {
+	if reHorizontalRule.Match(line) {
+		b.L = [][]byte{line}
+		return 1
+	}
+	return 0
+}
+func (b *HorizontalRuleBlock) Continue(line []byte) (reflux [][]byte) {
+	return [][]byte{line}
+}
+
+type UnorderedListBlock struct {
+	L       [][]byte
+	Starter []byte
+}
+
+func (b *UnorderedListBlock) Detect(line, secondLine []byte) (consumed int) {
+	m := reUnorderedList.FindSubmatch(line)
+	if m == nil {
+		return 0
+	}
+	b.L = [][]byte{line}
+	b.Starter = m[1]
+	return 1
+}
+func (b *UnorderedListBlock) Continue(line []byte) (reflux [][]byte) {
+	if line == nil {
+		return [][]byte{line}
+	}
+
+	prefix := len(b.Starter)
+	if len(line) < prefix {
+		prefix = len(line)
+	}
+	if isBlank(b.L[len(b.L)-1]) {
+		if isBlank(line) {
+			return [][]byte{line}
+		}
+		if !bytes.HasPrefix(line, b.Starter) &&
+			// FIXME(akavel): spec refers to runes ("characters"), not bytes; fix this everywhere
+			// has non-space chars in first prefix characters
+			len(bytes.Trim(line[:prefix], " ")) > 0 {
+			return [][]byte{line}
+		}
+	} else {
+		if !bytes.HasPrefix(line, b.Starter) &&
+			len(bytes.Trim(line[:prefix], " ")) > 0 &&
+			!bytes.HasPrefix(line, []byte("    ")) {
+			if reUnorderedList.Match(line) ||
+				reOrderedList.Match(line) ||
+				reHorizontalRule.Match(line) {
+				return [][]byte{line}
+			}
+		}
+	}
+	b.L = append(b.L, line)
+	return nil
+}
+
 type OrderedListBlock struct{}
 type ParagraphBlock struct{}
