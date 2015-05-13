@@ -37,13 +37,13 @@ func (line Line) hasFourSpacePrefix() bool {
 	return bytes.HasPrefix(line, []byte("    "))
 }
 
-type Block interface {
+type BlockDetector interface {
 	// Detect checks if the provided start line and optionally second line
-	// signify start of the particular Block kind. If unsuccessful, 0 and 0
-	// should be returned.  If successful, at least one of the returned
+	// signify start of the particular block kind.  If unsuccessful, 0 and
+	// 0 should be returned.  If successful, at least one of the returned
 	// numbers should be positive.  Consume is number of lines that sure
 	// belong to the block, and won't be needed in any subsequent calls to
-	// Continue. Pause is number of lines that may be still needed in
+	// Continue.  Pause is number of lines that may be still needed in
 	// subsequent calls to Continue, and/or aren't yet fully confirmed to
 	// belong to the block.
 	//
@@ -52,10 +52,10 @@ type Block interface {
 	//
 	// Note: second==nil means end of file/stream
 	Detect(start, second Line) (consume, pause int)
-	// Continue checks if the specified paused lines and next line may belong
-	// to the block, as reported started by Detect. If any of the lines is
-	// detected to be of a next block, Continue should report:
-	// consume <= len(paused), and nothing to pause. Otherwise, Continue
+	// Continue checks if the specified paused lines and next line may
+	// belong to the block, as reported started by Detect.  If any of the
+	// lines is detected to be of a next block, Continue should report:
+	// consume <= len(paused), and nothing to pause.  Otherwise, Continue
 	// must report: consume+pause == len(paused)+1.
 	//
 	// Number of paused lines passed to Continue will always be equal to
@@ -77,8 +77,8 @@ type BlockNeverContinue struct{}
 
 func (BlockNeverContinue) Continue([]Line, Line) (consume, pause int) { return 0, 0 }
 
-// static assertion of Block interface implementation by the listed types
-var _ []Block = []Block{
+// static assertion of BlockDetector interface implementation by the listed types
+var _ []BlockDetector = []BlockDetector{
 	&NullBlock{},
 	&ReferenceResolutionBlock{},
 	&SetextHeaderBlock{},
