@@ -50,7 +50,7 @@ type Block interface {
 	// Note: it is not allowed for Detect to report 0 lines to consume and
 	// then for Continue to reject all the paused lines.
 	//
-	// Note: secondLine==nil means end of file/stream
+	// Note: second==nil means end of file/stream
 	Detect(start, second Line) (consume, pause int)
 	// Continue checks if the specified paused lines and next line may belong
 	// to the block, as reported started by Detect. If any of the lines is
@@ -90,8 +90,8 @@ var _ []Block = []Block{
 
 type NullBlock struct{ BlockNeverContinue }
 
-func (b *NullBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	if line.isBlank() {
+func (b *NullBlock) Detect(start, second Line) (consume, pause int) {
+	if start.isBlank() {
 		return 1, 0
 	}
 	return 0, 0
@@ -105,13 +105,13 @@ type ReferenceResolutionBlock struct {
 	refDefinitionTrailingSequence []byte
 }
 
-func (b *ReferenceResolutionBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	if line.hasFourSpacePrefix() {
+func (b *ReferenceResolutionBlock) Detect(start, second Line) (consume, pause int) {
+	if start.hasFourSpacePrefix() {
 		return 0, 0
 	}
 	// TODO(akavel): move the regexp out of function, for speed (or cache it?)
 	re := regexp.MustCompile(`^ *\[(([^\\\[\]\!]|\\.|\![^\[])*((\!\[([^\\\[\]]|\\.)*\](\[([^\\\[\]]|\\.)*\])?)?([^\\\[\]]|\\.)*)*)\] *:(.*)$`)
-	m := re.FindSubmatch(line)
+	m := re.FindSubmatch(start)
 	if len(m) == 0 {
 		return 0, 0
 	}
@@ -128,8 +128,8 @@ func (b *ReferenceResolutionBlock) Detect(line, secondLine Line) (consumed, paus
 	// Detected ok. Now check if 1 or 2 lines.
 	re = regexp.MustCompile(`^ +("(([^"\\]|\\.)*)"|'(([^'\\]|\\.)*)'|\(([^\\\(\)]|\\.)*\)) *$`)
 	if bytes.IndexAny(b.refDefinitionTrailingSequence, " ") == -1 &&
-		secondLine != nil &&
-		re.Match(secondLine) {
+		second != nil &&
+		re.Match(second) {
 		return 2, 0
 	} else {
 		return 1, 0
@@ -138,12 +138,12 @@ func (b *ReferenceResolutionBlock) Detect(line, secondLine Line) (consumed, paus
 
 type SetextHeaderBlock struct{ BlockNeverContinue }
 
-func (b *SetextHeaderBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	if secondLine == nil {
+func (b *SetextHeaderBlock) Detect(start, second Line) (consume, pause int) {
+	if second == nil {
 		return 0, 0
 	}
 	re := regexp.MustCompile(`^(-+|=+) *$`)
-	if re.Match(secondLine) {
+	if re.Match(second) {
 		return 2, 0
 	}
 	return 0, 0
@@ -151,33 +151,33 @@ func (b *SetextHeaderBlock) Detect(line, secondLine Line) (consumed, paused int)
 
 type CodeBlock struct{}
 
-func (b *CodeBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	if line.hasFourSpacePrefix() {
+func (b *CodeBlock) Detect(start, second Line) (consume, pause int) {
+	if start.hasFourSpacePrefix() {
 		return 1, 0
 	}
 	return 0, 0
 }
-func (b *CodeBlock) Continue(pausedLines []Line, newLine Line) (consumed, paused int) {
-	// FIXME(akavel): handle newLine==nil !!!
+func (b *CodeBlock) Continue(paused []Line, next Line) (consume, pause int) {
+	// FIXME(akavel): handle next==nil !!!
 	// TODO(akavel): verify it's coded ok, it was converted from a different approach
 	switch {
 	// previous blank, current is not tab-indented
-	case len(pausedLines) > 0 && !newLine.hasFourSpacePrefix():
+	case len(paused) > 0 && !next.hasFourSpacePrefix():
 		return 0, 0
-	case newLine.isBlank():
-		return len(pausedLines), 1
-	case newLine.hasFourSpacePrefix():
-		return len(pausedLines) + 1, 0
+	case next.isBlank():
+		return len(paused), 1
+	case next.hasFourSpacePrefix():
+		return len(paused) + 1, 0
 	// current not blank & not indented. End the block.
 	default:
-		return len(pausedLines), 0
+		return len(paused), 0
 	}
 }
 
 type AtxHeaderBlock struct{ BlockNeverContinue }
 
-func (b *AtxHeaderBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	if bytes.HasPrefix(line, []byte("#")) {
+func (b *AtxHeaderBlock) Detect(start, second Line) (consume, pause int) {
+	if bytes.HasPrefix(start, []byte("#")) {
 		return 1, 0
 	}
 	return 0, 0
@@ -185,38 +185,38 @@ func (b *AtxHeaderBlock) Detect(line, secondLine Line) (consumed, paused int) {
 
 type QuoteBlock struct{}
 
-func (b *QuoteBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	ltrim := bytes.TrimLeft(line, " ")
+func (b *QuoteBlock) Detect(start, second Line) (consume, pause int) {
+	ltrim := bytes.TrimLeft(start, " ")
 	if len(ltrim) > 0 && ltrim[0] == '>' {
 		return 0, 1
 	}
 	return 0, 0
 }
-func (b *QuoteBlock) Continue(pausedLines []Line, newLine Line) (consumed, paused int) {
+func (b *QuoteBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	// TODO(akavel): verify it's coded ok, it was converted from a different approach
-	if newLine == nil {
-		return len(pausedLines), 0
+	if next == nil {
+		return len(paused), 0
 	}
-	if len(pausedLines) != 1 {
-		panic("len(pausedLines)!=1")
+	if len(paused) != 1 {
+		panic("len(paused)!=1")
 	}
-	if pausedLines[0].isBlank() {
-		if newLine.isBlank() ||
-			newLine.hasFourSpacePrefix() ||
-			bytes.TrimLeft(newLine, " ")[0] != '>' {
-			return len(pausedLines), 0
+	if paused[0].isBlank() {
+		if next.isBlank() ||
+			next.hasFourSpacePrefix() ||
+			bytes.TrimLeft(next, " ")[0] != '>' {
+			return len(paused), 0
 		}
-	} else if !newLine.hasFourSpacePrefix() &&
-		reHorizontalRule.Match(newLine) {
-		return len(pausedLines), 0
+	} else if !next.hasFourSpacePrefix() &&
+		reHorizontalRule.Match(next) {
+		return len(paused), 0
 	}
-	return len(pausedLines), 1
+	return len(paused), 1
 }
 
 type HorizontalRuleBlock struct{ BlockNeverContinue }
 
-func (b *HorizontalRuleBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	if reHorizontalRule.Match(line) {
+func (b *HorizontalRuleBlock) Detect(start, second Line) (consume, pause int) {
+	if reHorizontalRule.Match(start) {
 		return 1, 0
 	}
 	return 0, 0
@@ -226,82 +226,82 @@ type UnorderedListBlock struct {
 	Starter []byte
 }
 
-func (b *UnorderedListBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	m := reUnorderedList.FindSubmatch(line)
+func (b *UnorderedListBlock) Detect(start, second Line) (consume, pause int) {
+	m := reUnorderedList.FindSubmatch(start)
 	if m == nil {
 		return 0, 0
 	}
 	b.Starter = m[1]
 	return 0, 1
 }
-func (b *UnorderedListBlock) Continue(pausedLines []Line, newLine Line) (consumed, paused int) {
-	if newLine == nil {
-		return len(pausedLines), 0
+func (b *UnorderedListBlock) Continue(paused []Line, next Line) (consume, pause int) {
+	if next == nil {
+		return len(paused), 0
 	}
-	if len(pausedLines) != 1 {
-		panic("len(pausedLines)!=1")
+	if len(paused) != 1 {
+		panic("len(paused)!=1")
 	}
 
-	if pausedLines[0].isBlank() {
-		if newLine.isBlank() {
-			return len(pausedLines), 0
+	if paused[0].isBlank() {
+		if next.isBlank() {
+			return len(paused), 0
 		}
-		if !bytes.HasPrefix(newLine, b.Starter) &&
+		if !bytes.HasPrefix(next, b.Starter) &&
 			// FIXME(akavel): spec refers to runes ("characters"), not bytes; fix this everywhere
-			newLine.hasNonSpaceInPrefix(len(b.Starter)) {
-			return len(pausedLines), 0
+			next.hasNonSpaceInPrefix(len(b.Starter)) {
+			return len(paused), 0
 		}
 	} else {
-		if !bytes.HasPrefix(newLine, b.Starter) &&
-			newLine.hasNonSpaceInPrefix(len(b.Starter)) &&
-			!newLine.hasFourSpacePrefix() &&
-			(reUnorderedList.Match(newLine) ||
-				reOrderedList.Match(newLine) ||
-				reHorizontalRule.Match(newLine)) {
-			return len(pausedLines), 0
+		if !bytes.HasPrefix(next, b.Starter) &&
+			next.hasNonSpaceInPrefix(len(b.Starter)) &&
+			!next.hasFourSpacePrefix() &&
+			(reUnorderedList.Match(next) ||
+				reOrderedList.Match(next) ||
+				reHorizontalRule.Match(next)) {
+			return len(paused), 0
 		}
 	}
-	return len(pausedLines), 1
+	return len(paused), 1
 }
 
 type OrderedListBlock struct {
 	Starter []byte
 }
 
-func (b *OrderedListBlock) Detect(line, secondLine Line) (consumed, paused int) {
-	m := reOrderedList.FindSubmatch(line)
+func (b *OrderedListBlock) Detect(start, second Line) (consume, pause int) {
+	m := reOrderedList.FindSubmatch(start)
 	if m == nil {
 		return 0, 0
 	}
 	b.Starter = m[1]
 	return 0, 1
 }
-func (b *OrderedListBlock) Continue(pausedLines []Line, newLine Line) (consumed, paused int) {
-	if newLine == nil {
-		return len(pausedLines), 0
+func (b *OrderedListBlock) Continue(paused []Line, next Line) (consume, pause int) {
+	if next == nil {
+		return len(paused), 0
 	}
-	if len(pausedLines) != 1 {
-		panic("len(pausedLines)!=1")
+	if len(paused) != 1 {
+		panic("len(paused)!=1")
 	}
 
-	if pausedLines[0].isBlank() {
-		if newLine.isBlank() {
-			return len(pausedLines), 0
+	if paused[0].isBlank() {
+		if next.isBlank() {
+			return len(paused), 0
 		}
-		if !reOrderedList.Match(newLine) &&
-			newLine.hasNonSpaceInPrefix(len(b.Starter)) {
-			return len(pausedLines), 0
+		if !reOrderedList.Match(next) &&
+			next.hasNonSpaceInPrefix(len(b.Starter)) {
+			return len(paused), 0
 		}
 	} else {
-		if !reOrderedList.Match(newLine) &&
-			newLine.hasNonSpaceInPrefix(len(b.Starter)) &&
-			!newLine.hasFourSpacePrefix() &&
-			(reUnorderedList.Match(newLine) ||
-				reHorizontalRule.Match(newLine)) {
-			return len(pausedLines), 0
+		if !reOrderedList.Match(next) &&
+			next.hasNonSpaceInPrefix(len(b.Starter)) &&
+			!next.hasFourSpacePrefix() &&
+			(reUnorderedList.Match(next) ||
+				reHorizontalRule.Match(next)) {
+			return len(paused), 0
 		}
 	}
-	return len(pausedLines), 1
+	return len(paused), 1
 }
 
 type ParagraphBlock struct {
@@ -310,27 +310,27 @@ type ParagraphBlock struct {
 	IsInList       bool
 }
 
-func (b *ParagraphBlock) Detect(line, secondLine Line) (consumed, paused int) {
+func (b *ParagraphBlock) Detect(start, second Line) (consume, pause int) {
 	return 0, 1
 }
-func (b *ParagraphBlock) Continue(pausedLines []Line, newLine Line) (consumed, paused int) {
-	if newLine == nil {
-		return len(pausedLines), 0
+func (b *ParagraphBlock) Continue(paused []Line, next Line) (consume, pause int) {
+	if next == nil {
+		return len(paused), 0
 	}
-	if len(pausedLines) != 1 {
-		panic("len(pausedLines)!=1")
+	if len(paused) != 1 {
+		panic("len(paused)!=1")
 	}
 	// TODO(akavel): support HTML parser & related interactions [#paragraph-line-sequence]
-	if pausedLines[0].isBlank() {
-		return len(pausedLines), 0
+	if paused[0].isBlank() {
+		return len(paused), 0
 	}
-	if !newLine.hasFourSpacePrefix() {
-		if reHorizontalRule.Match(newLine) ||
-			(b.IsInBlockquote && bytes.HasPrefix(bytes.TrimLeft(newLine, " "), []byte(">"))) ||
-			(b.IsInList && reOrderedList.Match(newLine)) ||
-			(b.IsInList && reUnorderedList.Match(newLine)) {
-			return len(pausedLines), 0
+	if !next.hasFourSpacePrefix() {
+		if reHorizontalRule.Match(next) ||
+			(b.IsInBlockquote && bytes.HasPrefix(bytes.TrimLeft(next, " "), []byte(">"))) ||
+			(b.IsInList && reOrderedList.Match(next)) ||
+			(b.IsInList && reUnorderedList.Match(next)) {
+			return len(paused), 0
 		}
 	}
-	return len(pausedLines), 1
+	return len(paused), 1
 }
