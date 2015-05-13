@@ -162,16 +162,20 @@ func (b *CodeBlock) Detect(start, second Line) (consume, pause int) {
 }
 func (b *CodeBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	// FIXME(akavel): handle next==nil !!!
+	if next == nil {
+		return 0, 0
+		// note: len(paused)==1 if prev was blank, so we can ditch it anyway
+	}
 	// TODO(akavel): verify it's coded ok, it was converted from a different approach
 	switch {
-	// previous blank, current is not tab-indented
-	case len(paused) > 0 && !next.hasFourSpacePrefix():
+	// previous was blank, next is not tab-indented. Reject both.
+	case len(paused) == 1 && !next.hasFourSpacePrefix():
 		return 0, 0
 	case next.isBlank():
-		return len(paused), 1
+		return len(paused), 1 // note: only case where we pause a line
 	case next.hasFourSpacePrefix():
 		return len(paused) + 1, 0
-	// current not blank & not indented. End the block.
+	// next not blank & not indented. End the block.
 	default:
 		return len(paused), 0
 	}
