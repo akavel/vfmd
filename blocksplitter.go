@@ -58,6 +58,9 @@ type Block interface {
 	// consume <= len(paused), and nothing to pause. Otherwise, Continue
 	// must report: consume+pause == len(paused)+1.
 	//
+	// Number of paused lines passed to Continue will always be equal to
+	// value reported from previous Detect or Continue.
+	//
 	// Note: next==nil means end of file/stream; however, Continue will
 	// never be called with next==nil if previous call to
 	// Detect/Continue didn't report any lines to pause.
@@ -197,9 +200,6 @@ func (b *QuoteBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
 	}
-	if len(paused) != 1 {
-		panic("len(paused)!=1")
-	}
 	if paused[0].isBlank() {
 		if next.isBlank() ||
 			next.hasFourSpacePrefix() ||
@@ -237,9 +237,6 @@ func (b *UnorderedListBlock) Detect(start, second Line) (consume, pause int) {
 func (b *UnorderedListBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
-	}
-	if len(paused) != 1 {
-		panic("len(paused)!=1")
 	}
 
 	if paused[0].isBlank() {
@@ -280,9 +277,6 @@ func (b *OrderedListBlock) Continue(paused []Line, next Line) (consume, pause in
 	if next == nil {
 		return len(paused), 0
 	}
-	if len(paused) != 1 {
-		panic("len(paused)!=1")
-	}
 
 	if paused[0].isBlank() {
 		if next.isBlank() {
@@ -316,9 +310,6 @@ func (b *ParagraphBlock) Detect(start, second Line) (consume, pause int) {
 func (b *ParagraphBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
-	}
-	if len(paused) != 1 {
-		panic("len(paused)!=1")
 	}
 	// TODO(akavel): support HTML parser & related interactions [#paragraph-line-sequence]
 	if paused[0].isBlank() {
