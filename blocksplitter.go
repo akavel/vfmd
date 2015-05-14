@@ -329,3 +329,42 @@ func (b *ParagraphBlock) Continue(paused []Line, next Line) (consume, pause int)
 	}
 	return len(paused), 1
 }
+
+/*
+NOTES:
+
+AtxHeaderBlock
+ -> text-span-sequence
+
+SetextHeaderBlock
+ -> text-span-sequence
+
+QuoteBlock
+ -> process lines (strip certain prefix bytes)
+  -> detect[defaults..., ParagraphBlock{InQuote=1}]
+
+UnorderedListBlock
+ -> detect[UnorderedItemBlock]
+  -> process lines (strip certain prefix bytes)
+   -> detect[defaults..., ParagraphBlock{InList=1}]
+
+OrderedListBlock
+ -> detect[OrderedItemBlock]
+  -> process lines (strip certain prefix bytes)
+   -> detect[defaults..., ParagraphBlock{InList=1}]
+
+ParagraphBlock
+ -> join & trim
+  -> process as text-span-sequence
+
+Block{
+	block.Detector
+	NLines int
+	Nested []Block
+}
+
+// This function is guaranteed to be run after the line has been reported by
+// Detect or Continue as consumed, and after all preceding lines were
+// PostProcessed, and before any subsequent lines were PostProcessed.
+PostProcess(Line)
+*/
