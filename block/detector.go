@@ -1,4 +1,4 @@
-package vfmd
+package block
 
 import (
 	"bytes"
@@ -6,19 +6,6 @@ import (
 )
 
 // TODO(akavel): add tests for blocks
-
-type BlockSplitter struct {
-}
-
-func (b *BlockSplitter) WriteLine(line []byte) error {
-	// TODO(akavel): NIY
-	return nil
-}
-
-func (b *BlockSplitter) Close() error {
-	// TODO(akavel): NIY
-	return nil
-}
 
 type Line []byte
 
@@ -37,7 +24,7 @@ func (line Line) hasFourSpacePrefix() bool {
 	return bytes.HasPrefix(line, []byte("    "))
 }
 
-type BlockDetector interface {
+type Detector interface {
 	// Detect checks if the provided start line and optionally second line
 	// signify start of the particular block kind.  If unsuccessful, 0 and
 	// 0 should be returned.  If successful, at least one of the returned
@@ -73,42 +60,42 @@ var (
 	reHorizontalRule = regexp.MustCompile(`^ *((\* *\* *\* *[\* ]*)|(\- *\- *\- *[\- ]*)|(_ *_ *_ *[_ ]*))$`)
 )
 
-type BlockNeverContinue struct{}
+type NeverContinue struct{}
 
-func (BlockNeverContinue) Continue([]Line, Line) (consume, pause int) { return 0, 0 }
+func (NeverContinue) Continue([]Line, Line) (consume, pause int) { return 0, 0 }
 
-// static assertion of BlockDetector interface implementation by the listed types
-var _ []BlockDetector = []BlockDetector{
-	&NullBlock{},
-	&ReferenceResolutionBlock{},
-	&SetextHeaderBlock{},
-	&CodeBlock{},
-	&AtxHeaderBlock{},
-	&QuoteBlock{},
-	&HorizontalRuleBlock{},
-	&UnorderedListBlock{},
-	&OrderedListBlock{},
-	&ParagraphBlock{},
+// static assertion of Detector interface implementation by the listed types
+var _ []Detector = []Detector{
+	&Null{},
+	&ReferenceResolution{},
+	&SetextHeader{},
+	&Code{},
+	&AtxHeader{},
+	&Quote{},
+	&HorizontalRule{},
+	&UnorderedList{},
+	&OrderedList{},
+	&Paragraph{},
 }
 
-type NullBlock struct{ BlockNeverContinue }
+type Null struct{ NeverContinue }
 
-func (b *NullBlock) Detect(start, second Line) (consume, pause int) {
+func (b *Null) Detect(start, second Line) (consume, pause int) {
 	if start.isBlank() {
 		return 1, 0
 	}
 	return 0, 0
 }
 
-type ReferenceResolutionBlock struct {
-	BlockNeverContinue
+type ReferenceResolution struct {
+	NeverContinue
 	unprocessedReferenceID        []byte
 	refValueSequence              []byte
 	unprocessedUrl                []byte
 	refDefinitionTrailingSequence []byte
 }
 
-func (b *ReferenceResolutionBlock) Detect(start, second Line) (consume, pause int) {
+func (b *ReferenceResolution) Detect(start, second Line) (consume, pause int) {
 	if start.hasFourSpacePrefix() {
 		return 0, 0
 	}
@@ -139,9 +126,9 @@ func (b *ReferenceResolutionBlock) Detect(start, second Line) (consume, pause in
 	}
 }
 
-type SetextHeaderBlock struct{ BlockNeverContinue }
+type SetextHeader struct{ NeverContinue }
 
-func (b *SetextHeaderBlock) Detect(start, second Line) (consume, pause int) {
+func (b *SetextHeader) Detect(start, second Line) (consume, pause int) {
 	if second == nil {
 		return 0, 0
 	}
@@ -152,15 +139,15 @@ func (b *SetextHeaderBlock) Detect(start, second Line) (consume, pause int) {
 	return 0, 0
 }
 
-type CodeBlock struct{}
+type Code struct{}
 
-func (b *CodeBlock) Detect(start, second Line) (consume, pause int) {
+func (b *Code) Detect(start, second Line) (consume, pause int) {
 	if start.hasFourSpacePrefix() {
 		return 1, 0
 	}
 	return 0, 0
 }
-func (b *CodeBlock) Continue(paused []Line, next Line) (consume, pause int) {
+func (b *Code) Continue(paused []Line, next Line) (consume, pause int) {
 	// FIXME(akavel): handle next==nil !!!
 	if next == nil {
 		return 0, 0
@@ -181,25 +168,25 @@ func (b *CodeBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	}
 }
 
-type AtxHeaderBlock struct{ BlockNeverContinue }
+type AtxHeader struct{ NeverContinue }
 
-func (b *AtxHeaderBlock) Detect(start, second Line) (consume, pause int) {
+func (b *AtxHeader) Detect(start, second Line) (consume, pause int) {
 	if bytes.HasPrefix(start, []byte("#")) {
 		return 1, 0
 	}
 	return 0, 0
 }
 
-type QuoteBlock struct{}
+type Quote struct{}
 
-func (b *QuoteBlock) Detect(start, second Line) (consume, pause int) {
+func (b *Quote) Detect(start, second Line) (consume, pause int) {
 	ltrim := bytes.TrimLeft(start, " ")
 	if len(ltrim) > 0 && ltrim[0] == '>' {
 		return 0, 1
 	}
 	return 0, 0
 }
-func (b *QuoteBlock) Continue(paused []Line, next Line) (consume, pause int) {
+func (b *Quote) Continue(paused []Line, next Line) (consume, pause int) {
 	// TODO(akavel): verify it's coded ok, it was converted from a different approach
 	if next == nil {
 		return len(paused), 0
@@ -217,20 +204,20 @@ func (b *QuoteBlock) Continue(paused []Line, next Line) (consume, pause int) {
 	return len(paused), 1
 }
 
-type HorizontalRuleBlock struct{ BlockNeverContinue }
+type HorizontalRule struct{ NeverContinue }
 
-func (b *HorizontalRuleBlock) Detect(start, second Line) (consume, pause int) {
+func (b *HorizontalRule) Detect(start, second Line) (consume, pause int) {
 	if reHorizontalRule.Match(start) {
 		return 1, 0
 	}
 	return 0, 0
 }
 
-type UnorderedListBlock struct {
+type UnorderedList struct {
 	Starter []byte
 }
 
-func (b *UnorderedListBlock) Detect(start, second Line) (consume, pause int) {
+func (b *UnorderedList) Detect(start, second Line) (consume, pause int) {
 	m := reUnorderedList.FindSubmatch(start)
 	if m == nil {
 		return 0, 0
@@ -238,7 +225,7 @@ func (b *UnorderedListBlock) Detect(start, second Line) (consume, pause int) {
 	b.Starter = m[1]
 	return 0, 1
 }
-func (b *UnorderedListBlock) Continue(paused []Line, next Line) (consume, pause int) {
+func (b *UnorderedList) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
 	}
@@ -265,11 +252,11 @@ func (b *UnorderedListBlock) Continue(paused []Line, next Line) (consume, pause 
 	return len(paused), 1
 }
 
-type OrderedListBlock struct {
+type OrderedList struct {
 	Starter []byte
 }
 
-func (b *OrderedListBlock) Detect(start, second Line) (consume, pause int) {
+func (b *OrderedList) Detect(start, second Line) (consume, pause int) {
 	m := reOrderedList.FindSubmatch(start)
 	if m == nil {
 		return 0, 0
@@ -277,7 +264,7 @@ func (b *OrderedListBlock) Detect(start, second Line) (consume, pause int) {
 	b.Starter = m[1]
 	return 0, 1
 }
-func (b *OrderedListBlock) Continue(paused []Line, next Line) (consume, pause int) {
+func (b *OrderedList) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
 	}
@@ -302,16 +289,16 @@ func (b *OrderedListBlock) Continue(paused []Line, next Line) (consume, pause in
 	return len(paused), 1
 }
 
-type ParagraphBlock struct {
-	// NOTE: below fields must be set appropriately when creating a ParagraphBlock
-	IsInBlockquote bool
-	IsInList       bool
+type Paragraph struct {
+	// NOTE: below fields must be set appropriately when creating a Paragraph
+	InQuote bool
+	InList  bool
 }
 
-func (b *ParagraphBlock) Detect(start, second Line) (consume, pause int) {
+func (b *Paragraph) Detect(start, second Line) (consume, pause int) {
 	return 0, 1
 }
-func (b *ParagraphBlock) Continue(paused []Line, next Line) (consume, pause int) {
+func (b *Paragraph) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
 	}
@@ -321,9 +308,9 @@ func (b *ParagraphBlock) Continue(paused []Line, next Line) (consume, pause int)
 	}
 	if !next.hasFourSpacePrefix() {
 		if reHorizontalRule.Match(next) ||
-			(b.IsInBlockquote && bytes.HasPrefix(bytes.TrimLeft(next, " "), []byte(">"))) ||
-			(b.IsInList && reOrderedList.Match(next)) ||
-			(b.IsInList && reUnorderedList.Match(next)) {
+			(b.InQuote && bytes.HasPrefix(bytes.TrimLeft(next, " "), []byte(">"))) ||
+			(b.InList && reOrderedList.Match(next)) ||
+			(b.InList && reUnorderedList.Match(next)) {
 			return len(paused), 0
 		}
 	}
@@ -333,27 +320,27 @@ func (b *ParagraphBlock) Continue(paused []Line, next Line) (consume, pause int)
 /*
 NOTES:
 
-AtxHeaderBlock
+AtxHeader
  -> text-span-sequence
 
-SetextHeaderBlock
+SetextHeader
  -> text-span-sequence
 
-QuoteBlock
+Quote
  -> process lines (strip certain prefix bytes)
-  -> detect[defaults..., ParagraphBlock{InQuote=1}]
+  -> detect[defaults..., Paragraph{InQuote=1}]
 
-UnorderedListBlock
- -> detect[UnorderedItemBlock]
+UnorderedList
+ -> detect[UnorderedItem]
   -> process lines (strip certain prefix bytes)
-   -> detect[defaults..., ParagraphBlock{InList=1}]
+   -> detect[defaults..., Paragraph{InList=1}]
 
-OrderedListBlock
- -> detect[OrderedItemBlock]
+OrderedList
+ -> detect[OrderedItem]
   -> process lines (strip certain prefix bytes)
-   -> detect[defaults..., ParagraphBlock{InList=1}]
+   -> detect[defaults..., Paragraph{InList=1}]
 
-ParagraphBlock
+Paragraph
  -> join & trim
   -> process as text-span-sequence
 
