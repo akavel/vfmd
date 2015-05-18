@@ -1,0 +1,3 @@
+[submodule "testdata"]
+	path = testdata
+	url = https://github.com/vfmd/vfmd-test.git
