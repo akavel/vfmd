@@ -71,21 +71,8 @@ func (s *Splitter) WriteLine(line []byte) error {
 		switch {
 		case consume <= len(s.paused):
 			s.consumed += consume
-			s.Detected = append(s.Detected, Detection{
-				Detector: s.block,
-				First:    s.start,
-				Last:     s.consumed - 1,
-			})
-			rest := append(s.paused[consume:], line)
-			s.paused = nil
-			for _, retry := range rest {
-				// TODO(mateuszc): kinda risky, may potentially exhaust stack?
-				err := s.WriteLine(retry)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
+			s.emitDetection()
+			return s.retry(append(s.paused[consume:], line))
 		default:
 			s.paused = nil
 			s.consumed += consume
@@ -95,7 +82,43 @@ func (s *Splitter) WriteLine(line []byte) error {
 }
 
 func (s *Splitter) Close() error {
-	// TODO(akavel): NIY
+	if len(s.paused) == 0 {
+		if s.block != nil {
+			s.emitDetection()
+		}
+		return nil
+	}
+	assert(s.block != nil, s.block)
+	consume, pause := s.block.Continue(s.paused, nil)
+	assert(consume+pause <= len(s.paused), consume, pause, len(s.paused))
+	s.consumed += consume
+	s.emitDetection()
+	if consume == len(s.paused) {
+		s.paused = nil
+		return nil
+	}
+	s.retry(s.paused[consume:])
+	return s.Close()
+}
+
+func (s *Splitter) emitDetection() {
+	s.Detected = append(s.Detected, Detection{
+		Detector: s.block,
+		First:    s.start,
+		Last:     s.consumed - 1,
+	})
+	s.block = nil
+}
+
+func (s *Splitter) retry(lines []Line) error {
+	s.paused = nil
+	for _, l := range lines {
+		// TODO(mateuszc): kinda risky, may potentially exhaust stack?
+		err := s.WriteLine(l)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
