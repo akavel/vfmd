@@ -38,6 +38,8 @@ type Detector interface {
 	// then for Continue to reject all the paused lines.
 	//
 	// Note: second==nil means end of file/stream
+	//
+	// FIXME(mateuszc): make this comment complete and sane
 	Detect(start, second Line) (consume, pause int)
 	// Continue checks if the specified paused lines and next line may
 	// belong to the block, as reported started by Detect.  If any of the
