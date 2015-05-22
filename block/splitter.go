@@ -10,8 +10,14 @@ var (
 	ErrCannotDetectBlock = errors.New("vfmd: no block detector matched line")
 )
 
+type Detection struct {
+	Detector
+	First, Last int // line numbers
+}
+
 type Splitter struct {
 	Detectors []Detector
+	Detected  []Detection
 	consumed  int // number of lines consumed
 
 	block  Detector
@@ -24,18 +30,18 @@ func (s *Splitter) WriteLine(line []byte) error {
 		s.Detectors = DefaultDetectors
 	}
 
-	if s.block == nil && len(paused) < 2 {
+	switch {
+	case s.block == nil && len(s.paused) < 2:
 		// If not in a detected block, we must wait till we have two
 		// lines
 		s.paused = append(s.paused, line)
 		return nil
-	}
-	if s.block == nil {
+	case s.block == nil:
 		// Let's detect a block!
 		dets := cloneSlice(s.Detectors)
 		var consume, pause int
 		for _, d := range dets {
-			consume, pause = d.Detect(paused[0], paused[1])
+			consume, pause = d.Detect(s.paused[0], s.paused[1])
 			if consume+pause > 0 {
 				s.block = d
 				break
@@ -58,10 +64,34 @@ func (s *Splitter) WriteLine(line []byte) error {
 			return s.WriteLine(retry)
 		}
 		return nil
+	default:
+		consume, pause := s.block.Continue(s.paused, line)
+		assert(consume >= 0 && pause >= 0, consume, pause)
+		assert(consume+pause <= len(s.paused)+1, consume, pause, len(s.paused))
+		switch {
+		case consume <= len(s.paused):
+			s.consumed += consume
+			s.Detected = append(s.Detected, Detection{
+				Detector: s.block,
+				First:    s.start,
+				Last:     s.consumed - 1,
+			})
+			rest := append(s.paused[consume:], line)
+			s.paused = nil
+			for _, retry := range rest {
+				// TODO(mateuszc): kinda risky, may potentially exhaust stack?
+				err := s.WriteLine(retry)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		default:
+			s.paused = nil
+			s.consumed += consume
+			return nil
+		}
 	}
-	// s.Detectors = cloneSlice(DefaultDetectors)
-	// TODO(akavel): NIY
-	return nil
 }
 
 func (s *Splitter) Close() error {
@@ -89,6 +119,6 @@ func cloneSlice(src []Detector) []Detector {
 
 func assert(condition bool, notes ...interface{}) {
 	if !condition {
-		panic(fmt.Sprintln(notes...))
+		panic("assertion failed; values: " + fmt.Sprintln(notes...))
 	}
 }
