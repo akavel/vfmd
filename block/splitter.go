@@ -10,19 +10,16 @@ var (
 	ErrCannotDetectBlock = errors.New("vfmd: no block detector matched line")
 )
 
-type Detection struct {
+type Block struct {
 	Detector
 	First, Last int // line numbers
 }
 
 type Splitter struct {
 	Detectors []Detector
-	Detected  []Detection
-	consumed  int // number of lines consumed
-
-	block  Detector
-	paused []Line
-	start  int // nuber of line where current block started
+	Blocks    []Block
+	current   Block
+	paused    []Line
 }
 
 func (s *Splitter) WriteLine(line []byte) error {
@@ -31,31 +28,30 @@ func (s *Splitter) WriteLine(line []byte) error {
 	}
 
 	switch {
-	case s.block == nil && len(s.paused) < 2:
+	case s.current.Detector == nil && len(s.paused) < 2:
 		// If not in a detected block, we must wait till we have two
 		// lines
 		s.paused = append(s.paused, line)
 		return nil
-	case s.block == nil:
+	case s.current.Detector == nil:
 		// Let's detect a block!
 		dets := cloneSlice(s.Detectors)
 		var consume, pause int
 		for _, d := range dets {
 			consume, pause = d.Detect(s.paused[0], s.paused[1])
 			if consume+pause > 0 {
-				s.block = d
+				s.current.Detector = d
 				break
 			}
 		}
 		switch {
-		case s.block == nil:
+		case s.current.Detector == nil:
 			return ErrCannotDetectBlock
 		case consume < 0 || pause < 0 || consume+pause > 2:
 			return fmt.Errorf("vfmd: %T.Detect() broke block.Detector contract: must return one of: 0,0; 0,1; 1,0; 1,1; 0,2; 2,0; got: %d,%d",
-				s.block, consume, pause)
+				s.current.Detector, consume, pause)
 		}
-		s.start = s.consumed
-		s.consumed += consume
+		s.current.Last += consume
 		s.paused = s.paused[consume:]
 		if pause == 0 && len(s.paused) > 0 {
 			assert(len(s.paused) == 1, len(s.paused), s.paused)
@@ -65,17 +61,16 @@ func (s *Splitter) WriteLine(line []byte) error {
 		}
 		return nil
 	default:
-		consume, pause := s.block.Continue(s.paused, line)
+		consume, pause := s.current.Continue(s.paused, line)
 		assert(consume >= 0 && pause >= 0, consume, pause)
 		assert(consume+pause <= len(s.paused)+1, consume, pause, len(s.paused))
+		s.current.Last += consume
 		switch {
 		case consume <= len(s.paused):
-			s.consumed += consume
-			s.emitDetection()
+			s.emitBlock()
 			return s.retry(append(s.paused[consume:], line))
 		default:
 			s.paused = nil
-			s.consumed += consume
 			return nil
 		}
 	}
@@ -83,16 +78,16 @@ func (s *Splitter) WriteLine(line []byte) error {
 
 func (s *Splitter) Close() error {
 	if len(s.paused) == 0 {
-		if s.block != nil {
-			s.emitDetection()
+		if s.current.Detector != nil {
+			s.emitBlock()
 		}
 		return nil
 	}
-	assert(s.block != nil, s.block)
-	consume, pause := s.block.Continue(s.paused, nil)
+	assert(s.current.Detector != nil, s.current.Detector)
+	consume, pause := s.current.Continue(s.paused, nil)
 	assert(consume+pause <= len(s.paused), consume, pause, len(s.paused))
-	s.consumed += consume
-	s.emitDetection()
+	s.current.Last += consume
+	s.emitBlock()
 	if consume == len(s.paused) {
 		s.paused = nil
 		return nil
@@ -101,13 +96,11 @@ func (s *Splitter) Close() error {
 	return s.Close()
 }
 
-func (s *Splitter) emitDetection() {
-	s.Detected = append(s.Detected, Detection{
-		Detector: s.block,
-		First:    s.start,
-		Last:     s.consumed - 1,
-	})
-	s.block = nil
+func (s *Splitter) emitBlock() {
+	s.Blocks = append(s.Blocks, s.current)
+	s.current.Detector = nil
+	s.current.First = s.current.Last + 1
+	s.current.Last = s.current.First - 1
 }
 
 func (s *Splitter) retry(lines []Line) error {
