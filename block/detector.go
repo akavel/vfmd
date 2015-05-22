@@ -64,23 +64,24 @@ type NeverContinue struct{}
 
 func (NeverContinue) Continue([]Line, Line) (consume, pause int) { return 0, 0 }
 
-// static assertion of Detector interface implementation by the listed types
-var _ []Detector = []Detector{
-	&Null{},
+// DefaultDetectors contains the list of default detectors in order in which
+// they should be normally applied.
+var DefaultDetectors []Detector = []Detector{
+	Null{},
 	&ReferenceResolution{},
-	&SetextHeader{},
-	&Code{},
-	&AtxHeader{},
-	&Quote{},
-	&HorizontalRule{},
+	SetextHeader{},
+	Code{},
+	AtxHeader{},
+	Quote{},
+	HorizontalRule{},
 	&UnorderedList{},
 	&OrderedList{},
-	&Paragraph{},
+	Paragraph{},
 }
 
 type Null struct{ NeverContinue }
 
-func (b *Null) Detect(start, second Line) (consume, pause int) {
+func (Null) Detect(start, second Line) (consume, pause int) {
 	if start.isBlank() {
 		return 1, 0
 	}
@@ -128,7 +129,7 @@ func (b *ReferenceResolution) Detect(start, second Line) (consume, pause int) {
 
 type SetextHeader struct{ NeverContinue }
 
-func (b *SetextHeader) Detect(start, second Line) (consume, pause int) {
+func (SetextHeader) Detect(start, second Line) (consume, pause int) {
 	if second == nil {
 		return 0, 0
 	}
@@ -141,13 +142,13 @@ func (b *SetextHeader) Detect(start, second Line) (consume, pause int) {
 
 type Code struct{}
 
-func (b *Code) Detect(start, second Line) (consume, pause int) {
+func (Code) Detect(start, second Line) (consume, pause int) {
 	if start.hasFourSpacePrefix() {
 		return 1, 0
 	}
 	return 0, 0
 }
-func (b *Code) Continue(paused []Line, next Line) (consume, pause int) {
+func (Code) Continue(paused []Line, next Line) (consume, pause int) {
 	// FIXME(akavel): handle next==nil !!!
 	if next == nil {
 		return 0, 0
@@ -170,7 +171,7 @@ func (b *Code) Continue(paused []Line, next Line) (consume, pause int) {
 
 type AtxHeader struct{ NeverContinue }
 
-func (b *AtxHeader) Detect(start, second Line) (consume, pause int) {
+func (AtxHeader) Detect(start, second Line) (consume, pause int) {
 	if bytes.HasPrefix(start, []byte("#")) {
 		return 1, 0
 	}
@@ -179,14 +180,14 @@ func (b *AtxHeader) Detect(start, second Line) (consume, pause int) {
 
 type Quote struct{}
 
-func (b *Quote) Detect(start, second Line) (consume, pause int) {
+func (Quote) Detect(start, second Line) (consume, pause int) {
 	ltrim := bytes.TrimLeft(start, " ")
 	if len(ltrim) > 0 && ltrim[0] == '>' {
 		return 0, 1
 	}
 	return 0, 0
 }
-func (b *Quote) Continue(paused []Line, next Line) (consume, pause int) {
+func (Quote) Continue(paused []Line, next Line) (consume, pause int) {
 	// TODO(akavel): verify it's coded ok, it was converted from a different approach
 	if next == nil {
 		return len(paused), 0
@@ -206,7 +207,7 @@ func (b *Quote) Continue(paused []Line, next Line) (consume, pause int) {
 
 type HorizontalRule struct{ NeverContinue }
 
-func (b *HorizontalRule) Detect(start, second Line) (consume, pause int) {
+func (HorizontalRule) Detect(start, second Line) (consume, pause int) {
 	if reHorizontalRule.Match(start) {
 		return 1, 0
 	}
@@ -295,10 +296,10 @@ type Paragraph struct {
 	InList  bool
 }
 
-func (b *Paragraph) Detect(start, second Line) (consume, pause int) {
+func (Paragraph) Detect(start, second Line) (consume, pause int) {
 	return 0, 1
 }
-func (b *Paragraph) Continue(paused []Line, next Line) (consume, pause int) {
+func (b Paragraph) Continue(paused []Line, next Line) (consume, pause int) {
 	if next == nil {
 		return len(paused), 0
 	}
