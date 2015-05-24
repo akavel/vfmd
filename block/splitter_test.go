@@ -33,14 +33,14 @@ const dir = "../testdata/tests/block_level"
 +blockquote/followed_by_codeblock.md
 +blockquote/followed_by_hr.md
 +blockquote/followed_by_list.md
-blockquote/followed_by_para.md
-blockquote/followed_by_setext_header.md
-blockquote/indented_differently1.md
-blockquote/indented_differently2.md
-blockquote/many_level_nesting.md
-blockquote/many_lines.md
-blockquote/many_lines_lazy.md
-blockquote/many_paras.md
++blockquote/followed_by_para.md
++blockquote/followed_by_setext_header.md
++blockquote/indented_differently1.md
++blockquote/indented_differently2.md
++blockquote/many_level_nesting.md
++blockquote/many_lines.md
++blockquote/many_lines_lazy.md
++blockquote/many_paras.md
 blockquote/many_paras_2blank.md
 blockquote/many_paras_2blank_lazy.md
 blockquote/many_paras_2blank_lazy2.md
@@ -356,6 +356,51 @@ func TestFiles(test *testing.T) {
 				{2, &UnorderedList{}},
 				{3, Quote{}},
 			},
+		},
+		{
+			"blockquote/followed_by_para.md",
+			blocks{
+				{3, Quote{}},
+				{2, Paragraph{}},
+				{3, Quote{}},
+			},
+		},
+		{
+			"blockquote/followed_by_setext_header.md",
+			blocks{
+				{3, Quote{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{4, Quote{}},
+			},
+		},
+		{
+			"blockquote/indented_differently1.md",
+			blocks{{6, Quote{}}},
+		},
+		{
+			"blockquote/indented_differently2.md",
+			blocks{{11, Quote{}}},
+		},
+		{
+			"blockquote/many_level_nesting.md",
+			blocks{
+				{2, Paragraph{}},
+				{26, Quote{}},
+				{1, Paragraph{}},
+			},
+		},
+		{
+			"blockquote/many_lines.md",
+			blocks{{3, Quote{}}},
+		},
+		{
+			"blockquote/many_lines_lazy.md",
+			blocks{{3, Quote{}}},
+		},
+		{
+			"blockquote/many_paras.md",
+			blocks{{11, Quote{}}},
 		},
 	}
 
