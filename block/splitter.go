@@ -64,17 +64,17 @@ func (s *Splitter) WriteLine(line []byte) error {
 	default:
 		n := len(s.window)
 		consume, pause := s.current.Continue(s.window[:n-1], s.window[n-1])
-		if consume < 0 || pause < 0 || consume+pause > len(s.window) {
+		if consume < 0 || pause < 0 || consume+pause > len(s.window) || (pause != 0 && consume+pause != len(s.window)) {
 			return fmt.Errorf("vfmd: %T.Continue() broke block.Continue contract: got: %d,%d",
 				s.current.Detector, consume, pause)
 		}
 		s.current.Last += consume
 		switch {
-		case consume < len(s.window):
+		case consume+pause < len(s.window):
 			s.emitBlock()
 			return s.retry(s.window[consume:])
 		default:
-			s.window = nil
+			s.window = s.window[consume:]
 			return nil
 		}
 	}

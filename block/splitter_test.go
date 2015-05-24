@@ -16,14 +16,14 @@ const dir = "../testdata/tests/block_level"
 
 /*
 +atx_header/blank_text.md
-atx_header/enclosed_blank_text.md
-atx_header/hash_in_text.md
-atx_header/left_only.md
-atx_header/left_right.md
-atx_header/more_than_six_hashes.md
-atx_header/space_in_text.md
-atx_header/span_in_text.md
-blockquote/containing_atx_header.md
++atx_header/enclosed_blank_text.md
++atx_header/hash_in_text.md
++atx_header/left_only.md
++atx_header/left_right.md
++atx_header/more_than_six_hashes.md
++atx_header/space_in_text.md
++atx_header/span_in_text.md
++blockquote/containing_atx_header.md
 blockquote/containing_blockquote.md
 blockquote/containing_codeblock.md
 blockquote/containing_hr.md
@@ -188,6 +188,115 @@ func TestFiles(test *testing.T) {
 				{1, AtxHeader{}},
 			},
 		},
+		{
+			"atx_header/enclosed_blank_text.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"atx_header/hash_in_text.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"atx_header/left_only.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"atx_header/left_right.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"atx_header/more_than_six_hashes.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"atx_header/space_in_text.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"atx_header/span_in_text.md",
+			blocks{
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"blockquote/containing_atx_header.md",
+			blocks{
+				{6, Quote{}},
+			},
+		},
 	}
 
 Cases:
@@ -233,7 +342,7 @@ Cases:
 		}
 
 		if len(c.blocks) != len(s.Blocks) {
-			test.Errorf("case %s length mismatch, expected:\n%d (%v)\ngot:\n%d (%v)",
+			test.Errorf("case %s length mismatch, expected:\n%d (%#v)\ngot:\n%d (%#v)",
 				c.path, len(c.blocks), c.blocks, len(s.Blocks), s.Blocks)
 			continue
 		}
