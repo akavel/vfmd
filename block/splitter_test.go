@@ -41,15 +41,15 @@ const dir = "../testdata/tests/block_level"
 +blockquote/many_lines.md
 +blockquote/many_lines_lazy.md
 +blockquote/many_paras.md
-blockquote/many_paras_2blank.md
-blockquote/many_paras_2blank_lazy.md
-blockquote/many_paras_2blank_lazy2.md
-blockquote/many_paras_lazy.md
-blockquote/many_paras_lazy2.md
-blockquote/no_space_after_gt.md
-blockquote/one_line.md
-blockquote/space_before_gt.md
-codeblock/followed_by_para.md
++blockquote/many_paras_2blank.md
++blockquote/many_paras_2blank_lazy.md
++blockquote/many_paras_2blank_lazy2.md
++blockquote/many_paras_lazy.md
++blockquote/many_paras_lazy2.md
++blockquote/no_space_after_gt.md
++blockquote/one_line.md
++blockquote/space_before_gt.md
++codeblock/followed_by_para.md
 codeblock/html_escaping.md
 codeblock/many_lines.md
 codeblock/more_than_four_leading_space.md
@@ -401,6 +401,75 @@ func TestFiles(test *testing.T) {
 		{
 			"blockquote/many_paras.md",
 			blocks{{11, Quote{}}},
+		},
+		{
+			"blockquote/many_paras_2blank.md",
+			blocks{{13, Quote{}}},
+		},
+		{
+			"blockquote/many_paras_2blank_lazy.md",
+			blocks{
+				{4, Quote{}},
+				{1, Null{}},
+				{4, Quote{}},
+				{1, Null{}},
+				{3, Quote{}},
+			},
+		},
+		{
+			"blockquote/many_paras_2blank_lazy2.md",
+			blocks{
+				{4, Quote{}},
+				{1, Null{}},
+				{4, Quote{}},
+				{1, Null{}},
+				{3, Quote{}},
+			},
+		},
+		{
+			"blockquote/many_paras_lazy.md",
+			blocks{{11, Quote{}}},
+		},
+		{
+			"blockquote/many_paras_lazy2.md",
+			blocks{{11, Quote{}}},
+		},
+		{
+			"blockquote/no_space_after_gt.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, Quote{}},
+				{2, Paragraph{}},
+				{2, Quote{}},
+			},
+		},
+		{
+			"blockquote/one_line.md",
+			blocks{{1, Quote{}}},
+		},
+		{
+			"blockquote/space_before_gt.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, Quote{}},
+				{2, Paragraph{}},
+				{2, Quote{}},
+				{2, Paragraph{}},
+				{2, Quote{}},
+				{2, Paragraph{}},
+				{1, Code{}},
+			},
+		},
+		{
+			"codeblock/followed_by_para.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, Code{}},
+				{2, Paragraph{}},
+				{2, Code{}},
+				{1, Null{}},
+				{1, Paragraph{}},
+			},
 		},
 	}
 
