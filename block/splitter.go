@@ -54,11 +54,11 @@ func (s *Splitter) WriteLine(line []byte) error {
 		}
 		s.current.Last = s.current.First - 1 + consume
 		s.window = s.window[consume:]
-		if pause == 0 && len(s.window) > 0 {
-			assert(len(s.window) == 1, len(s.window), s.window)
-			retry := s.window[0]
-			s.window = nil
-			return s.WriteLine(retry)
+		rest := s.window[pause:]
+		if len(rest) > 0 {
+			assert(len(rest) == 1, len(rest), rest)
+			s.window = s.window[:pause]
+			return s.WriteLine(rest[0])
 		}
 		return nil
 	default:

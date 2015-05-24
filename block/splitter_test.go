@@ -24,15 +24,15 @@ const dir = "../testdata/tests/block_level"
 +atx_header/space_in_text.md
 +atx_header/span_in_text.md
 +blockquote/containing_atx_header.md
-blockquote/containing_blockquote.md
-blockquote/containing_codeblock.md
-blockquote/containing_hr.md
-blockquote/containing_list.md
-blockquote/containing_setext_header.md
-blockquote/followed_by_atx_header.md
-blockquote/followed_by_codeblock.md
-blockquote/followed_by_hr.md
-blockquote/followed_by_list.md
++blockquote/containing_blockquote.md
++blockquote/containing_codeblock.md
++blockquote/containing_hr.md
++blockquote/containing_list.md
++blockquote/containing_setext_header.md
++blockquote/followed_by_atx_header.md
++blockquote/followed_by_codeblock.md
++blockquote/followed_by_hr.md
++blockquote/followed_by_list.md
 blockquote/followed_by_para.md
 blockquote/followed_by_setext_header.md
 blockquote/indented_differently1.md
@@ -293,8 +293,68 @@ func TestFiles(test *testing.T) {
 		},
 		{
 			"blockquote/containing_atx_header.md",
+			blocks{{6, Quote{}}},
+		},
+		{
+			"blockquote/containing_blockquote.md",
+			blocks{{7, Quote{}}},
+		},
+		{
+			"blockquote/containing_codeblock.md",
+			blocks{{12, Quote{}}},
+		},
+		{
+			"blockquote/containing_hr.md",
+			blocks{{6, Quote{}}},
+		},
+		{
+			"blockquote/containing_list.md",
+			blocks{{20, Quote{}}},
+		},
+		{
+			"blockquote/containing_setext_header.md",
+			blocks{{9, Quote{}}},
+		},
+		{
+			"blockquote/followed_by_atx_header.md",
 			blocks{
-				{6, Quote{}},
+				{3, Quote{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{3, Quote{}},
+			},
+		},
+		{
+			"blockquote/followed_by_codeblock.md",
+			blocks{
+				{3, Quote{}},
+				{1, Code{}},
+				{1, Null{}},
+				{3, Quote{}},
+			},
+		},
+		{
+			"blockquote/followed_by_hr.md",
+			blocks{
+				{3, Quote{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{2, Quote{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"blockquote/followed_by_list.md",
+			blocks{
+				{3, Quote{}},
+				{2, &OrderedList{}},
+				{7, Quote{}},
+				{2, &UnorderedList{}},
+				{7, Quote{}},
+				{2, &UnorderedList{}},
+				{7, Quote{}},
+				{2, &UnorderedList{}},
+				{3, Quote{}},
 			},
 		},
 	}
