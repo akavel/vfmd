@@ -23,6 +23,7 @@ type Splitter struct {
 }
 
 func (s *Splitter) WriteLine(line []byte) error {
+	// TODO(mateuszc): add marker to disallow calls if previous call ended with error
 	if s.Detectors == nil {
 		s.Detectors = DefaultDetectors
 	}
@@ -62,8 +63,8 @@ func (s *Splitter) WriteLine(line []byte) error {
 		return nil
 	default:
 		n := len(s.window)
-		consume, pause := s.current.Continue(s.window[:n-1], s.window[n])
-		if consume <= 0 || pause < 0 || consume+pause > len(s.window) {
+		consume, pause := s.current.Continue(s.window[:n-1], s.window[n-1])
+		if consume < 0 || pause < 0 || consume+pause > len(s.window) {
 			return fmt.Errorf("vfmd: %T.Continue() broke block.Continue contract: got: %d,%d",
 				s.current.Detector, consume, pause)
 		}
@@ -80,26 +81,28 @@ func (s *Splitter) WriteLine(line []byte) error {
 }
 
 func (s *Splitter) Close() error {
+	// TODO(mateuszc): add marker to detect multiple closes
 	if len(s.window) == 0 {
 		if s.current.Detector != nil {
 			s.emitBlock()
 		}
 		return nil
 	}
-	assert(s.current.Detector != nil, s.current.Detector)
-	consume, pause := s.current.Continue(s.window, nil)
-	if consume <= 0 || pause < 0 || consume+pause > len(s.window) {
-		return fmt.Errorf("vfmd: %T.Continue() broke block.Continue contract: got: %d,%d",
-			s.current.Detector, consume, pause)
-	}
-	s.current.Last += consume
-	s.emitBlock()
-	if consume == len(s.window) {
-		s.window = nil
-		return nil
-	}
-	s.retry(s.window[consume:])
-	return s.Close()
+	return s.WriteLine(nil)
+	// assert(s.current.Detector != nil, s.current.Detector, s.window)
+	// consume, pause := s.current.Continue(s.window, nil)
+	// if consume <= 0 || pause < 0 || consume+pause > len(s.window) {
+	// 	return fmt.Errorf("vfmd: %T.Continue() broke block.Continue contract: got: %d,%d",
+	// 		s.current.Detector, consume, pause)
+	// }
+	// s.current.Last += consume
+	// s.emitBlock()
+	// if consume == len(s.window) {
+	// 	s.window = nil
+	// 	return nil
+	// }
+	// s.retry(s.window[consume:])
+	// return s.Close()
 }
 
 func (s *Splitter) emitBlock() {
