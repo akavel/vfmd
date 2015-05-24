@@ -50,16 +50,16 @@ const dir = "../testdata/tests/block_level"
 +blockquote/one_line.md
 +blockquote/space_before_gt.md
 +codeblock/followed_by_para.md
-codeblock/html_escaping.md
-codeblock/many_lines.md
-codeblock/more_than_four_leading_space.md
-codeblock/one_blank_line_bw_codeblocks.md
-codeblock/one_line.md
-codeblock/two_blank_lines_bw_codeblocks.md
-codeblock/vs_atx_header.md
-codeblock/vs_blockquote.md
-codeblock/vs_hr.md
-codeblock/vs_list.md
++codeblock/html_escaping.md
++codeblock/many_lines.md
++codeblock/more_than_four_leading_space.md
++codeblock/one_blank_line_bw_codeblocks.md
++codeblock/one_line.md
++codeblock/two_blank_lines_bw_codeblocks.md
++codeblock/vs_atx_header.md
++codeblock/vs_blockquote.md
++codeblock/vs_hr.md
++codeblock/vs_list.md
 horizontal_rule/end_with_space.md
 horizontal_rule/followed_by_block.md
 horizontal_rule/loose.md
@@ -469,6 +469,93 @@ func TestFiles(test *testing.T) {
 				{2, Code{}},
 				{1, Null{}},
 				{1, Paragraph{}},
+			},
+		},
+		{
+			"codeblock/html_escaping.md",
+			blocks{
+				{2, Paragraph{}},
+				{1, Code{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"codeblock/many_lines.md",
+			blocks{{3, Code{}}},
+		},
+		{
+			"codeblock/more_than_four_leading_space.md",
+			blocks{
+				{1, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{3, Code{}},
+			},
+		},
+		{
+			"codeblock/one_blank_line_bw_codeblocks.md",
+			blocks{{7, Code{}}},
+		},
+		{
+			"codeblock/one_line.md",
+			blocks{{1, Code{}}},
+		},
+		{
+			"codeblock/two_blank_lines_bw_codeblocks.md",
+			blocks{
+				{3, Code{}},
+				{1, Null{}},
+				{1, Null{}},
+				{3, Code{}},
+			},
+		},
+		{
+			"codeblock/vs_atx_header.md",
+			blocks{
+				{1, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{1, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{2, Code{}},
+			},
+		},
+		{
+			"codeblock/vs_blockquote.md",
+			blocks{
+				{1, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{1, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{2, Code{}},
+			},
+		},
+		{
+			"codeblock/vs_hr.md",
+			blocks{
+				{2, Paragraph{}},
+				{1, Code{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"codeblock/vs_list.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{2, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{2, Code{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{2, Code{}},
+				{1, Null{}},
 			},
 		},
 	}
