@@ -66,40 +66,40 @@ const dir = "../testdata/tests/block_level"
 +horizontal_rule/sparse.md
 +horizontal_rule/start_with_space.md
 +horizontal_rule/tight.md
-ordered_list/all_items_loose.md
-ordered_list/all_items_tight.md
-ordered_list/all_items_tight_even_with_blanks.md
-ordered_list/at_end_of_parent_without_blank_line.md
-ordered_list/bw_unordered_lists.md
-ordered_list/followed_by_hr.md
-ordered_list/followed_by_list.md
-ordered_list/indent_and_sub_blocks.md
-ordered_list/list_ends_with_2blanks.md
-ordered_list/many_level_nesting.md
-ordered_list/many_lines.md
-ordered_list/many_lines_lazy.md
-ordered_list/many_paras.md
-ordered_list/many_paras_2blank.md
-ordered_list/many_paras_2blank_lazy.md
-ordered_list/many_paras_lazy.md
-ordered_list/no_space_after_number.md
-ordered_list/no_space_before_number.md
-ordered_list/numbering_from_two.md
-ordered_list/numbering_not_in_order.md
-ordered_list/numbers_left_aligned.md
-ordered_list/numbers_right_aligned.md
-ordered_list/numbers_wiggly.md
-ordered_list/one_line.md
-ordered_list/some_items_loose.md
-ordered_list/space_before_number.md
-ordered_list/three_paras_loose.md
-ordered_list/three_paras_tight.md
-ordered_list/two_paras_loose.md
-ordered_list/with_atx_header.md
-ordered_list/with_blockquote.md
-ordered_list/with_codeblock.md
-ordered_list/with_para.md
-ordered_list/with_setext_header.md
++ordered_list/all_items_loose.md
++ordered_list/all_items_tight.md
++ordered_list/all_items_tight_even_with_blanks.md
++ordered_list/at_end_of_parent_without_blank_line.md
++ordered_list/bw_unordered_lists.md
++ordered_list/followed_by_hr.md
++ordered_list/followed_by_list.md
++ordered_list/indent_and_sub_blocks.md
++ordered_list/list_ends_with_2blanks.md
++ordered_list/many_level_nesting.md
++ordered_list/many_lines.md
++ordered_list/many_lines_lazy.md
++ordered_list/many_paras.md
++ordered_list/many_paras_2blank.md
++ordered_list/many_paras_2blank_lazy.md
++ordered_list/many_paras_lazy.md
++ordered_list/no_space_after_number.md
++ordered_list/no_space_before_number.md
++ordered_list/numbering_from_two.md
++ordered_list/numbering_not_in_order.md
++ordered_list/numbers_left_aligned.md
++ordered_list/numbers_right_aligned.md
++ordered_list/numbers_wiggly.md
++ordered_list/one_line.md
++ordered_list/some_items_loose.md
++ordered_list/space_before_number.md
++ordered_list/three_paras_loose.md
++ordered_list/three_paras_tight.md
++ordered_list/two_paras_loose.md
++ordered_list/with_atx_header.md
++ordered_list/with_blockquote.md
++ordered_list/with_codeblock.md
++ordered_list/with_para.md
++ordered_list/with_setext_header.md
 paragraph/blanks_within_html_comment.md
 paragraph/blanks_within_html_tag.md
 paragraph/blanks_within_verbatim_html.md
@@ -711,6 +711,269 @@ func TestFiles(test *testing.T) {
 				{1, HorizontalRule{}},
 			},
 		},
+		{
+			"ordered_list/all_items_loose.md",
+			blocks{{7, &OrderedList{}}},
+		},
+		{
+			"ordered_list/all_items_tight.md",
+			blocks{{4, &OrderedList{}}},
+		},
+		{
+			"ordered_list/all_items_tight_even_with_blanks.md",
+			blocks{{7, &OrderedList{}}},
+		},
+		{
+			"ordered_list/at_end_of_parent_without_blank_line.md",
+			blocks{
+				{1, Null{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{8, &UnorderedList{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{5, &OrderedList{}},
+			},
+		},
+		{
+			"ordered_list/bw_unordered_lists.md",
+			blocks{
+				{3, &UnorderedList{}},
+				{3, &OrderedList{}},
+				{3, &UnorderedList{}},
+			},
+		},
+		{
+			"ordered_list/followed_by_hr.md",
+			blocks{
+				{4, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{5, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{6, &OrderedList{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"ordered_list/followed_by_list.md",
+			blocks{
+				{4, &OrderedList{}},
+				{2, &UnorderedList{}},
+				{5, &OrderedList{}},
+				{2, &UnorderedList{}},
+				{6, &OrderedList{}},
+				{1, &UnorderedList{}},
+			},
+		},
+		{
+			"ordered_list/indent_and_sub_blocks.md",
+			blocks{
+				{6, &OrderedList{}},
+				{2, Paragraph{}},
+				{6, &OrderedList{}},
+				{2, Quote{}},
+				{6, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{6, &OrderedList{}},
+				{2, &UnorderedList{}},
+				{12, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{2, &OrderedList{}},
+				{1, Code{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"ordered_list/list_ends_with_2blanks.md",
+			blocks{
+				{4, &OrderedList{}},
+				{1, Null{}},
+				{10, &OrderedList{}},
+				{1, Null{}},
+				{1, Code{}},
+			},
+		},
+		{
+			"ordered_list/many_level_nesting.md",
+			blocks{
+				{2, Paragraph{}},
+				{22, &OrderedList{}},
+				{1, Paragraph{}},
+			},
+		},
+		{
+			"ordered_list/many_lines.md",
+			blocks{{5, &OrderedList{}}},
+		},
+		{
+			"ordered_list/many_lines_lazy.md",
+			blocks{{5, &OrderedList{}}},
+		},
+		{
+			"ordered_list/many_paras.md",
+			blocks{{9, &OrderedList{}}},
+		},
+		{
+			"ordered_list/many_paras_2blank.md",
+			blocks{
+				{5, &OrderedList{}},
+				{1, Null{}},
+				{4, Paragraph{}},
+			},
+		},
+		{
+			"ordered_list/many_paras_2blank_lazy.md",
+			blocks{
+				{5, &OrderedList{}},
+				{1, Null{}},
+				{4, Paragraph{}},
+			},
+		},
+		{
+			"ordered_list/many_paras_lazy.md",
+			blocks{{9, &OrderedList{}}},
+		},
+		{
+			"ordered_list/no_space_after_number.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, Paragraph{}},
+				{2, Paragraph{}},
+				{2, Paragraph{}},
+				{2, Paragraph{}},
+				{1, Paragraph{}},
+			},
+		},
+		{
+			"ordered_list/no_space_before_number.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{2, Paragraph{}},
+				{1, &OrderedList{}},
+			},
+		},
+		{
+			"ordered_list/numbering_from_two.md",
+			blocks{{11, &OrderedList{}}},
+		},
+		{
+			"ordered_list/numbering_not_in_order.md",
+			blocks{{12, &OrderedList{}}},
+		},
+		{
+			"ordered_list/numbers_left_aligned.md",
+			blocks{{12, &OrderedList{}}},
+		},
+		{
+			"ordered_list/numbers_right_aligned.md",
+			blocks{{12, &OrderedList{}}},
+		},
+		{
+			"ordered_list/numbers_wiggly.md",
+			blocks{{12, &OrderedList{}}},
+		},
+		{
+			"ordered_list/one_line.md",
+			blocks{{3, &OrderedList{}}},
+		},
+		{
+			"ordered_list/some_items_loose.md",
+			blocks{
+				{2, Paragraph{}},
+				{6, &OrderedList{}},
+				{2, Paragraph{}},
+				{8, &OrderedList{}},
+				{2, Paragraph{}},
+				{10, &OrderedList{}},
+				{2, Paragraph{}},
+				{6, &OrderedList{}},
+				{1, Paragraph{}},
+			},
+		},
+		{
+			"ordered_list/space_before_number.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{2, Paragraph{}},
+				{1, Code{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"ordered_list/three_paras_loose.md",
+			blocks{{15, &OrderedList{}}},
+		},
+		{
+			"ordered_list/three_paras_tight.md",
+			blocks{{13, &OrderedList{}}},
+		},
+		{
+			"ordered_list/two_paras_loose.md",
+			blocks{{11, &OrderedList{}}},
+		},
+		{
+			"ordered_list/with_atx_header.md",
+			blocks{
+				{16, &OrderedList{}},
+				{1, AtxHeader{}},
+			},
+		},
+		{
+			"ordered_list/with_blockquote.md",
+			blocks{
+				{8, &OrderedList{}},
+				{1, Quote{}},
+			},
+		},
+		{
+			"ordered_list/with_codeblock.md",
+			blocks{
+				{8, &OrderedList{}},
+				{2, Paragraph{}},
+				{2, &OrderedList{}},
+				{1, Code{}},
+			},
+		},
+		{
+			"ordered_list/with_para.md",
+			blocks{
+				{10, &OrderedList{}},
+				{1, Paragraph{}},
+			},
+		},
+		{
+			"ordered_list/with_setext_header.md",
+			blocks{
+				{25, &OrderedList{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{10, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{3, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{3, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{3, &OrderedList{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+			},
+		},
 	}
 
 Cases:
@@ -756,8 +1019,15 @@ Cases:
 		}
 
 		if len(c.blocks) != len(s.Blocks) {
-			test.Errorf("case %s length mismatch, expected:\n%d (%#v)\ngot:\n%d (%#v)",
-				c.path, len(c.blocks), c.blocks, len(s.Blocks), s.Blocks)
+			test.Errorf("case %s length mismatch, expected %d:",
+				c.path, len(c.blocks))
+			for _, b := range c.blocks {
+				test.Errorf("%#v", b)
+			}
+			test.Errorf("got %d", len(s.Blocks))
+			for _, b := range s.Blocks {
+				test.Errorf("%#v", b)
+			}
 			continue
 		}
 		for i := range c.blocks {
