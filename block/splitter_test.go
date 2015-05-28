@@ -103,21 +103,21 @@ const dir = "../testdata/tests/block_level"
 paragraph/blanks_within_html_comment.md
 paragraph/blanks_within_html_tag.md
 paragraph/blanks_within_verbatim_html.md
-paragraph/followed_by_atx_header.md
-paragraph/followed_by_blockquote.md
-paragraph/followed_by_codeblock.md
-paragraph/followed_by_horizontal_rule.md
-paragraph/followed_by_list.md
-paragraph/followed_by_setext_header.md
++paragraph/followed_by_atx_header.md
++paragraph/followed_by_blockquote.md
++paragraph/followed_by_codeblock.md
++paragraph/followed_by_horizontal_rule.md
++paragraph/followed_by_list.md
++paragraph/followed_by_setext_header.md
 paragraph/html_block.md
 paragraph/html_comment.md
 paragraph/md_within_html.md
 paragraph/misnested_html.md
 paragraph/non_phrasing_html_tag.md
 paragraph/phrasing_html_tag.md
-paragraph/simple_para.md
-paragraph/two_paras_1blank.md
-paragraph/two_paras_2blank.md
++paragraph/simple_para.md
++paragraph/two_paras_1blank.md
++paragraph/two_paras_2blank.md
 setext_header/blank_text.md
 setext_header/enclosed_space_in_underline.md
 setext_header/leading_space_in_text.md
@@ -972,6 +972,87 @@ func TestFiles(test *testing.T) {
 				{3, &OrderedList{}},
 				{2, SetextHeader{}},
 				{1, Null{}},
+			},
+		},
+		// {
+		// "paragraph/blanks_within_html_comment.md",
+		// blocks{
+		// },
+		// },
+		{
+			"paragraph/followed_by_atx_header.md",
+			blocks{
+				{3, Paragraph{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{3, Paragraph{}},
+			},
+		},
+		{
+			"paragraph/followed_by_blockquote.md",
+			blocks{
+				{3, Paragraph{}},
+				{3, Quote{}},
+				{4, Paragraph{}},
+			},
+		},
+		{
+			"paragraph/followed_by_codeblock.md",
+			blocks{
+				{3, Paragraph{}},
+				{2, Code{}},
+				{1, Null{}},
+				{4, Paragraph{}},
+			},
+		},
+		{
+			"paragraph/followed_by_horizontal_rule.md",
+			blocks{
+				{3, Paragraph{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, Null{}},
+				{2, Paragraph{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"paragraph/followed_by_list.md",
+			blocks{
+				{3, Paragraph{}},
+				{2, &UnorderedList{}},
+				{4, Paragraph{}},
+				{3, Paragraph{}},
+				{2, &OrderedList{}},
+				{4, Paragraph{}},
+			},
+		},
+		{
+			"paragraph/followed_by_setext_header.md",
+			blocks{
+				{3, Paragraph{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{4, Paragraph{}},
+			},
+		},
+		{
+			"paragraph/simple_para.md",
+			blocks{{3, Paragraph{}}},
+		},
+		{
+			"paragraph/two_paras_1blank.md",
+			blocks{
+				{3, Paragraph{}},
+				{2, Paragraph{}},
+			},
+		},
+		{
+			"paragraph/two_paras_2blank.md",
+			blocks{
+				{3, Paragraph{}},
+				{1, Null{}},
+				{2, Paragraph{}},
 			},
 		},
 	}
