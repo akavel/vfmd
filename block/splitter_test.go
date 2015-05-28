@@ -60,12 +60,12 @@ const dir = "../testdata/tests/block_level"
 +codeblock/vs_blockquote.md
 +codeblock/vs_hr.md
 +codeblock/vs_list.md
-horizontal_rule/end_with_space.md
-horizontal_rule/followed_by_block.md
-horizontal_rule/loose.md
-horizontal_rule/sparse.md
-horizontal_rule/start_with_space.md
-horizontal_rule/tight.md
++horizontal_rule/end_with_space.md
++horizontal_rule/followed_by_block.md
++horizontal_rule/loose.md
++horizontal_rule/sparse.md
++horizontal_rule/start_with_space.md
++horizontal_rule/tight.md
 ordered_list/all_items_loose.md
 ordered_list/all_items_tight.md
 ordered_list/all_items_tight_even_with_blanks.md
@@ -556,6 +556,159 @@ func TestFiles(test *testing.T) {
 				{2, Paragraph{}},
 				{2, Code{}},
 				{1, Null{}},
+			},
+		},
+		{
+			"horizontal_rule/end_with_space.md",
+			blocks{
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"horizontal_rule/followed_by_block.md",
+			blocks{
+				{1, HorizontalRule{}},
+				{2, Paragraph{}},
+				{1, HorizontalRule{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, Quote{}},
+				{1, HorizontalRule{}},
+				{2, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{2, &UnorderedList{}},
+				{1, HorizontalRule{}},
+				{2, &UnorderedList{}},
+				{1, HorizontalRule{}},
+				{1, Code{}},
+				{1, Null{}},
+
+				{1, HorizontalRule{}},
+				{2, Paragraph{}},
+				{1, HorizontalRule{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, Quote{}},
+				{1, HorizontalRule{}},
+				{2, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{2, &UnorderedList{}},
+				{1, HorizontalRule{}},
+				{2, &UnorderedList{}},
+				{1, HorizontalRule{}},
+				{1, Code{}},
+				{1, Null{}},
+
+				{1, HorizontalRule{}},
+				{2, Paragraph{}},
+				{1, HorizontalRule{}},
+				{1, AtxHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{2, Quote{}},
+				{1, HorizontalRule{}},
+				{2, &OrderedList{}},
+				{1, HorizontalRule{}},
+				{2, &UnorderedList{}},
+				{1, HorizontalRule{}},
+				{2, &UnorderedList{}},
+				{1, HorizontalRule{}},
+				{1, Code{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"horizontal_rule/loose.md",
+			blocks{
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"horizontal_rule/sparse.md",
+			blocks{
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"horizontal_rule/start_with_space.md",
+			blocks{
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"horizontal_rule/tight.md",
+			blocks{
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+				{1, HorizontalRule{}},
 			},
 		},
 	}
