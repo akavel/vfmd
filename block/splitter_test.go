@@ -118,17 +118,17 @@ paragraph/phrasing_html_tag.md
 +paragraph/simple_para.md
 +paragraph/two_paras_1blank.md
 +paragraph/two_paras_2blank.md
-setext_header/blank_text.md
-setext_header/enclosed_space_in_underline.md
-setext_header/leading_space_in_text.md
-setext_header/leading_space_in_underline.md
-setext_header/simple.md
-setext_header/span_in_text.md
-setext_header/trailing_space_in_underline.md
-setext_header/vs_atx_header.md
-setext_header/vs_blockquote.md
-setext_header/vs_codeblock.md
-setext_header/vs_list.md
++setext_header/blank_text.md
++setext_header/enclosed_space_in_underline.md
++setext_header/leading_space_in_text.md
++setext_header/leading_space_in_underline.md
++setext_header/simple.md
++setext_header/span_in_text.md
++setext_header/trailing_space_in_underline.md
++setext_header/vs_atx_header.md
++setext_header/vs_blockquote.md
++setext_header/vs_codeblock.md
++setext_header/vs_list.md
 unordered_list/all_items_loose.md
 unordered_list/all_items_tight.md
 unordered_list/all_items_tight_even_with_blanks.md
@@ -1053,6 +1053,133 @@ func TestFiles(test *testing.T) {
 				{3, Paragraph{}},
 				{1, Null{}},
 				{2, Paragraph{}},
+			},
+		},
+		{
+			"setext_header/blank_text.md",
+			blocks{
+				{2, Paragraph{}},
+				{2, Paragraph{}},
+				{2, Paragraph{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"setext_header/enclosed_space_in_underline.md",
+			blocks{
+				{3, Paragraph{}},
+				{1, Paragraph{}},
+				{1, HorizontalRule{}},
+			},
+		},
+		{
+			"setext_header/leading_space_in_text.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+			},
+		},
+		{
+			"setext_header/leading_space_in_underline.md",
+			blocks{
+				{3, Paragraph{}},
+				{1, Paragraph{}},
+				{1, HorizontalRule{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"setext_header/simple.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+			},
+		},
+		{
+			"setext_header/span_in_text.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+			},
+		},
+		{
+			"setext_header/trailing_space_in_underline.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+			},
+		},
+		{
+			"setext_header/vs_atx_header.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+			},
+		},
+		{
+			"setext_header/vs_blockquote.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+			},
+		},
+		{
+			"setext_header/vs_codeblock.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+			},
+		},
+		{
+			"setext_header/vs_list.md",
+			blocks{
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
+				{1, Null{}},
+				{2, SetextHeader{}},
 			},
 		},
 	}
