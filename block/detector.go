@@ -54,6 +54,11 @@ type Detector interface {
 	// never be called with next==nil if previous call to
 	// Detect/Continue didn't report any lines to pause.
 	Continue(paused []Line, next Line) (consume, pause int)
+	// // This function is guaranteed to be run after the line has been
+	// // reported by Detect or Continue as consumed, and after all
+	// // preceding lines were PostProcessed, and before any subsequent
+	// // lines were PostProcessed.
+	// PostProcess(Line)
 }
 
 var (
@@ -65,6 +70,10 @@ var (
 type NeverContinue struct{}
 
 func (NeverContinue) Continue([]Line, Line) (consume, pause int) { return 0, 0 }
+
+type NoPostProcess struct{}
+
+func (NoPostProcess) PostProcess(Line) {}
 
 // DefaultDetectors contains the list of default detectors in order in which
 // they should be normally applied.
@@ -81,7 +90,10 @@ var DefaultDetectors []Detector = []Detector{
 	Paragraph{},
 }
 
-type Null struct{ NeverContinue }
+type Null struct {
+	NeverContinue
+	NoPostProcess
+}
 
 func (Null) Detect(start, second Line) (consume, pause int) {
 	if start.isBlank() {
@@ -92,10 +104,16 @@ func (Null) Detect(start, second Line) (consume, pause int) {
 
 type ReferenceResolution struct {
 	NeverContinue
-	unprocessedReferenceID        []byte
-	refValueSequence              []byte
-	unprocessedUrl                []byte
-	refDefinitionTrailingSequence []byte
+	NoPostProcess
+	ReferenceID    string
+	LinkURL        string
+	TitleContainer string
+	LinkTitle      string
+
+	UnprocessedReferenceID        []byte
+	RefValueSequence              []byte
+	UnprocessedURL                []byte
+	RefDefinitionTrailingSequence []byte
 }
 
 func (b *ReferenceResolution) Detect(start, second Line) (consume, pause int) {
@@ -108,25 +126,48 @@ func (b *ReferenceResolution) Detect(start, second Line) (consume, pause int) {
 	if len(m) == 0 {
 		return 0, 0
 	}
-	b.unprocessedReferenceID = m[1]
-	b.refValueSequence = m[9] // TODO(akavel): verify if right one
+	b.UnprocessedReferenceID = m[1]
+	b.ReferenceID = string(Simplify(b.UnprocessedReferenceID))
+	b.RefValueSequence = m[9] // TODO(akavel): verify if right one
 	re = regexp.MustCompile(`^ *([^ \<\>]+|\<[^\<\>]*\>)( .*)?$`)
-	m = re.FindSubmatch(b.refValueSequence)
+	m = re.FindSubmatch(b.RefValueSequence)
 	if len(m) == 0 {
 		return 0, 0
 	}
-	b.unprocessedUrl = m[1]
-	b.refDefinitionTrailingSequence = m[2]
+	b.UnprocessedURL = m[1]
+	{
+		tmp := make([]byte, 0, len(b.UnprocessedURL))
+		for _, c := range b.UnprocessedURL {
+			if c != ' ' && c != '<' && c != '>' {
+				tmp = append(tmp, c)
+			}
+		}
+		b.LinkURL = string(tmp)
+	}
+	b.RefDefinitionTrailingSequence = m[2]
 
 	// Detected ok. Now check if 1 or 2 lines.
+	var nlines int
 	re = regexp.MustCompile(`^ +("(([^"\\]|\\.)*)"|'(([^'\\]|\\.)*)'|\(([^\\\(\)]|\\.)*\)) *$`)
-	if bytes.IndexAny(b.refDefinitionTrailingSequence, " ") == -1 &&
+	if bytes.IndexAny(b.RefDefinitionTrailingSequence, " ") == -1 &&
 		second != nil &&
 		re.Match(second) {
-		return 2, 0
+		nlines = 2
+		b.TitleContainer = string(second)
 	} else {
-		return 1, 0
+		nlines = 1
+		b.TitleContainer = string(b.RefDefinitionTrailingSequence)
 	}
+
+	re = regexp.MustCompile(`^\((([^\\\(\)]|\\.)*)\)`)
+	if m := re.FindStringSubmatch(b.TitleContainer); len(m) != 0 {
+		b.LinkTitle = m[1]
+	}
+	if s := HasQuotedStringPrefix(b.TitleContainer); s != "" {
+		b.LinkTitle = s[1 : len(s)-1]
+	}
+
+	return nlines, 0
 }
 
 type SetextHeader struct{ NeverContinue }
