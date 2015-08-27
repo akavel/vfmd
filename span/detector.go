@@ -3,6 +3,7 @@ package span
 import (
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 type Detector interface {
@@ -146,3 +147,24 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 
 type LinkBegin struct{ ReferenceID, URL, Title string }
 type LinkEnd struct{}
+
+type EmphasisTags struct{}
+
+func (EmphasisTags) Detect(s *Splitter) (consumed int) {
+	rest := s.Buf[s.Pos:]
+	if rest[0] != '*' && rest[0] != '_' {
+		return 0
+	}
+	panic("NIY")
+}
+
+func emphasisFringeRank(r rune) int {
+	switch {
+	case unicode.In(r, unicode.Zs, unicode.Zl, unicode.Zp, unicode.Cc, unicode.Cf):
+		return 0
+	case unicode.In(r, unicode.Pc, unicode.Pd, unicode.Ps, unicode.Pe, unicode.Pi, unicode.Pf, unicode.Po, unicode.Sc, unicode.Sk, unicode.Sm, unicode.So):
+		return 1
+	default:
+		return 2
+	}
+}
