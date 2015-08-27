@@ -121,8 +121,10 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 		}
 	}
 
+	// e.g.: "] []" ?
 	m = reEmptyRef.FindSubmatch(rest)
 	if m == nil {
+		// just: "]"
 		m = [][]byte{rest[:1]}
 	}
 	// cancel all unclosed spans inside the link

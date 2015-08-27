@@ -71,6 +71,7 @@ func (s *OpeningsStack) deleteLinks() {
 type Span struct {
 	// Pos is a subslice of the original input buffer
 	Pos []byte
+	Tag interface{}
 }
 
 func (span Span) OffsetIn(buf []byte) (int, error) {
@@ -89,19 +90,26 @@ type Splitter struct {
 	Spans    []Span
 }
 
-func (s *Splitter) Process(buf []byte) []Span {
-	remaining := buf
-	/*
-		for len(remaining)>0 {
-			consumed := 0
-			for _, d := range detectors {
-				if d.Detect(&consumed, remaining, buf) {
-					// ...
-				}
+func Process(buf []byte, detectors []Detector) []Span {
+	if detectors == nil {
+		detectors = DefaultDetectors
+	}
+	s := Splitter{Buf: buf}
+walk:
+	for s.Pos < len(s.Buf) {
+		for _, d := range detectors {
+			consumed := d.Detect(&s)
+			if consumed > 0 {
+				s.Pos += consumed
+				continue walk
 			}
-			assert(consumed>0, consumed)
-			remaining = remaining[consumed:]
 		}
-		// ...
-	*/
+		s.Pos++
+	}
+	// FIXME(akavel): sort s.Spans by Span.OffsetIn(buf)
+	return s.Spans
+}
+
+func (s *Splitter) Emit(slice []byte, tag interface{}) {
+	s.Spans = append(s.Spans, Span{slice, tag})
 }
