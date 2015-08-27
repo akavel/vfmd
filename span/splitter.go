@@ -42,6 +42,32 @@ func (s OpeningsStack) NullTopmostOfType(t NodeType) bool {
 	return true
 }
 
+func (s *OpeningsStack) Push(o MaybeOpening) {
+	(*s) = append(*s, o)
+}
+func (s OpeningsStack) Peek() *MaybeOpening {
+	if len(s) == 0 {
+		return nil
+	}
+	return &s[len(s)-1]
+}
+func (s *OpeningsStack) Pop() {
+	if len(*s) > 0 {
+		(*s) = (*s)[:len(*s)-1]
+	}
+}
+
+// deleteLinks cancels all unclosed links
+func (s *OpeningsStack) deleteLinks() {
+	filtered := make(OpeningsStack, 0, len(*s))
+	for _, o := range *s {
+		if o.NodeType != LinkNode {
+			filtered = append(filtered, o)
+		}
+	}
+	*s = filtered
+}
+
 type Span struct {
 	// Pos is a subslice of the original input buffer
 	Pos []byte
@@ -57,6 +83,10 @@ func (span Span) OffsetIn(buf []byte) (int, error) {
 }
 
 type Splitter struct {
+	Buf      []byte
+	Pos      int
+	Openings OpeningsStack
+	Spans    []Span
 }
 
 func (s *Splitter) Process(buf []byte) []Span {
