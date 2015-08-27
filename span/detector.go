@@ -12,6 +12,7 @@ type Detector interface {
 var DefaultDetectors = []Detector{
 	EscapedChar{},
 	LinkTags{},
+	EmphasisTags{},
 }
 
 type EscapedChar struct{}
@@ -143,20 +144,5 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 	return len(m[0])
 }
 
-// FIXME(akavel): test if this works as expected
-var whitespaceDeleter = strings.NewReplacer("\u0009", "",
-	"\u000a", "",
-	"\u000c", "",
-	"\u000d", "",
-	"\u0020", "")
-
-func DelWhitespace(s string) string {
-	return whitespaceDeleter.Replace(s)
-}
-
 type LinkBegin struct{ ReferenceID, URL, Title string }
 type LinkEnd struct{}
-
-func Simplify(s string) string {
-	panic("NIY")
-}
