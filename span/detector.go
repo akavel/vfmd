@@ -293,3 +293,106 @@ func (CodeTags) Detect(s *Splitter) (consumed int) {
 }
 
 type Code struct{ Code []byte }
+
+type ImageTags struct{}
+
+func (ImageTags) Detect(s *Splitter) (consumed int) {
+	rest := s.Buf[s.Pos:]
+	if !bytes.HasPrefix(rest, []byte(`![`)) {
+		return 0
+	}
+	m := reImageTagStarter.FindSubmatch(rest)
+	if m == nil {
+		return 2
+	}
+	altText, residual := m[1], m[3]
+
+	// e.g.: "] [ref id]" ?
+	r := reImageRef.FindSubmatch(residual)
+	if r != nil {
+		tag := rest[:len(rest)-len(residual)+len(r[0])]
+		s.Emit(tag, Image{
+			ReferenceID: utils.Simplify(r[1]),
+		})
+		return len(tag)
+	}
+
+	// e.g.: "] ("...
+	consumed = imageParen(s, altText, len(rest)-len(residual), residual)
+	if consumed > 0 {
+		return consumed
+	}
+
+	// "neither of the above conditions"
+	closing := residual[:1]
+	r = reImageEmptyRef.FindSubmatch(residual)
+	if r != nil {
+		closing = r[0]
+	}
+	tag := rest[:len(rest)-len(residual)+len(closing)]
+	s.Emit(tag, Image{
+		ReferenceID: utils.Simplify(altText),
+		AltText:     altText,
+	})
+	return len(tag)
+}
+
+var (
+	reImageTagStarter = regexp.MustCompile(`^!\[(([^\\\[\]\` + "`" + `]|\\.)*)(\].*)$`)
+	reImageRef        = regexp.MustCompile(`^\]\s*\[(([^\\\[\]\` + "`" + `]|\\.)*)\]`)
+
+	reImageParen           = regexp.MustCompile(`^\]\s*\(`)
+	reImageURLWithoutAngle = regexp.MustCompile(`^\]\s*\(\s*([^\(\)<>\` + "`" + `\s]+)([\)\s].*)$`)
+	reImageURLWithAngle    = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)].+)$`)
+
+	reImageAttrParen = regexp.MustCompile(`^\s*\)`)
+	reImageAttrTitle = regexp.MustCompile(`^\s*("(([^"\\\` + "`" + `]|\\.)*)"|'(([^'\\\` + "`" + `]|\\.)*)')\s*\)`)
+
+	reImageEmptyRef = regexp.MustCompile(`^(\]\s*\[\s*\])`)
+)
+
+func imageParen(s *Splitter, altText []byte, prefix int, residual []byte) (consumed int) {
+	// e.g.: "] ("
+	if !reImageParen.Match(residual) {
+		return 0
+	}
+
+	r := reImageURLWithoutAngle.FindSubmatch(residual)
+	if r == nil {
+		r = reImageURLWithAngle.FindSubmatch(residual)
+	}
+	if r == nil {
+		return 0
+	}
+	unprocessedSrc, attrs := r[1], r[2]
+
+	a := reImageAttrParen.FindSubmatch(attrs)
+	if a == nil {
+		a = reImageAttrTitle.FindSubmatch(attrs)
+	}
+	if a == nil {
+		return 0
+	}
+	title := ""
+	if len(a) >= 2 {
+		unprocessedTitle := a[1][1 : len(a[1])-2]
+		title = strings.Replace(string(unprocessedTitle), "\x0a", "", -1)
+	}
+
+	rest := s.Buf[s.Pos:]
+	tag := rest[:prefix+(len(residual)-len(attrs))+len(a[0])]
+	s.Emit(tag, Image{
+		// TODO(akavel): keep only raw slices as fields, add methods to return processed strings
+		URL:     utils.DelWhites(string(unprocessedSrc)),
+		Title:   title,
+		AltText: altText,
+	})
+	return len(tag)
+}
+
+type Image struct {
+	ReferenceID string
+	URL         string
+	Title       string
+	AltText     []byte
+}
