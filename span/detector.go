@@ -21,6 +21,7 @@ var DefaultDetectors = []Detector{
 	CodeTags{},
 	ImageTags{},
 	AutomaticLinks{},
+	// TODO(akavel): HTMLTags{},
 }
 
 type EscapedChar struct{}
