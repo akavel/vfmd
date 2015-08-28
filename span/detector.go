@@ -60,9 +60,9 @@ var (
 	// e.g.: "] [ref id]"
 	reClosingTagRef = regexp.MustCompile(`^\]\s*\[(([^\\\[\]\` + "`" + `]|\\.)+)\]`)
 	// e.g.: "] (http://www.example.net"...
-	reClosingTagWithoutAngle = regexp.MustCompile(`^\]\s*\(\s*([^\(\)<>\` + "`" + `\s]+)([\)\s].*)$`)
+	reClosingTagWithoutAngle = regexp.MustCompile(`^\]\s*\(\s*([^\(\)<>\` + "`" + `\s]+)([\)\s][\s\S]*)$`)
 	// e.g.: "] ( <http://example.net/?q=)>"...
-	reClosingTagWithAngle = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)\s].*)$`)
+	reClosingTagWithAngle = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)\s][\s\S]*)$`)
 
 	reJustClosingParen     = regexp.MustCompile(`^\s*\)`)
 	reTitleAndClosingParen = regexp.MustCompile(`^\s*("(([^\\"\` + "`" + `]|\\.)*)"|'(([^\\'\` + "`" + `]|\\.)*)')\s*\)`)
@@ -342,12 +342,12 @@ func (ImageTags) Detect(s *Splitter) (consumed int) {
 }
 
 var (
-	reImageTagStarter = regexp.MustCompile(`^!\[(([^\\\[\]\` + "`" + `]|\\.)*)(\].*)$`)
+	reImageTagStarter = regexp.MustCompile(`^!\[(([^\\\[\]\` + "`" + `]|\\.)*)(\][\s\S]*)$`)
 	reImageRef        = regexp.MustCompile(`^\]\s*\[(([^\\\[\]\` + "`" + `]|\\.)*)\]`)
 
 	reImageParen           = regexp.MustCompile(`^\]\s*\(`)
-	reImageURLWithoutAngle = regexp.MustCompile(`^\]\s*\(\s*([^\(\)<>\` + "`" + `\s]+)([\)\s].*)$`)
-	reImageURLWithAngle    = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)].+)$`)
+	reImageURLWithoutAngle = regexp.MustCompile(`^\]\s*\(\s*([^\(\)<>\` + "`" + `\s]+)([\)\s][\s\S]*)$`)
+	reImageURLWithAngle    = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)][\s\S]+)$`)
 
 	reImageAttrParen = regexp.MustCompile(`^\s*\)`)
 	reImageAttrTitle = regexp.MustCompile(`^\s*("(([^"\\\` + "`" + `]|\\.)*)"|'(([^'\\\` + "`" + `]|\\.)*)')\s*\)`)
@@ -356,18 +356,23 @@ var (
 )
 
 func imageParen(s *Splitter, altText []byte, prefix int, residual []byte) (consumed int) {
+	// fmt.Println("imageParen @", s.Pos, string(s.Buf[s.Pos:s.Pos+prefix]))
 	// e.g.: "] ("
 	if !reImageParen.Match(residual) {
+		// fmt.Println("no ](")
 		return 0
 	}
+	// fmt.Println("yes ](")
 
 	r := reImageURLWithoutAngle.FindSubmatch(residual)
 	if r == nil {
 		r = reImageURLWithAngle.FindSubmatch(residual)
 	}
 	if r == nil {
+		// fmt.Println("no imgurl")
 		return 0
 	}
+	// fmt.Println("yes imgurl")
 	unprocessedSrc, attrs := r[1], r[2]
 
 	a := reImageAttrParen.FindSubmatch(attrs)
@@ -375,8 +380,10 @@ func imageParen(s *Splitter, altText []byte, prefix int, residual []byte) (consu
 		a = reImageAttrTitle.FindSubmatch(attrs)
 	}
 	if a == nil {
+		// fmt.Println("no imgattr")
 		return 0
 	}
+	// fmt.Println("yes imgattr")
 	title := ""
 	if len(a) >= 2 {
 		unprocessedTitle := a[1][1 : len(a[1])-1]

@@ -300,6 +300,12 @@ func TestSpan(test *testing.T) {
 			{bb("![image](url)"), Image{AltText: bb("image"), URL: "url"}},
 			{bb(`![image](url "title")`), Image{AltText: bb("image"), URL: "url", Title: "title"}},
 		}),
+		lines("image/direct_link_with_2separating_spaces.md", spans{
+			{bb("![linking]  (/img.png)"), Image{AltText: bb("linking"), URL: "/img.png"}},
+		}),
+		blocks("image/direct_link_with_separating_newline.md", spans{
+			{bb("![link]\n(/img.png)"), Image{AltText: bb("link"), URL: "/img.png"}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -315,6 +321,7 @@ func TestSpan(test *testing.T) {
 				test.Errorf("[%d] @ %d [%v]: %s",
 					i, off, err, spew.Sdump(span))
 			}
+			test.Errorf("blocks:\n%s", spew.Sdump(c.blocks))
 			test.Errorf("QUICK DIFF: %s\n", diff(c.spans, spans))
 		}
 	}
@@ -325,8 +332,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/direct_link_with_2separating_spaces.md
-image/direct_link_with_separating_newline.md
 image/direct_link_with_separating_space.md
 image/image_title.md
 image/incomplete.md
