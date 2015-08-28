@@ -20,6 +20,7 @@ var DefaultDetectors = []Detector{
 	EmphasisTags{},
 	CodeTags{},
 	ImageTags{},
+	AutomaticLinks{},
 }
 
 type EscapedChar struct{}
@@ -398,3 +399,89 @@ type Image struct {
 	Title       string
 	AltText     []byte
 }
+
+type AutomaticLinks struct{}
+
+func (AutomaticLinks) Detect(s *Splitter) (consumed int) {
+	rest := s.Buf[s.Pos:]
+	if s.Pos > 0 && rest[0] != '<' {
+		r, _ := utf8.DecodeLastRune(s.Buf[:s.Pos])
+		if r == utf8.RuneError || !isWordSep(r) {
+			return 0
+		}
+	}
+	// "potential-auto-link-start-position"
+	// e.g. "<http://example.net>"
+	m := reURLWithinAngle.FindSubmatch(rest)
+	// e.g. "<mailto:someone@example.net?subject=Hi+there>"
+	if m == nil {
+		m = reMailtoURLWithinAngle.FindSubmatch(rest)
+	}
+	if m != nil {
+		url := utils.DelWhites(string(m[1]))
+		s.Emit(m[0], AutoLink{
+			URL:  url,
+			Text: url,
+		})
+		return len(m[0])
+	}
+
+	// e.g.: "<someone@example.net>"
+	m = reMailWithinAngle.FindSubmatch(rest)
+	if m != nil {
+		s.Emit(m[0], AutoLink{
+			URL:  "mailto:" + string(m[1]),
+			Text: string(m[1]),
+		})
+		return len(m[0])
+	}
+
+	// e.g.: "http://example.net"
+	m = reURLWithoutAngle.FindSubmatch(rest)
+	if m == nil {
+		m = reMailtoURLWithoutAngle.FindSubmatch(rest)
+	}
+	if m != nil {
+		scheme := m[1]
+		tag := m[0]
+		// remove any trailing "speculative-url-end" characters
+		for len(tag) > 0 {
+			r, n := utf8.DecodeLastRune(tag)
+			if !isSpeculativeURLEnd(r) {
+				break
+			}
+			tag = tag[:len(tag)-n]
+		}
+		if len(tag) <= len(scheme) {
+			return len(scheme)
+		}
+		s.Emit(tag, AutoLink{
+			URL:  string(tag),
+			Text: string(tag),
+		})
+		return len(tag)
+	}
+	return 0
+}
+
+var (
+	// NOTE(akavel): "(?i)" is non-capturing - it's a flag enabling
+	// case-insensitive matching
+	reURLWithinAngle        = regexp.MustCompile(`^(?i)<([a-z0-9\+\.\-]+:\/\/[^<> \` + "`" + `]+)>`)
+	reMailtoURLWithinAngle  = regexp.MustCompile(`^(?i)<(mailto:[^<> \` + "`" + `]+)>`)
+	reMailWithinAngle       = regexp.MustCompile(`^<([^\(\)\<\>\[\]\:\'\@\\\,\"\s\` + "`" + `]+@[^\(\)\<\>\[\]\:\'\@\\\,\"\s\` + "`" + `\.]+\.[^\(\)\<\>\[\]\:\'\@\\\,\"\s\` + "`" + `]+)>`)
+	reURLWithoutAngle       = regexp.MustCompile(`^(?i)([a-z0-9\+\.\-]+:\/\/)[^<>\` + "`" + `\s]+`)
+	reMailtoURLWithoutAngle = regexp.MustCompile(`^(?i)(mailto:)[^<>\` + "`" + `\s]+`)
+)
+
+func isWordSep(r rune) bool {
+	return unicode.In(r,
+		unicode.Zs, unicode.Zl, unicode.Zp,
+		unicode.Pc, unicode.Pd, unicode.Ps, unicode.Pe, unicode.Pi, unicode.Pf, unicode.Po,
+		unicode.Cc, unicode.Cf)
+}
+func isSpeculativeURLEnd(r rune) bool {
+	return r != '\u002f' && isWordSep(r)
+}
+
+type AutoLink struct{ URL, Text string }
