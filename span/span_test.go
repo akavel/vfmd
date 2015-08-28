@@ -253,6 +253,17 @@ func TestSpan(test *testing.T) {
 			emB("_"), emB("_"), emB("_"), emE("_"), emE("_"), emE("_"),
 			emB("__"), emB("_"), emE("_"), emE("__"),
 		}),
+		lines("emphasis/intertwined.md", spans{
+			emB("*"), emE("*"),
+			emB("**"), emE("**"),
+			emB("*"), emB("*"), emB("*"), emE("*"), emE("*"), emE("*"),
+			emB("*"), emB("*"), emB("*"), emE("*"), emE("*"), emE("*"),
+
+			emB("_"), emE("_"),
+			emB("__"), emE("__"),
+			emB("_"), emB("_"), emB("_"), emE("_"), emE("_"), emE("_"),
+			emB("_"), emB("_"), emB("_"), emE("_"), emE("_"), emE("_"),
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -277,7 +288,6 @@ func TestSpan(test *testing.T) {
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
-emphasis/intertwined.md
 emphasis/intraword.md
 emphasis/nested_homogenous.md
 emphasis/opening_and_closing_tags.md
