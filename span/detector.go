@@ -6,6 +6,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/akavel/vfmd-go/utils"
 )
 
 type Detector interface {
@@ -79,7 +81,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 		}
 		// emit a link
 		s.Emit(s.Openings.Peek().Tag, LinkBegin{
-			ReferenceID: Simplify(string(m[1])),
+			ReferenceID: string(utils.Simplify(m[1])),
 		})
 		s.Emit(m[0], LinkEnd{})
 		s.Openings.Pop()
@@ -95,7 +97,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 		m = reClosingTagWithAngle.FindSubmatch(rest)
 	}
 	if m != nil {
-		linkURL := DelWhitespace(string(m[1]))
+		linkURL := utils.DelWhites(string(m[1]))
 		residual := m[2]
 		title := ""
 		t := reJustClosingParen.FindSubmatch(residual)
@@ -138,7 +140,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 	// emit a link
 	begin := s.Openings.Peek()
 	s.Emit(begin.Tag, LinkBegin{
-		ReferenceID: Simplify(string(s.Buf[begin.LinkStart:s.Pos])),
+		ReferenceID: string(utils.Simplify(s.Buf[begin.LinkStart:s.Pos])),
 	})
 	s.Emit(m[0], LinkEnd{})
 	s.Openings.Pop()
