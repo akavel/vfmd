@@ -5,8 +5,7 @@ import "errors"
 type NodeType int
 
 const (
-	AsteriskEmphasisNode NodeType = iota
-	UnderscoreEmphasisNode
+	EmphasisNode NodeType = iota
 	LinkNode
 	// RawHTMLNode // TODO(akavel): HTML
 )

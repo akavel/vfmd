@@ -1,6 +1,7 @@
 package span
 
 import (
+	"bytes"
 	"regexp"
 	"strings"
 	"unicode"
@@ -186,23 +187,59 @@ func (EmphasisTags) Detect(s *Splitter) (consumed int) {
 	// left-flanking? if yes, add some openings
 	if flanking < 0 {
 		for _, tag := range tags {
-			// TODO(akavel): leave just one EmphasisNode value and compare specific subtypes based on Tag[0]
-			typ := AsteriskEmphasisNode
-			if tag[0] == '_' {
-				typ = UnderscoreEmphasisNode
-			}
 			s.Openings.Push(MaybeOpening{
 				Tag:      tag,
-				NodeType: typ,
+				NodeType: EmphasisNode,
 			})
 		}
 		return len(indicator)
 	}
 
-	panic("NIY")
+	// right-flanking; maybe a closing tag
+	closingEmphasisTags(s, tags)
+	return len(indicator)
 }
 
-func isEmph(c byte) { return c == '*' || c == '_' }
+func closingEmphasisTags(s *Splitter, tags [][]byte) {
+	for len(tags) > 0 {
+		// find topmost opening of matching emphasis type
+		tag := tags[0]
+		i := len(s.Openings) - 1
+		for i >= 0 && (s.Openings[i].NodeType != EmphasisNode || !bytes.HasPrefix(s.Openings[i].Tag, tag[:1])) {
+			i--
+		}
+		// no opening node of this type, try next tag
+		if i == -1 {
+			tags = tags[1:]
+			continue
+		}
+		// cancel any unclosed openings inside the emphasis span
+		s.Openings = s.Openings[:i+1]
+		// "procedure for matching emphasis tag strings"
+		tags[0] = matchEmphasisTag(s, tag)
+		if len(tags[0]) == 0 {
+			tags = tags[1:]
+		}
+	}
+}
+func matchEmphasisTag(s *Splitter, tag []byte) []byte {
+	top := s.Openings.Peek()
+	if len(top.Tag) > len(tag) {
+		n := len(tag)
+		s.Emit(top.Tag[len(top.Tag)-n:], EmphasisBegin{Level: n})
+		s.Emit(tag, EmphasisEnd{Level: n})
+		top.Tag = top.Tag[:len(top.Tag)-n]
+		return nil
+	}
+	// now len(top.Tag) <= len(tag)
+	n := len(top.Tag)
+	s.Emit(top.Tag, EmphasisBegin{Level: n})
+	s.Emit(tag[:n], EmphasisEnd{Level: n})
+	s.Openings.Pop()
+	return tag[n:]
+}
+
+func isEmph(c byte) bool { return c == '*' || c == '_' }
 
 func emphasisFringeRank(r rune) int {
 	switch {
@@ -217,3 +254,6 @@ func emphasisFringeRank(r rune) int {
 		return 2
 	}
 }
+
+type EmphasisBegin struct{ Level int }
+type EmphasisEnd struct{ Level int }
