@@ -106,6 +106,11 @@ func TestSpan(test *testing.T) {
 			{bb(`http://example.net/blah/*#$%^&\~`), AutoLink{URL: `http://example.net/blah/*#$%^&\~`, Text: `http://example.net/blah/*#$%^&\~`}},
 			{bb(`<http://example.net/blah/*#$%^&\~)>`), AutoLink{URL: `http://example.net/blah/*#$%^&\~)`, Text: `http://example.net/blah/*#$%^&\~)`}},
 		}),
+		lines("automatic_links/web_url_in_angle_brackets.md", spans{
+			{bb("<http://example.net/path/>"), AutoLink{URL: "http://example.net/path/", Text: "http://example.net/path/"}},
+			{bb("<https://example.net/path/>"), AutoLink{URL: "https://example.net/path/", Text: "https://example.net/path/"}},
+			{bb("<ftp://example.net/path/>"), AutoLink{URL: "ftp://example.net/path/", Text: "ftp://example.net/path/"}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -129,7 +134,6 @@ func TestSpan(test *testing.T) {
 /*
 in ROOT/testdata/tests/span_level:
 
-automatic_links/web_url_in_angle_brackets.md
 automatic_links/web_url_without_angle_brackets.md
 code/end_of_codespan.md
 code/multiline.md
