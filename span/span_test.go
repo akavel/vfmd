@@ -231,6 +231,13 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{ReferenceID: "intertwined`with"}},
 			{bb("]"), LinkEnd{}},
 		}),
+		lines("code/well_formed.md", spans{
+			{bb("`code span`"), Code{bb("code span")}},
+			{bb("``code ` span``"), Code{bb("code ` span")}},
+			{bb("`` ` code span``"), Code{bb("` code span")}},
+			{bb("``code span ` ``"), Code{bb("code span `")}},
+			{bb("`` `code span` ``"), Code{bb("`code span`")}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -255,7 +262,6 @@ func TestSpan(test *testing.T) {
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
-code/well_formed.md
 emphasis/emphasis_tag_combinations.md
 emphasis/intertwined.md
 emphasis/intraword.md
