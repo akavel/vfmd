@@ -167,6 +167,36 @@ func TestSpan(test *testing.T) {
 			{bb("`code __intertwined`"), Code{bb("code __intertwined")}},
 			{bb("`with strong__ text`"), Code{bb("with strong__ text")}},
 		}),
+		lines("code/vs_image.md", spans{
+			{bb("`code containing ![image](url)`"), Code{bb("code containing ![image](url)")}},
+			{bb("`code containing ![image][ref]`"), Code{bb("code containing ![image][ref]")}},
+			{bb("`code containing ![ref]`"), Code{bb("code containing ![ref]")}},
+
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("]"), LinkEnd{}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+
+			{bb("`code ![intertwined`"), Code{bb("code ![intertwined")}},
+			{bb("`intertwined](with) image`"), Code{bb("intertwined](with) image")}},
+			{bb("`code ![intertwined`"), Code{bb("code ![intertwined")}},
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("]"), LinkEnd{}},
+			{bb("`intertwined with][ref] image`"), Code{bb("intertwined with][ref] image")}},
+			{bb("`code ![intertwined`"), Code{bb("code ![intertwined")}},
+			{bb("`with] image`"), Code{bb("with] image")}},
+
+			// NOTE(akavel): below are accidental because of testing
+			// approach; they're irrelevant to algorithm correctness
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "image `containing code`"}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb("]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "intertwined`with"}},
+			{bb("]"), LinkEnd{}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -191,7 +221,6 @@ func TestSpan(test *testing.T) {
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
-code/vs_image.md
 code/vs_link.md
 code/well_formed.md
 emphasis/emphasis_tag_combinations.md
