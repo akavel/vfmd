@@ -54,6 +54,22 @@ func TestSpan(test *testing.T) {
 			{bb("<http://example.net)>"), AutoLink{URL: "http://example.net)", Text: "http://example.net)"}},
 			{bb("<http://example.net/)>"), AutoLink{URL: "http://example.net/)", Text: "http://example.net/)"}},
 		}),
+		lines("automatic_links/mail_url_in_angle_brackets.md", spans{
+			{bb("<mailto:someone@example.net>"), AutoLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
+			{bb("<someone@example.net>"), AutoLink{URL: "mailto:someone@example.net", Text: "someone@example.net"}},
+		}),
+		lines("automatic_links/mail_url_without_angle_brackets.md", spans{}),
+		lines("automatic_links/url_schemes.md", spans{
+			{bb("http://example.net"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
+			{bb("<http://example.net>"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
+			{bb("file:///tmp/tmp.html"), AutoLink{URL: "file:///tmp/tmp.html", Text: "file:///tmp/tmp.html"}},
+			{bb("<file:///tmp/tmp.html>"), AutoLink{URL: "file:///tmp/tmp.html", Text: "file:///tmp/tmp.html"}},
+			{bb("feed://example.net/rss.xml"), AutoLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
+			{bb("<feed://example.net/rss.xml>"), AutoLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
+			{bb("googlechrome://example.net/"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
+			{bb("<googlechrome://example.net/>"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
+			{bb("<mailto:me@example.net>"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -61,8 +77,9 @@ func TestSpan(test *testing.T) {
 			spans = append(spans, Process(b, nil)...)
 		}
 		if !reflect.DeepEqual(c.spans, spans) {
-			test.Errorf("case %s expected:\n%s\ngot:",
+			test.Errorf("case %s expected:\n%s",
 				c.fname, spew.Sdump(c.spans))
+			test.Errorf("got:")
 			for i, span := range spans {
 				off, err := span.OffsetIn(c.buf)
 				test.Errorf("[%d] @ %d [%v]: %s",
@@ -75,9 +92,6 @@ func TestSpan(test *testing.T) {
 /*
 in ROOT/testdata/tests/span_level:
 
-automatic_links/mail_url_in_angle_brackets.md
-automatic_links/mail_url_without_angle_brackets.md
-automatic_links/url_schemes.md
 automatic_links/url_special_chars.md
 automatic_links/web_url_in_angle_brackets.md
 automatic_links/web_url_without_angle_brackets.md
