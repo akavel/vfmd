@@ -271,6 +271,12 @@ func TestSpan(test *testing.T) {
 			emB("_"), emB("_"), emE("_"), emE("_"),
 			emB("__"), emB("__"), emE("__"), emE("__"),
 		}),
+		lines("emphasis/opening_and_closing_tags.md", spans{}),
+		lines("emphasis/simple.md", spans{
+			emB("*"), emE("*"), emB("**"), emE("**"),
+			emB("_"), emE("_"), emB("__"), emE("__"),
+		}),
+		lines("emphasis/within_whitespace.md", spans{}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -295,10 +301,7 @@ func TestSpan(test *testing.T) {
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
-emphasis/opening_and_closing_tags.md
-emphasis/simple.md
 emphasis/vs_html.md
-emphasis/within_whitespace.md
 emphasis/with_punctuation.md
 image/direct_link.md
 image/direct_link_with_2separating_spaces.md
