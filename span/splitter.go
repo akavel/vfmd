@@ -1,6 +1,9 @@
 package span
 
-import "errors"
+import (
+	"errors"
+	"sort"
+)
 
 type NodeType int
 
@@ -107,8 +110,22 @@ walk:
 		}
 		s.Pos++
 	}
-	// FIXME(akavel): sort s.Spans by Span.OffsetIn(buf)
+	sort.Sort(sortedSpans(s.Spans))
 	return s.Spans
+}
+
+type sortedSpans []Span
+
+func (s sortedSpans) Len() int      { return len(s) }
+func (s sortedSpans) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s sortedSpans) Less(i, j int) bool {
+	iext, jext := s[i].Pos, s[j].Pos
+	iext, jext = iext[:cap(iext)], jext[:cap(jext)]
+	if &iext[cap(iext)-1] != &jext[cap(jext)-1] {
+		// TODO(akavel): panic
+		return false
+	}
+	return len(iext) > len(jext)
 }
 
 func (s *Splitter) Emit(slice []byte, tag interface{}) {
