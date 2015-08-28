@@ -74,7 +74,12 @@ func TestSpan(test *testing.T) {
 			{bb("<mailto:someone@example.net>"), AutoLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
 			{bb("<someone@example.net>"), AutoLink{URL: "mailto:someone@example.net", Text: "someone@example.net"}},
 		}),
-		lines("automatic_links/mail_url_without_angle_brackets.md", spans{}),
+		lines("automatic_links/mail_url_without_angle_brackets.md", spans{
+			// NOTE(akavel): below line is unexpected according to
+			// testdata/, but from spec this seems totally expected,
+			// so I added it
+			{bb("mailto:someone@example.net"), AutoLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
+		}),
 		lines("automatic_links/url_schemes.md", spans{
 			{bb("http://example.net"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
 			{bb("<http://example.net>"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
@@ -85,6 +90,10 @@ func TestSpan(test *testing.T) {
 			{bb("googlechrome://example.net/"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
 			{bb("<googlechrome://example.net/>"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
 			{bb("`<>`"), Code{bb("<>")}},
+			// NOTE(akavel): below line is unexpected according to
+			// testdata/, but from spec this seems totally expected,
+			// so I added it
+			{bb("mailto:me@example.net"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
 			{bb("<mailto:me@example.net>"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
 		}),
 	}
