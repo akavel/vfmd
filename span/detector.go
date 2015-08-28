@@ -18,6 +18,8 @@ var DefaultDetectors = []Detector{
 	EscapedChar{},
 	LinkTags{},
 	EmphasisTags{},
+	CodeTags{},
+	ImageTags{},
 }
 
 type EscapedChar struct{}
