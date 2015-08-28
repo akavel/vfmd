@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 type Detector interface {
@@ -152,14 +153,62 @@ type EmphasisTags struct{}
 
 func (EmphasisTags) Detect(s *Splitter) (consumed int) {
 	rest := s.Buf[s.Pos:]
-	if rest[0] != '*' && rest[0] != '_' {
+	if !isEmph(rest[0]) {
 		return 0
 	}
+	// find substring composed solely of '*' and '_'
+	indicator := rest[:1]
+	for i := len(indicator); i < len(rest); i++ {
+		if !isEmph(rest[i]) {
+			break
+		}
+		indicator = rest[:i+1]
+	}
+	// "right-fringe-mark"
+	r, _ := utf8.DecodeRune(rest[len(indicator):])
+	rightFringe := emphasisFringeRank(r)
+	r, _ = utf8.DecodeLastRune(s.Buf[:s.Pos])
+	leftFringe := emphasisFringeRank(r)
+	// <0 means "left-flanking", >0 "right-flanking", 0 "non-flanking"
+	flanking := leftFringe - rightFringe
+	if flanking == 0 {
+		return len(indicator)
+	}
+	// split into "emphasis-tag-strings" - subslices of the same char
+	tags := [][]byte{}
+	prev := 0
+	for curr := 1; curr <= len(indicator); curr++ {
+		if curr == len(indicator) || indicator[curr] != indicator[prev] {
+			tags = append(tags, indicator[prev:curr])
+			prev = curr
+		}
+	}
+	// left-flanking? if yes, add some openings
+	if flanking < 0 {
+		for _, tag := range tags {
+			// TODO(akavel): leave just one EmphasisNode value and compare specific subtypes based on Tag[0]
+			typ := AsteriskEmphasisNode
+			if tag[0] == '_' {
+				typ = UnderscoreEmphasisNode
+			}
+			s.Openings.Push(MaybeOpening{
+				Tag:      tag,
+				NodeType: typ,
+			})
+		}
+		return len(indicator)
+	}
+
 	panic("NIY")
 }
 
+func isEmph(c byte) { return c == '*' || c == '_' }
+
 func emphasisFringeRank(r rune) int {
 	switch {
+	case r == utf8.RuneError:
+		// NOTE(akavel): not sure if that's really correct
+		return 0
 	case unicode.In(r, unicode.Zs, unicode.Zl, unicode.Zp, unicode.Cc, unicode.Cf):
 		return 0
 	case unicode.In(r, unicode.Pc, unicode.Pd, unicode.Ps, unicode.Pe, unicode.Pi, unicode.Pf, unicode.Po, unicode.Sc, unicode.Sk, unicode.Sm, unicode.So):
