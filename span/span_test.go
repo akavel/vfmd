@@ -2,6 +2,7 @@ package span
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -37,6 +38,21 @@ func lines(filename string, spans spans) spanCase {
 	}
 }
 
+func diff(ok, bad []Span) string {
+	for i := range ok {
+		if i >= len(bad) {
+			return fmt.Sprintf("ends abruptly at position %d, expected:\n%s",
+				i, spew.Sdump(ok[i]))
+		}
+		if !reflect.DeepEqual(ok[i], bad[i]) {
+			return fmt.Sprintf("position %d, expected:\n%sgot:\n%s",
+				i, spew.Sdump(ok[i]), spew.Sdump(bad[i]))
+		}
+	}
+	return fmt.Sprintf("too many nodes, starting at position %d:\n%s",
+		len(ok), spew.Sdump(bad[len(ok)]))
+}
+
 func TestSpan(test *testing.T) {
 	cases := []spanCase{
 		lines(`automatic_links/angle_brackets_in_link.md`, spans{
@@ -68,6 +84,7 @@ func TestSpan(test *testing.T) {
 			{bb("<feed://example.net/rss.xml>"), AutoLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
 			{bb("googlechrome://example.net/"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
 			{bb("<googlechrome://example.net/>"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
+			{bb("`<>`"), Code{bb("<>")}},
 			{bb("<mailto:me@example.net>"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
 		}),
 	}
@@ -85,6 +102,7 @@ func TestSpan(test *testing.T) {
 				test.Errorf("[%d] @ %d [%v]: %s",
 					i, off, err, spew.Sdump(span))
 			}
+			test.Errorf("QUICK DIFF: %s\n", diff(c.spans, spans))
 		}
 	}
 }
