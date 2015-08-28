@@ -66,6 +66,9 @@ func diff(ok, bad []Span) string {
 		len(ok), spew.Sdump(bad[len(ok)]))
 }
 
+func emB(tag string) Span { return Span{bb(tag), EmphasisBegin{len(tag)}} }
+func emE(tag string) Span { return Span{bb(tag), EmphasisEnd{len(tag)}} }
+
 func TestSpan(test *testing.T) {
 	cases := []spanCase{
 		lines(`automatic_links/angle_brackets_in_link.md`, spans{
@@ -238,6 +241,18 @@ func TestSpan(test *testing.T) {
 			{bb("``code span ` ``"), Code{bb("code span `")}},
 			{bb("`` `code span` ``"), Code{bb("`code span`")}},
 		}),
+		lines("emphasis/emphasis_tag_combinations.md", spans{
+			emB("*"), emB("__"), emE("__"), emE("*"),
+			emB("_"), emB("**"), emE("**"), emE("_"),
+			emB("***"), emE("***"),
+			emB("**"), emB("*"), emE("*"), emE("**"),
+			emB("*"), emB("*"), emB("*"), emE("*"), emE("*"), emE("*"),
+			emB("*"), emB("**"), emE("**"), emE("*"),
+
+			emB("_"), emB("__"), emE("__"), emE("_"),
+			emB("_"), emB("_"), emB("_"), emE("_"), emE("_"), emE("_"),
+			emB("__"), emB("_"), emE("_"), emE("__"),
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -262,7 +277,6 @@ func TestSpan(test *testing.T) {
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
-emphasis/emphasis_tag_combinations.md
 emphasis/intertwined.md
 emphasis/intraword.md
 emphasis/nested_homogenous.md
