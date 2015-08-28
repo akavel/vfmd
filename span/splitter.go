@@ -104,6 +104,7 @@ walk:
 			if consumed > 0 {
 				// fmt.Printf("DBG %T consumed %v at %v\n",
 				// 	d, consumed, s.Pos)
+				// FIXME(akavel): if new spans emitted, verify no errors on span.OffsetIn(buf)
 				s.Pos += consumed
 				continue walk
 			}
