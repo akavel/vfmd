@@ -37,6 +37,19 @@ func lines(filename string, spans spans) spanCase {
 		spans: spans,
 	}
 }
+func blocks(filename string, spans spans) spanCase {
+	buf, err := ioutil.ReadFile(dir + filename)
+	if err != nil {
+		panic(err)
+	}
+	buf = bytes.Replace(buf, bb("\r"), bb(""), -1)
+	return spanCase{
+		fname:  filename,
+		buf:    buf,
+		blocks: bytes.Split(buf, []byte("\n\n")),
+		spans:  spans,
+	}
+}
 
 func diff(ok, bad []Span) string {
 	for i := range ok {
@@ -123,6 +136,9 @@ func TestSpan(test *testing.T) {
 			{bb("````code span`` ``ends````"), Code{bb("code span`` ``ends")}},
 			{bb("`code span\\`"), Code{bb(`code span\`)}},
 		}),
+		blocks("code/multiline.md", spans{
+			{bb("`code span\ncan span multiple\nlines`"), Code{bb("code span\ncan span multiple\nlines")}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -146,7 +162,6 @@ func TestSpan(test *testing.T) {
 /*
 in ROOT/testdata/tests/span_level:
 
-code/multiline.md
 code/vs_emph.md
 code/vs_html.md
 code/vs_image.md
