@@ -111,7 +111,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 		if t != nil {
 			if len(t) > 1 {
 				attribs := t[1]
-				unquoted := attribs[1 : len(attribs)-2]
+				unquoted := attribs[1 : len(attribs)-1]
 				title = strings.Replace(string(unquoted), "\u000a", "", -1)
 			}
 			// cancel all unclosed spans inside the link
@@ -379,7 +379,7 @@ func imageParen(s *Splitter, altText []byte, prefix int, residual []byte) (consu
 	}
 	title := ""
 	if len(a) >= 2 {
-		unprocessedTitle := a[1][1 : len(a[1])-2]
+		unprocessedTitle := a[1][1 : len(a[1])-1]
 		title = strings.Replace(string(unprocessedTitle), "\x0a", "", -1)
 	}
 
