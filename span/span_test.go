@@ -96,6 +96,16 @@ func TestSpan(test *testing.T) {
 			{bb("mailto:me@example.net"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
 			{bb("<mailto:me@example.net>"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
 		}),
+		lines("automatic_links/url_special_chars.md", spans{
+			{bb(`http://example.net/*#$%^&\~/blah`), AutoLink{URL: `http://example.net/*#$%^&\~/blah`, Text: `http://example.net/*#$%^&\~/blah`}},
+			{bb(`<http://example.net/*#$%^&\~)/blah>`), AutoLink{URL: `http://example.net/*#$%^&\~)/blah`, Text: `http://example.net/*#$%^&\~)/blah`}},
+			// NOTE(akavel): testdata expects below commented entry,
+			// but this seems wrong compared to spec; I've added
+			// fixed entry
+			// {bb(`http://example.net/blah/`), AutoLink{URL: `http://example.net/blah/`, Text: `http://example.net/blah/`}},
+			{bb(`http://example.net/blah/*#$%^&\~`), AutoLink{URL: `http://example.net/blah/*#$%^&\~`, Text: `http://example.net/blah/*#$%^&\~`}},
+			{bb(`<http://example.net/blah/*#$%^&\~)>`), AutoLink{URL: `http://example.net/blah/*#$%^&\~)`, Text: `http://example.net/blah/*#$%^&\~)`}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -119,7 +129,6 @@ func TestSpan(test *testing.T) {
 /*
 in ROOT/testdata/tests/span_level:
 
-automatic_links/url_special_chars.md
 automatic_links/web_url_in_angle_brackets.md
 automatic_links/web_url_without_angle_brackets.md
 code/end_of_codespan.md
