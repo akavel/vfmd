@@ -277,6 +277,25 @@ func TestSpan(test *testing.T) {
 			emB("_"), emE("_"), emB("__"), emE("__"),
 		}),
 		lines("emphasis/within_whitespace.md", spans{}),
+		lines("emphasis/with_punctuation.md", spans{
+			emB("*"), emE("*"),
+			emB("*"), emE("*"),
+			emB("*"), emE("*"),
+			emB("*"), emE("*"),
+
+			emB("_"), emE("_"), emB("_"), emE("_"),
+			// NOTE(akavel): link below not expected in testdata
+			// because it's not defined below; but we leave this to
+			// user.
+			{bb("["), LinkBegin{ReferenceID: "_"}},
+			{bb("]"), LinkEnd{}},
+			emB("_"), emE("_"), emB("_"), emE("_"),
+			// NOTE(akavel): link below not expected in testdata
+			// because it's not defined below; but we leave this to
+			// user.
+			{bb("["), LinkBegin{ReferenceID: "_"}},
+			{bb("]"), LinkEnd{}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -302,7 +321,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-emphasis/with_punctuation.md
 image/direct_link.md
 image/direct_link_with_2separating_spaces.md
 image/direct_link_with_separating_newline.md
