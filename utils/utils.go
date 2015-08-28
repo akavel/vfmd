@@ -20,7 +20,7 @@ func DelWhites(s string) string {
 	return whitespaceDeleter.Replace(s)
 }
 
-func Simplify(buf []byte) []byte {
+func Simplify(buf []byte) string {
 	// FIXME(akavel): write tests for Simplify
 	out := []byte{}
 	// trim left + shorten multiple whitespace
@@ -40,5 +40,5 @@ func Simplify(buf []byte) []byte {
 	if len(out) > 0 && out[len(out)-1] == ' ' {
 		out = out[:len(out)-1]
 	}
-	return out
+	return string(out)
 }

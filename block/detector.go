@@ -129,7 +129,7 @@ func (b *ReferenceResolution) Detect(start, second Line) (consume, pause int) {
 		return 0, 0
 	}
 	b.UnprocessedReferenceID = m[1]
-	b.ReferenceID = string(utils.Simplify(b.UnprocessedReferenceID))
+	b.ReferenceID = utils.Simplify(b.UnprocessedReferenceID)
 	b.RefValueSequence = m[9] // TODO(akavel): verify if right one
 	re = regexp.MustCompile(`^ *([^ \<\>]+|\<[^\<\>]*\>)( .*)?$`)
 	m = re.FindSubmatch(b.RefValueSequence)

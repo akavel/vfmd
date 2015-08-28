@@ -81,7 +81,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 		}
 		// emit a link
 		s.Emit(s.Openings.Peek().Tag, LinkBegin{
-			ReferenceID: string(utils.Simplify(m[1])),
+			ReferenceID: utils.Simplify(m[1]),
 		})
 		s.Emit(m[0], LinkEnd{})
 		s.Openings.Pop()
@@ -140,7 +140,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 	// emit a link
 	begin := s.Openings.Peek()
 	s.Emit(begin.Tag, LinkBegin{
-		ReferenceID: string(utils.Simplify(s.Buf[begin.LinkStart:s.Pos])),
+		ReferenceID: utils.Simplify(s.Buf[begin.LinkStart:s.Pos]),
 	})
 	s.Emit(m[0], LinkEnd{})
 	s.Openings.Pop()
