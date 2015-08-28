@@ -139,6 +139,34 @@ func TestSpan(test *testing.T) {
 		blocks("code/multiline.md", spans{
 			{bb("`code span\ncan span multiple\nlines`"), Code{bb("code span\ncan span multiple\nlines")}},
 		}),
+		lines("code/vs_emph.md", spans{
+			{bb("`code containing *em* text`"), Code{bb("code containing *em* text")}},
+			{bb("`code containing **strong** text`"), Code{bb("code containing **strong** text")}},
+			{bb("`code containing _em_ text`"), Code{bb("code containing _em_ text")}},
+			{bb("`code containing __strong__ text`"), Code{bb("code containing __strong__ text")}},
+
+			{bb("*"), EmphasisBegin{Level: 1}},
+			{bb("`code`"), Code{bb("code")}},
+			{bb("*"), EmphasisEnd{Level: 1}},
+			{bb("**"), EmphasisBegin{Level: 2}},
+			{bb("`code`"), Code{bb("code")}},
+			{bb("**"), EmphasisEnd{Level: 2}},
+			{bb("_"), EmphasisBegin{Level: 1}},
+			{bb("`code`"), Code{bb("code")}},
+			{bb("_"), EmphasisEnd{Level: 1}},
+			{bb("__"), EmphasisBegin{Level: 2}},
+			{bb("`code`"), Code{bb("code")}},
+			{bb("__"), EmphasisEnd{Level: 2}},
+
+			{bb("`code *intertwined`"), Code{bb("code *intertwined")}},
+			{bb("`with em* text`"), Code{bb("with em* text")}},
+			{bb("`code **intertwined`"), Code{bb("code **intertwined")}},
+			{bb("`with strong** text`"), Code{bb("with strong** text")}},
+			{bb("`code _intertwined`"), Code{bb("code _intertwined")}},
+			{bb("`with em_ text`"), Code{bb("with em_ text")}},
+			{bb("`code __intertwined`"), Code{bb("code __intertwined")}},
+			{bb("`with strong__ text`"), Code{bb("with strong__ text")}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -162,7 +190,6 @@ func TestSpan(test *testing.T) {
 /*
 in ROOT/testdata/tests/span_level:
 
-code/vs_emph.md
 code/vs_html.md
 code/vs_image.md
 code/vs_link.md
