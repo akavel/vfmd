@@ -197,6 +197,40 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{ReferenceID: "intertwined`with"}},
 			{bb("]"), LinkEnd{}},
 		}),
+		lines("code/vs_link.md", spans{
+			{bb("`code containing [link](url)`"), Code{bb("code containing [link](url)")}},
+			{bb("`code containing [link][ref]`"), Code{bb("code containing [link][ref]")}},
+			{bb("`code containing [ref]`"), Code{bb("code containing [ref]")}},
+
+			{bb("["), LinkBegin{URL: "url"}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb(")"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb("][ref]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "link `containing code`"}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb("]"), LinkEnd{}},
+
+			{bb("`code [intertwined`"), Code{bb("code [intertwined")}},
+			{bb("`intertwined](with) link`"), Code{bb("intertwined](with) link")}},
+			{bb("`code [intertwined`"), Code{bb("code [intertwined")}},
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("]"), LinkEnd{}},
+			{bb("`intertwined with][ref] link`"), Code{bb("intertwined with][ref] link")}},
+			{bb("`code [intertwined`"), Code{bb("code [intertwined")}},
+			{bb("`with] link`"), Code{bb("with] link")}},
+
+			// NOTE(akavel): below are accidental because of testing
+			// approach; they're irrelevant to algorithm correctness
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "link `containing code`"}},
+			{bb("`containing code`"), Code{bb("containing code")}},
+			{bb("]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "intertwined`with"}},
+			{bb("]"), LinkEnd{}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -221,7 +255,6 @@ func TestSpan(test *testing.T) {
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
-code/vs_link.md
 code/well_formed.md
 emphasis/emphasis_tag_combinations.md
 emphasis/intertwined.md
