@@ -116,6 +116,13 @@ func TestSpan(test *testing.T) {
 			{bb("https://example.net/path/"), AutoLink{URL: "https://example.net/path/", Text: "https://example.net/path/"}},
 			{bb("ftp://example.net/path/"), AutoLink{URL: "ftp://example.net/path/", Text: "ftp://example.net/path/"}},
 		}),
+		lines("code/end_of_codespan.md", spans{
+			{bb("`code span`"), Code{bb("code span")}},
+			{bb("``code span` ends``"), Code{bb("code span` ends")}},
+			{bb("`code span`` ends`"), Code{bb("code span`` ends")}},
+			{bb("````code span`` ``ends````"), Code{bb("code span`` ``ends")}},
+			{bb("`code span\\`"), Code{bb(`code span\`)}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -139,7 +146,6 @@ func TestSpan(test *testing.T) {
 /*
 in ROOT/testdata/tests/span_level:
 
-code/end_of_codespan.md
 code/multiline.md
 code/vs_emph.md
 code/vs_html.md
