@@ -160,13 +160,11 @@ func (EmphasisTags) Detect(s *Splitter) (consumed int) {
 		return 0
 	}
 	// find substring composed solely of '*' and '_'
-	indicator := rest[:1]
-	for i := len(indicator); i < len(rest); i++ {
-		if !isEmph(rest[i]) {
-			break
-		}
-		indicator = rest[:i+1]
+	i := 1
+	for i < len(rest) && isEmph(rest[i]) {
+		i++
 	}
+	indicator := rest[:i]
 	// "right-fringe-mark"
 	r, _ := utf8.DecodeRune(rest[len(indicator):])
 	rightFringe := emphasisFringeRank(r)
@@ -259,3 +257,39 @@ func emphasisFringeRank(r rune) int {
 
 type EmphasisBegin struct{ Level int }
 type EmphasisEnd struct{ Level int }
+
+type CodeTags struct{}
+
+func (CodeTags) Detect(s *Splitter) (consumed int) {
+	rest := s.Buf[s.Pos:]
+	if rest[0] != '`' {
+		return 0
+	}
+	i := 1
+	for i < len(rest) && rest[i] == '`' {
+		i++
+	}
+	opening := rest[:i]
+	// try to find a sequence of '`' with length exactly equal to 'opening'
+	for {
+		pos := bytes.Index(rest[i:], opening)
+		if pos == -1 {
+			return len(opening)
+		}
+		i = i + pos + len(opening)
+		if i >= len(rest) || rest[i] != '`' {
+			// found closing tag!
+			code := rest[len(opening) : i-len(opening)]
+			code = bytes.Trim(code, utils.Whites)
+			s.Emit(rest[:i], Code{Code: code})
+			return i
+		}
+		for i < len(rest) && rest[i] == '`' {
+			// too many '`' character to match the opening; consume
+			// them as code contents and search again further
+			i++
+		}
+	}
+}
+
+type Code struct{ Code []byte }
