@@ -367,6 +367,20 @@ func TestSpan(test *testing.T) {
 			{bb("![  ref id  ]"), Image{ReferenceID: "ref id", AltText: bb("  ref id  ")}},
 			{bb("![ref\n   id]"), Image{ReferenceID: "ref id", AltText: bb("ref\n   id")}},
 		}, head(18)),
+		// NOTE(akavel): below tests are not really interesting for us
+		// here now.
+		// lines("image/ref_link.md", spans{}),
+		// lines("image/ref_link_empty.md", spans{}),
+		// lines("image/ref_link_self.md", spans{}),
+		lines("image/ref_link_with_2separating_spaces.md", spans{
+			{bb("![link]  [ref]"), Image{AltText: bb("link"), ReferenceID: "ref"}},
+		}, head(2)),
+		blocks("image/ref_link_with_separating_newline.md", spans{
+			{bb("![link]\n[ref]"), Image{AltText: bb("link"), ReferenceID: "ref"}},
+		}, head(3)),
+		lines("image/ref_link_with_separating_space.md", spans{
+			{bb("![link] [ref]"), Image{AltText: bb("link"), ReferenceID: "ref"}},
+		}, head(2)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -393,12 +407,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/ref_link.md
-image/ref_link_empty.md
-image/ref_link_self.md
-image/ref_link_with_2separating_spaces.md
-image/ref_link_with_separating_newline.md
-image/ref_link_with_separating_space.md
 image/ref_resolution_within_other_blocks.md
 image/square_brackets_in_link_or_ref.md
 image/two_consecutive_refs.md
