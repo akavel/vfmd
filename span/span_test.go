@@ -690,6 +690,11 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
 			emB("__"), emE("__"),
 		}),
+		lines("link/vs_image.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("![image](/image.jpg)"), Image{AltText: bb("image"), URL: "/image.jpg"}},
+			{bb("](url)"), LinkEnd{URL: "url"}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -712,11 +717,12 @@ func TestSpan(test *testing.T) {
 }
 
 /*
+TODO(akavel): tests for HTML after HTML is implemented:
+
 in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
 link/vs_html.md
-link/vs_image.md
 */
