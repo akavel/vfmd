@@ -339,6 +339,11 @@ func TestSpan(test *testing.T) {
 			{bb("![ref\nid][]"), Image{ReferenceID: "ref id", AltText: bb("ref\nid")}},
 			{bb("![ref\nid]"), Image{ReferenceID: "ref id", AltText: bb("ref\nid")}},
 		}, head(9)),
+		lines("image/link_with_parenthesis.md", spans{
+			{bb("![bad link](url)"), Image{URL: "url", AltText: bb("bad link")}},
+			{bb(`![bad link](url\)`), Image{URL: `url\`, AltText: bb("bad link")}},
+			{bb(`![link](<url)> "title")`), Image{URL: `url)`, AltText: bb("link"), Title: "title"}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -365,7 +370,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/link_with_parenthesis.md
 image/multiple_ref_id_definitions.md
 image/nested_images.md
 image/ref_case_sensitivity.md

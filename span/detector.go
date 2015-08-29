@@ -354,7 +354,12 @@ var (
 
 	reImageParen           = regexp.MustCompile(`^\]\s*\(`)
 	reImageURLWithoutAngle = regexp.MustCompile(`^\]\s*\(\s*([^\(\)<>\` + "`" + `\s]+)([\)\s][\s\S]*)$`)
-	reImageURLWithAngle    = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)][\s\S]+)$`)
+	// NOTE(akavel): below regexp was in spec, but fixed so that final
+	// capture matches the above pattern, and passes
+	// "image/link_with_parenthesis" test case.
+	// reImageURLWithAngle    = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)][\s\S]+)$`)
+	// TODO(akavel): send below fix to the spec.
+	reImageURLWithAngle = regexp.MustCompile(`^\]\s*\(\s*<([^<>\` + "`" + `]*)>([\)\s][\s\S]*)$`)
 
 	reImageAttrParen = regexp.MustCompile(`^\s*\)`)
 	reImageAttrTitle = regexp.MustCompile(`^\s*("(([^"\\\` + "`" + `]|\\.)*)"|'(([^'\\\` + "`" + `]|\\.)*)')\s*\)`)
