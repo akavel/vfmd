@@ -1,5 +1,7 @@
-package vfmd
+package utils
 
+// TODO(akavel): this struct will be useful when implementing HTML; should be
+// deleted for now, as it's unused and untested.
 type CodeSpanDetector struct {
 	Within bool
 	// number of backtick (`) characters:
