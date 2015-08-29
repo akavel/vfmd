@@ -574,6 +574,49 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "ref id"}},
 			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "ref id"}},
 		}, head(18)),
+		// NOTE(akavel): below tests are not really interesting for us
+		// here now.
+		// link/ref_link.md
+		// link/ref_link_empty.md
+		// link/ref_link_self.md
+		lines("link/ref_link_with_2separating_spaces.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("]  [ref]"), LinkEnd{ReferenceID: "ref"}},
+		}, head(2)),
+		blocks("link/ref_link_with_separating_newline.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("]\n[ref]"), LinkEnd{ReferenceID: "ref"}},
+		}, head(3)),
+		lines("link/ref_link_with_separating_space.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("] [ref]"), LinkEnd{ReferenceID: "ref"}},
+		}, head(2)),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// link/ref_resolution_within_other_blocks.md
+		lines("link/square_brackets_in_link_or_ref.md", spans{
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "1"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "2"}},
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "link"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "3"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "link"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "4"}},
+			{bb("["), LinkBegin{}}, {bb(`][ref\[3\]]`), LinkEnd{ReferenceID: `ref\[3\]`}},
+			{bb("["), LinkBegin{}}, {bb(`][ref\[4\]]`), LinkEnd{ReferenceID: `ref\[4\]`}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "link"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "5"}},
+			{bb("["), LinkBegin{}}, {bb("][ref]"), LinkEnd{ReferenceID: "ref"}},
+			{bb("["), LinkBegin{}}, {bb(`][ref\[5]`), LinkEnd{ReferenceID: `ref\[5`}},
+			{bb("["), LinkBegin{}}, {bb(`][ref\]6]`), LinkEnd{ReferenceID: `ref\]6`}},
+		}, head(13)),
+		lines("link/two_consecutive_refs.md", spans{
+			{bb("["), LinkBegin{}}, {bb(`][two]`), LinkEnd{ReferenceID: `two`}},
+			{bb("["), LinkBegin{}}, {bb(`]`), LinkEnd{ReferenceID: `three`}},
+			{bb("["), LinkBegin{}}, {bb(`][four]`), LinkEnd{ReferenceID: `four`}},
+			{bb("["), LinkBegin{}}, {bb(`]`), LinkEnd{ReferenceID: `three`}},
+		}, head(4)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -601,15 +644,6 @@ in ROOT/testdata/tests/span_level:
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
-link/ref_link.md
-link/ref_link_empty.md
-link/ref_link_self.md
-link/ref_link_with_2separating_spaces.md
-link/ref_link_with_separating_newline.md
-link/ref_link_with_separating_space.md
-link/ref_resolution_within_other_blocks.md
-link/square_brackets_in_link_or_ref.md
-link/two_consecutive_refs.md
 link/unused_ref.md
 link/url_escapes.md
 link/url_in_angle_brackets.md
