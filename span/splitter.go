@@ -92,7 +92,7 @@ type Splitter struct {
 	Spans    []Span
 }
 
-func Process(buf []byte, detectors []Detector) []Span {
+func Split(buf []byte, detectors []Detector) []Span {
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
