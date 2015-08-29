@@ -420,6 +420,25 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{ReferenceID: "three"}},
 			{bb("]"), LinkEnd{}},
 		}, head(4)),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// image/unused_ref.md
+		lines("image/url_escapes.md", spans{
+			{bb(`![link](url\_\:\$\?)`), Image{AltText: bb("link"), URL: `url\_\:\$\?`}},
+			{bb(`![link](http://g&ouml;&ouml;gle.com)`), Image{AltText: bb("link"), URL: `http://g&ouml;&ouml;gle.com`}},
+		}, head(2)),
+		lines("image/url_in_angle_brackets.md", spans{
+			{bb(`![link](<url>)`), Image{AltText: bb("link"), URL: "url"}},
+			{bb(`![link](<url(>)`), Image{AltText: bb("link"), URL: "url("}},
+			{bb(`![link](<url)>)`), Image{AltText: bb("link"), URL: "url)"}},
+			{bb(`![link](<url)> "title")`), Image{AltText: bb("link"), URL: "url)", Title: "title"}},
+		}, head(4)),
+		lines("image/url_special_chars.md", spans{
+			{bb(`![link](url*#$%^&\~)`), Image{AltText: bb("link"), URL: `url*#$%^&\~`}},
+			{bb("![link][ref id1]"), Image{ReferenceID: "ref id1", AltText: bb("link")}},
+			{bb("![ref id1]"), Image{ReferenceID: "ref id1", AltText: bb("ref id1")}},
+			{bb("![link]"), Image{ReferenceID: "link", AltText: bb("link")}},
+		}, head(8)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -446,10 +465,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/unused_ref.md
-image/url_escapes.md
-image/url_in_angle_brackets.md
-image/url_special_chars.md
 image/url_whitespace.md
 image/vs_code.md
 image/vs_emph.md
