@@ -315,8 +315,15 @@ func (ImageTags) Detect(s *Splitter) (consumed int) {
 	r := reImageRef.FindSubmatch(residual)
 	if r != nil {
 		tag := rest[:len(rest)-len(residual)+len(r[0])]
+		refID := utils.Simplify(r[1])
+		// NOTE(akavel): below refID resolution seems not in spec, but expected according to testdata/test/span_level/image{/expected,}/link_text_with_newline.* and makes sense to me as such.
+		// TODO(akavel): send fix for this to the spec
+		if refID == "" {
+			refID = utils.Simplify(altText)
+		}
 		s.Emit(tag, Image{
-			ReferenceID: utils.Simplify(r[1]),
+			AltText:     altText,
+			ReferenceID: refID,
 		})
 		return len(tag)
 	}

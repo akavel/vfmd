@@ -328,6 +328,17 @@ func TestSpan(test *testing.T) {
 			{bb("![ref id11]"), Image{ReferenceID: "ref id11", AltText: bb("ref id11")}},
 			{bb("![ref id12]"), Image{ReferenceID: "ref id12", AltText: bb("ref id12")}},
 		}, head(19)),
+		lines("image/incomplete.md", spans{
+			{bb("![ref undefined]"), Image{ReferenceID: "ref undefined", AltText: bb("ref undefined")}},
+			{bb("![ref 1]"), Image{ReferenceID: "ref 1", AltText: bb("ref 1")}},
+			{bb("![ref undefined]"), Image{ReferenceID: "ref undefined", AltText: bb("ref undefined")}},
+			{bb("![ref 1]"), Image{ReferenceID: "ref 1", AltText: bb("ref 1")}},
+		}, head(8)),
+		blocks("image/link_text_with_newline.md", spans{
+			{bb("![link\ntext](url1)"), Image{AltText: bb("link\ntext"), URL: "url1"}},
+			{bb("![ref\nid][]"), Image{ReferenceID: "ref id", AltText: bb("ref\nid")}},
+			{bb("![ref\nid]"), Image{ReferenceID: "ref id", AltText: bb("ref\nid")}},
+		}, head(9)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -354,8 +365,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/incomplete.md
-image/link_text_with_newline.md
 image/link_with_parenthesis.md
 image/multiple_ref_id_definitions.md
 image/nested_images.md
