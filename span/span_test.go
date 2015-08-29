@@ -508,6 +508,38 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{}},
 			{bb("] (http://example.net)"), LinkEnd{URL: "http://example.net"}},
 		}),
+		lines("link/incomplete.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("]"), LinkEnd{ReferenceID: "ref undefined"}},
+			{bb("["), LinkBegin{}},
+			{bb("]"), LinkEnd{ReferenceID: "ref 1"}},
+			{bb("["), LinkBegin{}},
+			{bb("]"), LinkEnd{ReferenceID: "ref undefined"}},
+			{bb("["), LinkBegin{}},
+			{bb("]"), LinkEnd{ReferenceID: "ref 1"}},
+		}, head(8)),
+		blocks("link/link_text_with_newline.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("](url1)"), LinkEnd{URL: "url1"}},
+			{bb("["), LinkBegin{}},
+			{bb("][]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}},
+			{bb("]"), LinkEnd{ReferenceID: "ref id"}},
+		}, head(9)),
+		lines("link/link_title.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb(`](url "title")`), LinkEnd{URL: "url", Title: "title"}},
+			{bb("["), LinkBegin{}},
+			{bb(`](url 'title')`), LinkEnd{URL: "url", Title: "title"}},
+			{bb("["), LinkBegin{}},
+			{bb(`](url "title 'with' \"quotes\"")`), LinkEnd{URL: "url", Title: `title 'with' \"quotes\"`}},
+			{bb("["), LinkBegin{}},
+			{bb(`](url 'title \'with\' "quotes"')`), LinkEnd{URL: "url", Title: `title \'with\' "quotes"`}},
+			{bb("["), LinkBegin{}},
+			{bb(`](url "title with (brackets)")`), LinkEnd{URL: "url", Title: "title with (brackets)"}},
+			{bb("["), LinkBegin{}},
+			{bb(`](url 'title with (brackets)')`), LinkEnd{URL: "url", Title: "title with (brackets)"}},
+		}, head(6)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -535,9 +567,6 @@ in ROOT/testdata/tests/span_level:
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
-link/incomplete.md
-link/link_text_with_newline.md
-link/link_title.md
 link/link_with_parenthesis.md
 link/multiple_ref_id_definitions.md
 link/nested_links.md
