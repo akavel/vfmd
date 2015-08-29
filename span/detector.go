@@ -84,10 +84,10 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 			s.Openings.Pop()
 		}
 		// emit a link
-		s.Emit(s.Openings.Peek().Tag, LinkBegin{
+		s.Emit(s.Openings.Peek().Tag, LinkBegin{})
+		s.Emit(m[0], LinkEnd{
 			ReferenceID: utils.Simplify(m[1]),
 		})
-		s.Emit(m[0], LinkEnd{})
 		s.Openings.Pop()
 		// cancel all unclosed links
 		s.Openings.deleteLinks()
@@ -119,12 +119,12 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 				s.Openings.Pop()
 			}
 			// emit a link
-			s.Emit(s.Openings.Peek().Tag, LinkBegin{
+			s.Emit(s.Openings.Peek().Tag, LinkBegin{})
+			closing := rest[:len(rest)-len(residual)+len(t[0])]
+			s.Emit(closing, LinkEnd{
 				URL:   linkURL,
 				Title: title,
 			})
-			closing := rest[:len(rest)-len(residual)+len(t[0])]
-			s.Emit(closing, LinkEnd{})
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
@@ -144,18 +144,18 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 	}
 	// emit a link
 	begin := s.Openings.Peek()
-	s.Emit(begin.Tag, LinkBegin{
+	s.Emit(begin.Tag, LinkBegin{})
+	s.Emit(m[0], LinkEnd{
 		ReferenceID: utils.Simplify(s.Buf[begin.LinkStart:s.Pos]),
 	})
-	s.Emit(m[0], LinkEnd{})
 	s.Openings.Pop()
 	// cancel all unclosed links
 	s.Openings.deleteLinks()
 	return len(m[0])
 }
 
-type LinkBegin struct{ ReferenceID, URL, Title string }
-type LinkEnd struct{}
+type LinkBegin struct{}
+type LinkEnd struct{ ReferenceID, URL, Title string }
 
 type EmphasisTags struct{}
 
