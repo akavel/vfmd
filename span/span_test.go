@@ -540,6 +540,40 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{}},
 			{bb(`](url 'title with (brackets)')`), LinkEnd{URL: "url", Title: "title with (brackets)"}},
 		}, head(6)),
+		lines("link/link_with_parenthesis.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("](url)"), LinkEnd{URL: "url"}},
+			{bb("["), LinkBegin{}},
+			{bb(`](url\)`), LinkEnd{URL: `url\`}},
+			{bb("["), LinkBegin{}},
+			{bb(`](<url)> "title")`), LinkEnd{URL: `url)`, Title: "title"}},
+		}),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// link/multiple_ref_id_definitions.md
+		lines("link/nested_links.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("](url2)"), LinkEnd{URL: "url2"}},
+		}),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// link/ref_case_sensitivity.md
+		blocks("link/ref_id_matching.md", spans{
+			{bb("["), LinkBegin{}}, {bb("][ref id]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("][ref   id]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("][  ref id  ]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("][ref\n   id]"), LinkEnd{ReferenceID: "ref id"}},
+
+			{bb("["), LinkBegin{}}, {bb("][]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("][]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("][]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("][]"), LinkEnd{ReferenceID: "ref id"}},
+
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "ref id"}},
+			{bb("["), LinkBegin{}}, {bb("]"), LinkEnd{ReferenceID: "ref id"}},
+		}, head(18)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -567,11 +601,6 @@ in ROOT/testdata/tests/span_level:
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
-link/link_with_parenthesis.md
-link/multiple_ref_id_definitions.md
-link/nested_links.md
-link/ref_case_sensitivity.md
-link/ref_id_matching.md
 link/ref_link.md
 link/ref_link_empty.md
 link/ref_link_self.md
