@@ -439,6 +439,21 @@ func TestSpan(test *testing.T) {
 			{bb("![ref id1]"), Image{ReferenceID: "ref id1", AltText: bb("ref id1")}},
 			{bb("![link]"), Image{ReferenceID: "link", AltText: bb("link")}},
 		}, head(8)),
+		blocks("image/url_whitespace.md", spans{
+			{bb("![link]"), Image{AltText: bb("link"), ReferenceID: "link"}},
+			{bb("![link]"), Image{AltText: bb("link"), ReferenceID: "link"}},
+			{bb("![link](<url 1>)"), Image{AltText: bb("link"), URL: "url1"}},
+			{bb("![link](<url \n   1>)"), Image{AltText: bb("link"), URL: "url1"}},
+		}, head(6)),
+		lines("image/vs_code.md", spans{
+			{bb("`code`"), Code{bb("code")}},
+			{bb("`containing ![image](url)`"), Code{bb("containing ![image](url)")}},
+			{bb("`containing ![image][ref]`"), Code{bb("containing ![image][ref]")}},
+			{bb("["), LinkBegin{ReferenceID: "ref"}},
+			{bb("]"), LinkEnd{}},
+			{bb("`intertwined](url) with code`"), Code{bb("intertwined](url) with code")}},
+			{bb("`intertwined ![with code`"), Code{bb("intertwined ![with code")}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -465,8 +480,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/url_whitespace.md
-image/vs_code.md
 image/vs_emph.md
 image/vs_html.md
 image/within_link.md
