@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/akavel/vfmd-go"
-	. "github.com/akavel/vfmd-go/block"
+	"gopkg.in/akavel/vfmd.v0"
+	. "gopkg.in/akavel/vfmd.v0/block"
 )
 
 const dir = "../testdata/tests/block_level"

@@ -1,4 +1,4 @@
-package span
+package span // import "gopkg.in/akavel/vfmd.v0/span"
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/akavel/vfmd-go/utils"
+	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
 type Detector interface {

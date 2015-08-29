@@ -1,4 +1,4 @@
-package utils
+package utils // import "gopkg.in/akavel/vfmd.v0/utils"
 
 import "strings"
 

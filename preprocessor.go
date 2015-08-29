@@ -1,4 +1,4 @@
-package vfmd
+package vfmd // import "gopkg.in/akavel/vfmd.v0"
 
 import (
 	"bytes"

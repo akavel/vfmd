@@ -1,10 +1,10 @@
-package block
+package block // import "gopkg.in/akavel/vfmd.v0/block"
 
 import (
 	"bytes"
 	"regexp"
 
-	"github.com/akavel/vfmd-go/utils"
+	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
 // TODO(akavel): add tests for blocks
