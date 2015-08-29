@@ -432,6 +432,8 @@ func (AutomaticLinks) Detect(s *Splitter) (consumed int) {
 		}
 	}
 	// "potential-auto-link-start-position"
+	// fmt.Printf("potential autolink start at %d: %-15q...\n",
+	// 	s.Pos, string(rest))
 	// e.g. "<http://example.net>"
 	m := reURLWithinAngle.FindSubmatch(rest)
 	// e.g. "<mailto:someone@example.net?subject=Hi+there>"
@@ -463,6 +465,8 @@ func (AutomaticLinks) Detect(s *Splitter) (consumed int) {
 		m = reMailtoURLWithoutAngle.FindSubmatch(rest)
 	}
 	if m != nil {
+		// fmt.Printf("matched url w/o angle at %d: %s\n",
+		// 	s.Pos, string(m[0]))
 		scheme := m[1]
 		tag := m[0]
 		// remove any trailing "speculative-url-end" characters

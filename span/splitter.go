@@ -102,8 +102,8 @@ walk:
 		for _, d := range detectors {
 			consumed := d.Detect(&s)
 			if consumed > 0 {
-				// fmt.Printf("DBG %T consumed %v at %v\n",
-				// 	d, consumed, s.Pos)
+				// fmt.Printf("DBG %T consumed %v at %v\t[%q]\n",
+				// 	d, consumed, s.Pos, string(s.Buf[s.Pos:s.Pos+consumed]))
 				// FIXME(akavel): if new spans emitted, verify no errors on span.OffsetIn(buf)
 				s.Pos += consumed
 				continue walk

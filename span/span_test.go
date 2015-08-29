@@ -88,7 +88,12 @@ func TestSpan(test *testing.T) {
 	cases := []spanCase{
 		lines(`automatic_links/angle_brackets_in_link.md`, spans{
 			{bb("http://exampl"), AutoLink{URL: `http://exampl`, Text: `http://exampl`}},
-			{bb("http://exampl"), AutoLink{URL: `http://exampl`, Text: `http://exampl`}},
+			// TODO(akavel): below is expected by testdata/, but
+			// invalid according to spec, because preceding "<" is
+			// not a 'word-separator' character (it has unicode
+			// general class Sm - "Symbol, math"); try to resolve
+			// this with the spec author.
+			// {bb("http://exampl"), AutoLink{URL: `http://exampl`, Text: `http://exampl`}},
 		}),
 		lines("automatic_links/ending_with_punctuation.md", spans{
 			{bb("http://example.net"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
@@ -697,6 +702,7 @@ func TestSpan(test *testing.T) {
 		}),
 	}
 	for _, c := range cases {
+		fmt.Printf("\ncase %s\n", c.fname)
 		spans := []Span{}
 		for _, b := range c.blocks {
 			spans = append(spans, Process(b, nil)...)
