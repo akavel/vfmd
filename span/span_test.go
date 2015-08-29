@@ -654,6 +654,42 @@ func TestSpan(test *testing.T) {
 			{bb("`intertwined](url) with code`"), Code{bb("intertwined](url) with code")}},
 			{bb("`intertwined [with code`"), Code{bb("intertwined [with code")}},
 		}),
+		lines("link/vs_emph.md", spans{
+			{bb("["), LinkBegin{}},
+			emB("*"), emE("*"),
+			{bb("](url)"), LinkEnd{URL: "url"}},
+			{bb("["), LinkBegin{}},
+			emB("**"), emE("**"),
+			{bb("](url)"), LinkEnd{URL: "url"}},
+			{bb("["), LinkBegin{}},
+			emB("_"), emE("_"),
+			{bb("](url)"), LinkEnd{URL: "url"}},
+			{bb("["), LinkBegin{}},
+			emB("__"), emE("__"),
+			{bb("](url)"), LinkEnd{URL: "url"}},
+
+			emB("*"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emE("*"),
+			emB("**"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emE("**"),
+			emB("_"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emE("_"),
+			emB("__"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emE("__"),
+
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emB("*"), emE("*"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emB("**"), emE("**"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emB("_"), emE("_"),
+			{bb("["), LinkBegin{}}, {bb("](url)"), LinkEnd{URL: "url"}},
+			emB("__"), emE("__"),
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -681,7 +717,6 @@ in ROOT/testdata/tests/span_level:
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
-link/vs_emph.md
 link/vs_html.md
 link/vs_image.md
 */
