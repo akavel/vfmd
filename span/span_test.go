@@ -381,6 +381,37 @@ func TestSpan(test *testing.T) {
 		lines("image/ref_link_with_separating_space.md", spans{
 			{bb("![link] [ref]"), Image{AltText: bb("link"), ReferenceID: "ref"}},
 		}, head(2)),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// lines("image/ref_resolution_within_other_blocks.md", spans{}),
+		lines("image/square_brackets_in_link_or_ref.md", spans{
+			{bb("["), LinkBegin{ReferenceID: "1"}},
+			{bb("]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "2"}},
+			{bb("]"), LinkEnd{}},
+			{bb("![2]"), Image{ReferenceID: "2", AltText: bb("2")}},
+			// TODO(akavel): make sure we handled escaping properly in cases below
+			{bb(`![link\[1\]](url)`), Image{URL: "url", AltText: bb(`link\[1\]`)}},
+			{bb(`![link\[2\]](url)`), Image{URL: "url", AltText: bb(`link\[2\]`)}},
+			{bb(`![link!\[2\]](url)`), Image{URL: "url", AltText: bb(`link!\[2\]`)}},
+			{bb("["), LinkBegin{ReferenceID: "2"}},
+			{bb("]"), LinkEnd{}},
+			{bb("![link]"), Image{ReferenceID: "link", AltText: bb("link")}},
+			{bb("["), LinkBegin{ReferenceID: "3"}},
+			{bb("]"), LinkEnd{}},
+			{bb("![link]"), Image{ReferenceID: "link", AltText: bb("link")}},
+			{bb("["), LinkBegin{ReferenceID: "4"}},
+			{bb("]"), LinkEnd{}},
+			// TODO(akavel): make sure we handled escaping properly in cases below
+			{bb(`![link][ref\[3\]]`), Image{ReferenceID: `ref\[3\]`, AltText: bb(`link`)}},
+			{bb(`![link][ref\[4\]]`), Image{ReferenceID: `ref\[4\]`, AltText: bb(`link`)}},
+			{bb("![link]"), Image{ReferenceID: "link", AltText: bb("link")}},
+			{bb("["), LinkBegin{ReferenceID: "5"}},
+			{bb("]"), LinkEnd{}},
+			{bb("![link][ref]"), Image{ReferenceID: "ref", AltText: bb("link")}},
+			{bb(`![link][ref\[5]`), Image{ReferenceID: `ref\[5`, AltText: bb(`link`)}},
+			{bb(`![link][ref\]6]`), Image{ReferenceID: `ref\]6`, AltText: bb(`link`)}},
+		}, head(16)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -407,8 +438,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/ref_resolution_within_other_blocks.md
-image/square_brackets_in_link_or_ref.md
 image/two_consecutive_refs.md
 image/unused_ref.md
 image/url_escapes.md
