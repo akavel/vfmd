@@ -412,6 +412,14 @@ func TestSpan(test *testing.T) {
 			{bb(`![link][ref\[5]`), Image{ReferenceID: `ref\[5`, AltText: bb(`link`)}},
 			{bb(`![link][ref\]6]`), Image{ReferenceID: `ref\]6`, AltText: bb(`link`)}},
 		}, head(16)),
+		lines("image/two_consecutive_refs.md", spans{
+			{bb("![one][two]"), Image{ReferenceID: "two", AltText: bb("one")}},
+			{bb("["), LinkBegin{ReferenceID: "three"}},
+			{bb("]"), LinkEnd{}},
+			{bb("![one][four]"), Image{ReferenceID: "four", AltText: bb("one")}},
+			{bb("["), LinkBegin{ReferenceID: "three"}},
+			{bb("]"), LinkEnd{}},
+		}, head(4)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -438,7 +446,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/two_consecutive_refs.md
 image/unused_ref.md
 image/url_escapes.md
 image/url_in_angle_brackets.md
