@@ -123,7 +123,8 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 				URL:   linkURL,
 				Title: title,
 			})
-			s.Emit(t[0], LinkEnd{})
+			closing := rest[:len(rest)-len(residual)+len(t[0])]
+			s.Emit(closing, LinkEnd{})
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
