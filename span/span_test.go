@@ -344,6 +344,29 @@ func TestSpan(test *testing.T) {
 			{bb(`![bad link](url\)`), Image{URL: `url\`, AltText: bb("bad link")}},
 			{bb(`![link](<url)> "title")`), Image{URL: `url)`, AltText: bb("link"), Title: "title"}},
 		}),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// lines("image/multiple_ref_id_definitions.md", spans{}),
+		lines("image/nested_images.md", spans{
+			{bb("![link2](url2)"), Image{AltText: bb("link2"), URL: "url2"}},
+		}),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// lines("image/ref_case_sensitivity.md", spans{}),
+		blocks("image/ref_id_matching.md", spans{
+			{bb("![link][ref id]"), Image{ReferenceID: "ref id", AltText: bb("link")}},
+			{bb("![link][ref   id]"), Image{ReferenceID: "ref id", AltText: bb("link")}},
+			{bb("![link][  ref id  ]"), Image{ReferenceID: "ref id", AltText: bb("link")}},
+			{bb("![link][ref\n   id]"), Image{ReferenceID: "ref id", AltText: bb("link")}},
+			{bb("![ref id][]"), Image{ReferenceID: "ref id", AltText: bb("ref id")}},
+			{bb("![ref   id][]"), Image{ReferenceID: "ref id", AltText: bb("ref   id")}},
+			{bb("![  ref id  ][]"), Image{ReferenceID: "ref id", AltText: bb("  ref id  ")}},
+			{bb("![ref\n   id][]"), Image{ReferenceID: "ref id", AltText: bb("ref\n   id")}},
+			{bb("![ref id]"), Image{ReferenceID: "ref id", AltText: bb("ref id")}},
+			{bb("![ref   id]"), Image{ReferenceID: "ref id", AltText: bb("ref   id")}},
+			{bb("![  ref id  ]"), Image{ReferenceID: "ref id", AltText: bb("  ref id  ")}},
+			{bb("![ref\n   id]"), Image{ReferenceID: "ref id", AltText: bb("ref\n   id")}},
+		}, head(18)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -370,10 +393,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/multiple_ref_id_definitions.md
-image/nested_images.md
-image/ref_case_sensitivity.md
-image/ref_id_matching.md
 image/ref_link.md
 image/ref_link_empty.md
 image/ref_link_self.md
