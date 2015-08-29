@@ -496,6 +496,18 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{}},
 			{bb(`](url "title")`), LinkEnd{URL: "url", Title: "title"}},
 		}),
+		lines("link/direct_link_with_2separating_spaces.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("]  (/example.html)"), LinkEnd{URL: "/example.html"}},
+		}),
+		blocks("link/direct_link_with_separating_newline.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("]\n(/example.html)"), LinkEnd{URL: "/example.html"}},
+		}),
+		lines("link/direct_link_with_separating_space.md", spans{
+			{bb("["), LinkBegin{}},
+			{bb("] (http://example.net)"), LinkEnd{URL: "http://example.net"}},
+		}),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -523,9 +535,6 @@ in ROOT/testdata/tests/span_level:
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
-link/direct_link_with_2separating_spaces.md
-link/direct_link_with_separating_newline.md
-link/direct_link_with_separating_space.md
 link/incomplete.md
 link/link_text_with_newline.md
 link/link_title.md
