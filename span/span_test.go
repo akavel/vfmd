@@ -23,10 +23,22 @@ type spans []Span
 
 const dir = `../testdata/tests/span_level/`
 
-func lines(filename string, spans spans) spanCase {
+type opt func([]byte) []byte
+
+func head(nlines int) opt {
+	return func(buf []byte) []byte {
+		lines := bytes.Split(buf, []byte("\n"))[:nlines]
+		return bytes.Join(lines, []byte("\n"))
+	}
+}
+
+func lines(filename string, spans spans, opts ...opt) spanCase {
 	buf, err := ioutil.ReadFile(dir + filename)
 	if err != nil {
 		panic(err)
+	}
+	for _, opt := range opts {
+		buf = opt(buf)
 	}
 	return spanCase{
 		fname: filename,
@@ -37,12 +49,15 @@ func lines(filename string, spans spans) spanCase {
 		spans: spans,
 	}
 }
-func blocks(filename string, spans spans) spanCase {
+func blocks(filename string, spans spans, opts ...opt) spanCase {
 	buf, err := ioutil.ReadFile(dir + filename)
 	if err != nil {
 		panic(err)
 	}
 	buf = bytes.Replace(buf, bb("\r"), bb(""), -1)
+	for _, opt := range opts {
+		buf = opt(buf)
+	}
 	return spanCase{
 		fname:  filename,
 		buf:    buf,
@@ -189,17 +204,7 @@ func TestSpan(test *testing.T) {
 			{bb("`intertwined with][ref] image`"), Code{bb("intertwined with][ref] image")}},
 			{bb("`code ![intertwined`"), Code{bb("code ![intertwined")}},
 			{bb("`with] image`"), Code{bb("with] image")}},
-
-			// NOTE(akavel): below are accidental because of testing
-			// approach; they're irrelevant to algorithm correctness
-			{bb("["), LinkBegin{ReferenceID: "ref"}},
-			{bb("]"), LinkEnd{}},
-			{bb("["), LinkBegin{ReferenceID: "image `containing code`"}},
-			{bb("`containing code`"), Code{bb("containing code")}},
-			{bb("]"), LinkEnd{}},
-			{bb("["), LinkBegin{ReferenceID: "intertwined`with"}},
-			{bb("]"), LinkEnd{}},
-		}),
+		}, head(30)),
 		lines("code/vs_link.md", spans{
 			{bb("`code containing [link](url)`"), Code{bb("code containing [link](url)")}},
 			{bb("`code containing [link][ref]`"), Code{bb("code containing [link][ref]")}},
@@ -223,17 +228,7 @@ func TestSpan(test *testing.T) {
 			{bb("`intertwined with][ref] link`"), Code{bb("intertwined with][ref] link")}},
 			{bb("`code [intertwined`"), Code{bb("code [intertwined")}},
 			{bb("`with] link`"), Code{bb("with] link")}},
-
-			// NOTE(akavel): below are accidental because of testing
-			// approach; they're irrelevant to algorithm correctness
-			{bb("["), LinkBegin{ReferenceID: "ref"}},
-			{bb("]"), LinkEnd{}},
-			{bb("["), LinkBegin{ReferenceID: "link `containing code`"}},
-			{bb("`containing code`"), Code{bb("containing code")}},
-			{bb("]"), LinkEnd{}},
-			{bb("["), LinkBegin{ReferenceID: "intertwined`with"}},
-			{bb("]"), LinkEnd{}},
-		}),
+		}, head(30)),
 		lines("code/well_formed.md", spans{
 			{bb("`code span`"), Code{bb("code span")}},
 			{bb("``code ` span``"), Code{bb("code ` span")}},
@@ -306,6 +301,33 @@ func TestSpan(test *testing.T) {
 		blocks("image/direct_link_with_separating_newline.md", spans{
 			{bb("![link]\n(/img.png)"), Image{AltText: bb("link"), URL: "/img.png"}},
 		}),
+		lines("image/direct_link_with_separating_space.md", spans{
+			{bb("![link] (http://example.net/img.png)"), Image{AltText: bb("link"), URL: "http://example.net/img.png"}},
+		}),
+		lines("image/image_title.md", spans{
+			{bb(`![link](url "title")`), Image{AltText: bb("link"), URL: "url", Title: `title`}},
+			{bb(`![link](url 'title')`), Image{AltText: bb("link"), URL: "url", Title: `title`}},
+			// TODO(akavel): unquote contents of Title when
+			// processing? doesn't seem noted in spec, send fix for
+			// spec?
+			{bb(`![link](url "title 'with' \"quotes\"")`), Image{AltText: bb("link"), URL: "url", Title: `title 'with' \"quotes\"`}},
+			{bb(`![link](url 'title \'with\' "quotes"')`), Image{AltText: bb("link"), URL: "url", Title: `title \'with\' "quotes"`}},
+			{bb(`![link](url "title with (brackets)")`), Image{AltText: bb("link"), URL: "url", Title: `title with (brackets)`}},
+			{bb(`![link](url 'title with (brackets)')`), Image{AltText: bb("link"), URL: "url", Title: `title with (brackets)`}},
+
+			{bb("![ref id1]"), Image{ReferenceID: "ref id1", AltText: bb("ref id1")}},
+			{bb("![ref id2]"), Image{ReferenceID: "ref id2", AltText: bb("ref id2")}},
+			{bb("![ref id3]"), Image{ReferenceID: "ref id3", AltText: bb("ref id3")}},
+			{bb("![ref id4]"), Image{ReferenceID: "ref id4", AltText: bb("ref id4")}},
+			{bb("![ref id5]"), Image{ReferenceID: "ref id5", AltText: bb("ref id5")}},
+			{bb("![ref id6]"), Image{ReferenceID: "ref id6", AltText: bb("ref id6")}},
+			{bb("![ref id7]"), Image{ReferenceID: "ref id7", AltText: bb("ref id7")}},
+			{bb("![ref id8]"), Image{ReferenceID: "ref id8", AltText: bb("ref id8")}},
+			{bb("![ref id9]"), Image{ReferenceID: "ref id9", AltText: bb("ref id9")}},
+			{bb("![ref id10]"), Image{ReferenceID: "ref id10", AltText: bb("ref id10")}},
+			{bb("![ref id11]"), Image{ReferenceID: "ref id11", AltText: bb("ref id11")}},
+			{bb("![ref id12]"), Image{ReferenceID: "ref id12", AltText: bb("ref id12")}},
+		}, head(19)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -332,8 +354,6 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/direct_link_with_separating_space.md
-image/image_title.md
 image/incomplete.md
 image/link_text_with_newline.md
 image/link_with_parenthesis.md
