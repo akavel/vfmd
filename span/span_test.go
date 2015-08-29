@@ -617,6 +617,26 @@ func TestSpan(test *testing.T) {
 			{bb("["), LinkBegin{}}, {bb(`][four]`), LinkEnd{ReferenceID: `four`}},
 			{bb("["), LinkBegin{}}, {bb(`]`), LinkEnd{ReferenceID: `three`}},
 		}, head(4)),
+		// NOTE(akavel): below test is not really interesting for us
+		// here now.
+		// link/unused_ref.md
+		lines("link/url_escapes.md", spans{
+			// TODO(akavel): make sure we handled escaping properly in cases below
+			{bb("["), LinkBegin{}}, {bb(`](url\_\:\$\?)`), LinkEnd{URL: `url\_\:\$\?`}},
+			{bb("["), LinkBegin{}}, {bb(`](http://g&ouml;&ouml;gle.com)`), LinkEnd{URL: `http://g&ouml;&ouml;gle.com`}},
+		}, head(2)),
+		lines("link/url_in_angle_brackets.md", spans{
+			{bb("["), LinkBegin{}}, {bb(`](<url>)`), LinkEnd{URL: `url`}},
+			{bb("["), LinkBegin{}}, {bb(`](<url(>)`), LinkEnd{URL: `url(`}},
+			{bb("["), LinkBegin{}}, {bb(`](<url)>)`), LinkEnd{URL: `url)`}},
+			{bb("["), LinkBegin{}}, {bb(`](<url)> "title")`), LinkEnd{URL: `url)`, Title: "title"}},
+		}, head(4)),
+		lines("link/url_special_chars.md", spans{
+			{bb("["), LinkBegin{}}, {bb(`](url*#$%^&\~)`), LinkEnd{URL: `url*#$%^&\~`}},
+			{bb("["), LinkBegin{}}, {bb(`][ref id1]`), LinkEnd{ReferenceID: "ref id1"}},
+			{bb("["), LinkBegin{}}, {bb(`]`), LinkEnd{ReferenceID: "ref id1"}},
+			{bb("["), LinkBegin{}}, {bb(`]`), LinkEnd{ReferenceID: "link"}},
+		}, head(8)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -644,10 +664,6 @@ in ROOT/testdata/tests/span_level:
 code/vs_html.md
 emphasis/vs_html.md
 image/vs_html.md
-link/unused_ref.md
-link/url_escapes.md
-link/url_in_angle_brackets.md
-link/url_special_chars.md
 link/url_whitespace.md
 link/vs_code.md
 link/vs_emph.md
