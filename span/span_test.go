@@ -454,6 +454,42 @@ func TestSpan(test *testing.T) {
 			{bb("`intertwined](url) with code`"), Code{bb("intertwined](url) with code")}},
 			{bb("`intertwined ![with code`"), Code{bb("intertwined ![with code")}},
 		}),
+		lines("image/vs_emph.md", spans{
+			{bb("![image containing *em* text](url)"), Image{URL: "url", AltText: bb("image containing *em* text")}},
+			{bb("![image containing **strong** text](url)"), Image{URL: "url", AltText: bb("image containing **strong** text")}},
+			{bb("![image containing _em_ text](url)"), Image{URL: "url", AltText: bb("image containing _em_ text")}},
+			{bb("![image containing __strong__ text](url)"), Image{URL: "url", AltText: bb("image containing __strong__ text")}},
+
+			emB("*"),
+			{bb("![image](url)"), Image{AltText: bb("image"), URL: "url"}},
+			emE("*"),
+			emB("**"),
+			{bb("![image](url)"), Image{AltText: bb("image"), URL: "url"}},
+			emE("**"),
+			emB("_"),
+			{bb("![image](url)"), Image{AltText: bb("image"), URL: "url"}},
+			emE("_"),
+			emB("__"),
+			{bb("![image](url)"), Image{AltText: bb("image"), URL: "url"}},
+			emE("__"),
+
+			{bb("![image *intertwined](url)"), Image{URL: "url", AltText: bb("image *intertwined")}},
+			{bb("![with em* text](url)"), Image{URL: "url", AltText: bb("with em* text")}},
+			{bb("![image **intertwined](url)"), Image{URL: "url", AltText: bb("image **intertwined")}},
+			{bb("![with strong** text](url)"), Image{URL: "url", AltText: bb("with strong** text")}},
+			{bb("![image _intertwined](url)"), Image{URL: "url", AltText: bb("image _intertwined")}},
+			{bb("![with em_ text](url)"), Image{URL: "url", AltText: bb("with em_ text")}},
+			{bb("![image __intertwined](url)"), Image{URL: "url", AltText: bb("image __intertwined")}},
+			{bb("![with strong__ text](url)"), Image{URL: "url", AltText: bb("with strong__ text")}},
+		}),
+		lines("image/within_link.md", spans{
+			{bb("["), LinkBegin{ReferenceID: "![kitten 1]"}},
+			{bb("![kitten 1]"), Image{ReferenceID: "kitten 1", AltText: bb("kitten 1")}},
+			{bb("]"), LinkEnd{}},
+			{bb("["), LinkBegin{ReferenceID: "![kitten 2]"}},
+			{bb("![kitten 2]"), Image{ReferenceID: "kitten 2", AltText: bb("kitten 2")}},
+			{bb("]"), LinkEnd{}},
+		}, head(5)),
 	}
 	for _, c := range cases {
 		spans := []Span{}
@@ -480,9 +516,7 @@ in ROOT/testdata/tests/span_level:
 
 code/vs_html.md
 emphasis/vs_html.md
-image/vs_emph.md
 image/vs_html.md
-image/within_link.md
 link/direct_link.md
 link/direct_link_with_2separating_spaces.md
 link/direct_link_with_separating_newline.md
