@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"gopkg.in/akavel/vfmd.v0/utils"
+
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -712,7 +714,7 @@ func TestSpan(test *testing.T) {
 				c.fname, spew.Sdump(c.spans))
 			test.Errorf("got:")
 			for i, span := range spans {
-				off, err := span.OffsetIn(c.buf)
+				off, err := utils.OffsetIn(c.buf, span.Pos)
 				test.Errorf("[%d] @ %d [%v]: %s",
 					i, off, err, spew.Sdump(span))
 			}

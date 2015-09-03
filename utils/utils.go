@@ -42,3 +42,16 @@ func Simplify(buf []byte) string {
 	}
 	return string(out)
 }
+
+func OffsetIn(s, span []byte) (int, bool) {
+	// one weird trick to check if one of two slices is subslice of the other
+	bigS := s[:cap(s)]
+	bigSpan := span[:cap(span)]
+	if &bigSpan[cap(bigSpan)-1] != &bigS[cap(bigS)-1] {
+		return -1, false
+	}
+	if len(bigS) < len(bigSpan) {
+		return -1, false
+	}
+	return len(bigS) - len(bigSpan), true
+}

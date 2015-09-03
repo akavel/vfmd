@@ -1,9 +1,6 @@
 package span
 
-import (
-	"errors"
-	"sort"
-)
+import "sort"
 
 type NodeType int
 
@@ -74,15 +71,6 @@ type Span struct {
 	// Pos is a subslice of the original input buffer
 	Pos []byte
 	Tag interface{}
-}
-
-func (span Span) OffsetIn(buf []byte) (int, error) {
-	// one weird trick to check if one of two slices is subslice of the other
-	extSpan, extBuf := span.Pos[:cap(span.Pos)], buf[:cap(buf)]
-	if &extSpan[cap(extSpan)-1] != &extBuf[cap(extBuf)-1] {
-		return -1, errors.New("vfmd-go: Span is not subslice of the buf provided to OffsetIn()")
-	}
-	return len(extBuf) - len(extSpan), nil
 }
 
 type Splitter struct {
