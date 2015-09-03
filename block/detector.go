@@ -3,6 +3,8 @@ package block // import "gopkg.in/akavel/vfmd.v0/block"
 import (
 	"bytes"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"gopkg.in/akavel/vfmd.v0/utils"
 )
@@ -56,11 +58,12 @@ type Detector interface {
 	// never be called with next==nil if previous call to
 	// Detect/Continue didn't report any lines to pause.
 	Continue(paused []Line, next Line) (consume, pause int)
-	// // This function is guaranteed to be run after the line has been
-	// // reported by Detect or Continue as consumed, and after all
-	// // preceding lines were PostProcessed, and before any subsequent
-	// // lines were PostProcessed.
-	// PostProcess(Line)
+	// This function is guaranteed to be run after the line has been
+	// reported by Detect or Continue as consumed, and after all
+	// preceding lines were PostProcessed, and before any subsequent
+	// lines were PostProcessed. After last line, additional call with nil
+	// argument is done.
+	PostProcess(Line)
 }
 
 var (
@@ -68,6 +71,8 @@ var (
 	reOrderedList    = regexp.MustCompile(`^( *([0-9]+)\. +)[^ ]`)
 	reHorizontalRule = regexp.MustCompile(`^ *((\* *\* *\* *[\* ]*)|(\- *\- *\- *[\- ]*)|(_ *_ *_ *[_ ]*))$`)
 )
+
+type Spans [][]byte
 
 type NeverContinue struct{}
 
@@ -82,14 +87,14 @@ func (NoPostProcess) PostProcess(Line) {}
 var DefaultDetectors []Detector = []Detector{
 	Null{},
 	&ReferenceResolution{},
-	SetextHeader{},
-	Code{},
-	AtxHeader{},
-	Quote{},
+	&SetextHeader{},
+	&Code{},
+	&AtxHeader{},
+	&Quote{},
 	HorizontalRule{},
 	&UnorderedList{},
 	&OrderedList{},
-	Paragraph{},
+	&Paragraph{},
 }
 
 type Null struct {
@@ -107,6 +112,7 @@ func (Null) Detect(start, second Line) (consume, pause int) {
 type ReferenceResolution struct {
 	NeverContinue
 	NoPostProcess
+
 	ReferenceID    string
 	LinkURL        string
 	TitleContainer string
@@ -172,20 +178,40 @@ func (b *ReferenceResolution) Detect(start, second Line) (consume, pause int) {
 	return nlines, 0
 }
 
-type SetextHeader struct{ NeverContinue }
+type SetextHeader struct {
+	NeverContinue
 
-func (SetextHeader) Detect(start, second Line) (consume, pause int) {
+	Level int
+	Spans
+}
+
+func (s *SetextHeader) Detect(start, second Line) (consume, pause int) {
 	if second == nil {
 		return 0, 0
 	}
 	re := regexp.MustCompile(`^(-+|=+) *$`)
 	if re.Match(second) {
+		switch second[0] {
+		case '=':
+			s.Level = 1
+		case '-':
+			s.Level = 2
+		}
 		return 2, 0
 	}
 	return 0, 0
 }
 
-type Code struct{}
+func (s *SetextHeader) PostProcess(line Line) {
+	if line == nil {
+		return
+	}
+	s.Spans = Spans{bytes.Trim(line, utils.Whites)}
+}
+
+type Code struct {
+	Spans
+}
 
 func (Code) Detect(start, second Line) (consume, pause int) {
 	if start.hasFourSpacePrefix() {
@@ -213,8 +239,25 @@ func (Code) Continue(paused []Line, next Line) (consume, pause int) {
 		return len(paused), 0
 	}
 }
+func (c *Code) PostProcess(line Line) {
+	line = trimLeftN(line, utils.Whites, 4)
+	c.Spans = append(c.Spans, line)
+}
 
-type AtxHeader struct{ NeverContinue }
+func trimLeftN(s []byte, cutset string, nmax int) []byte {
+	for nmax > 0 && len(s) > 0 && strings.IndexByte(cutset, s[0]) != -1 {
+		nmax--
+		s = s[1:]
+	}
+	return s
+}
+
+type AtxHeader struct {
+	NeverContinue
+
+	Level int
+	Spans
+}
 
 func (AtxHeader) Detect(start, second Line) (consume, pause int) {
 	if bytes.HasPrefix(start, []byte("#")) {
@@ -222,8 +265,28 @@ func (AtxHeader) Detect(start, second Line) (consume, pause int) {
 	}
 	return 0, 0
 }
+func (a *AtxHeader) PostProcess(line Line) {
+	if line == nil {
+		return
+	}
+	text := bytes.Trim(line, "#")
+	if len(text) == 0 {
+		a.Level = len(text)
+	} else {
+		a.Level, _ = utils.OffsetIn(line, text)
+	}
+	if a.Level > 6 {
+		a.Level = 6
+	}
+	a.Spans = Spans{bytes.Trim(text, utils.Whites)}
+}
 
-type Quote struct{}
+type Quote struct {
+	Detectors []Detector
+	splitter  Splitter
+
+	Blocks []Block
+}
 
 func (Quote) Detect(start, second Line) (consume, pause int) {
 	ltrim := bytes.TrimLeft(start, " ")
@@ -249,8 +312,35 @@ func (Quote) Continue(paused []Line, next Line) (consume, pause int) {
 	}
 	return len(paused), 1
 }
+func (q *Quote) PostProcess(line Line) {
+	if line == nil {
+		// FIXME(akavel): handle error
+		_ = q.splitter.Close()
+		q.Blocks = q.splitter.Blocks
+		return
+	}
 
-type HorizontalRule struct{ NeverContinue }
+	text := bytes.TrimLeft(line, " ")
+	switch {
+	case bytes.HasPrefix(text, []byte("> ")):
+		text = text[2:]
+	case bytes.HasPrefix(text, []byte(">")):
+		text = text[1:]
+	}
+
+	if q.splitter.Detectors == nil {
+		q.splitter.Detectors = q.Detectors
+	}
+	// FIXME(akavel): handle error
+	// FIXME(akavel): ignore final line if "empty"
+	_ = q.splitter.WriteLine(line)
+	q.Blocks = q.splitter.Blocks
+}
+
+type HorizontalRule struct {
+	NeverContinue
+	NoPostProcess
+}
 
 func (HorizontalRule) Detect(start, second Line) (consume, pause int) {
 	if reHorizontalRule.Match(start) {
@@ -259,8 +349,16 @@ func (HorizontalRule) Detect(start, second Line) (consume, pause int) {
 	return 0, 0
 }
 
+type UnorderedListItem struct {
+	Blocks   []Block
+	splitter Splitter
+}
+
 type UnorderedList struct {
+	Detectors []Detector
+
 	Starter []byte
+	Items   []UnorderedListItem
 }
 
 func (b *UnorderedList) Detect(start, second Line) (consume, pause int) {
@@ -297,9 +395,49 @@ func (b *UnorderedList) Continue(paused []Line, next Line) (consume, pause int) 
 	}
 	return len(paused), 1
 }
+func (b *UnorderedList) PostProcess(line Line) {
+	var current *UnorderedListItem
+	if len(b.Items) > 0 {
+		current = &b.Items[len(b.Items)-1]
+	}
+
+	if line == nil {
+		if current != nil {
+			// FIXME(akavel): handle errors
+			_ = current.splitter.Close()
+			current.Blocks = current.splitter.Blocks
+		}
+		return
+	}
+
+	if bytes.HasPrefix(line, b.Starter) {
+		if current != nil {
+			// FIXME(akavel): handle errors
+			_ = current.splitter.Close()
+			current.Blocks = current.splitter.Blocks
+		}
+		b.Items = append(b.Items, UnorderedListItem{})
+		current = &b.Items[len(b.Items)-1]
+		current.splitter.Detectors = b.Detectors
+		// FIXME(akavel): handle errors
+		_ = current.splitter.WriteLine(line[len(b.Starter):])
+		return
+	}
+
+	_ = current.splitter.WriteLine(trimLeftN(line, " ", len(b.Starter)))
+}
+
+type OrderedListItem struct {
+	Blocks   []Block
+	splitter Splitter
+}
 
 type OrderedList struct {
-	Starter []byte
+	Detectors []Detector
+
+	Starter     []byte
+	FirstNumber int
+	Items       []OrderedListItem
 }
 
 func (b *OrderedList) Detect(start, second Line) (consume, pause int) {
@@ -308,6 +446,7 @@ func (b *OrderedList) Detect(start, second Line) (consume, pause int) {
 		return 0, 0
 	}
 	b.Starter = m[1]
+	b.FirstNumber, _ = strconv.Atoi(string(m[2]))
 	return 0, 1
 }
 func (b *OrderedList) Continue(paused []Line, next Line) (consume, pause int) {
@@ -334,11 +473,52 @@ func (b *OrderedList) Continue(paused []Line, next Line) (consume, pause int) {
 	}
 	return len(paused), 1
 }
+func (b *OrderedList) PostProcess(line Line) {
+	var current *OrderedListItem
+	if len(b.Items) > 0 {
+		current = &b.Items[len(b.Items)-1]
+	}
+
+	if line == nil {
+		if current != nil {
+			// FIXME(akavel): handle errors
+			_ = current.splitter.Close()
+			current.Blocks = current.splitter.Blocks
+		}
+		return
+	}
+
+	m := reOrderedList.FindSubmatch(line)
+	if m != nil {
+		text := bytes.TrimLeft(m[1], " ")
+		spaces, _ := utils.OffsetIn(m[1], text)
+		if spaces >= len(b.Starter) {
+			m = nil
+		}
+	}
+	if m != nil {
+		if current != nil {
+			// FIXME(akavel): handle errors
+			_ = current.splitter.Close()
+			current.Blocks = current.splitter.Blocks
+		}
+		b.Items = append(b.Items, OrderedListItem{})
+		current = &b.Items[len(b.Items)-1]
+		current.splitter.Detectors = b.Detectors
+		// FIXME(akavel): handle errors
+		_ = current.splitter.WriteLine(line[len(m[1]):])
+		return
+	}
+
+	_ = current.splitter.WriteLine(trimLeftN(line, " ", len(b.Starter)))
+}
 
 type Paragraph struct {
-	// NOTE: below fields must be set appropriately when creating a Paragraph
+	// FIXME(akavel): below fields must be set appropriately when creating a Paragraph
 	InQuote bool
 	InList  bool
+
+	Spans
 }
 
 func (Paragraph) Detect(start, second Line) (consume, pause int) {
@@ -361,6 +541,19 @@ func (b Paragraph) Continue(paused []Line, next Line) (consume, pause int) {
 		}
 	}
 	return len(paused), 1
+}
+func (b *Paragraph) PostProcess(line Line) {
+	if line == nil {
+		if n := len(b.Spans); n > 0 {
+			b.Spans[n-1] = bytes.TrimRight(b.Spans[n-1], utils.Whites)
+		}
+		return
+	}
+
+	if len(b.Spans) == 0 {
+		line = bytes.TrimLeft(line, utils.Whites)
+	}
+	b.Spans = append(b.Spans, line)
 }
 
 /*
