@@ -23,7 +23,9 @@ const (
 )
 
 type Chunk struct {
-	Type  ChunkType
+	Type ChunkType
+	// Bytes contains fragment of new data of the document (after
+	// preprocessing).
 	Bytes []byte
 }
 
@@ -35,8 +37,10 @@ func (c Chunk) SourceLength() int {
 		return 3
 	case ChunkUnchangedRunes:
 		return len(c.Bytes)
-	case ChunkNormalizedCRLF:
-		return 2
+	case ChunkIgnoredCR:
+		return 1
+	case ChunkUnchangedLF:
+		return 1
 	case ChunkExpandedTab:
 		return 1
 	case ChunkConvertedISO8859_1:
@@ -50,7 +54,8 @@ type ChunkType int
 const (
 	ChunkIgnoredBOM ChunkType = iota
 	ChunkUnchangedRunes
-	ChunkNormalizedCRLF
+	ChunkIgnoredCR   // Note: only for CR immediately before LF
+	ChunkUnchangedLF // Note: all LFs (for easier lines splitting)
 	ChunkExpandedTab
 	ChunkConvertedISO8859_1
 )
@@ -84,7 +89,7 @@ func (p *Preprocessor) WriteByte(b byte) error {
 			p.Write(buf)
 			return nil
 		case len(p.Pending) == len(BOM):
-			p.otherChunk(ChunkIgnoredBOM, p.Pending...)
+			p.otherChunk(ChunkIgnoredBOM)
 			return nil
 		default: // still not sure
 			return nil
@@ -95,7 +100,8 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		p.Pending = nil
 		if b == _LF {
 			// CRLF detected
-			p.otherChunk(ChunkNormalizedCRLF, _LF)
+			p.otherChunk(ChunkIgnoredCR)
+			p.otherChunk(ChunkUnchangedLF, _LF)
 			return nil
 		}
 		// Flush the pending _CR
@@ -142,6 +148,12 @@ func (p *Preprocessor) WriteByte(b byte) error {
 		spaces := 4 - (p.column % 4)
 		bufSpaces := []byte("    ")
 		p.otherChunk(ChunkExpandedTab, bufSpaces[:spaces]...)
+		return nil
+	}
+
+	// Split to lines on LF. [#lines]
+	if b == _LF {
+		p.otherChunk(ChunkUnchangedLF, _LF)
 		return nil
 	}
 

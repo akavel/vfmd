@@ -17,7 +17,7 @@ func TestBOM(test *testing.T) {
 		pending  []byte
 	}{{
 		input:    BOM,
-		expected: []Chunk{{ChunkIgnoredBOM, BOM}},
+		expected: []Chunk{{ChunkIgnoredBOM, nil}},
 		pending:  nil,
 	}, {
 		input:    bb('a', 0xEF, 0xBB, 0xBF),
@@ -156,7 +156,7 @@ func TestCRLFPending(test *testing.T) {
 		pending: bs("\r"),
 	}, {
 		input:   bs("\r\n"),
-		output:  []Chunk{{ChunkNormalizedCRLF, bs("\n")}},
+		output:  []Chunk{{ChunkIgnoredCR, nil}, {ChunkUnchangedLF, bs("\n")}},
 		pending: nil,
 	}}
 
