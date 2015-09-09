@@ -84,6 +84,12 @@ func postProcess(b blockser, lines []block.Line) []Block {
 	result := make([]Block, 0, len(bs))
 	for _, b := range bs {
 		b := Block{Block: b}
+		if _, ok := b.Detector.(block.Null); ok {
+			result = append(result, b)
+			continue
+		}
+		// spew.Dump(b)
+		// spew.Printf("%q\n", lines)
 		for _, line := range lines[b.First : b.Last+1] {
 			b.PostProcess(line)
 		}
