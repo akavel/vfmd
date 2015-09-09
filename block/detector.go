@@ -74,6 +74,12 @@ var (
 
 type Spans [][]byte
 
+func (s Spans) GetSpans() Spans { return s }
+
+type Blocks []Block
+
+func (b Blocks) GetBlocks() Blocks { return b }
+
 type NeverContinue struct{}
 
 func (NeverContinue) Continue([]Line, Line) (consume, pause int) { return 0, 0 }
@@ -285,7 +291,7 @@ type Quote struct {
 	Detectors []Detector
 	splitter  Splitter
 
-	Blocks []Block
+	Blocks
 }
 
 func (Quote) Detect(start, second Line) (consume, pause int) {
@@ -350,7 +356,7 @@ func (HorizontalRule) Detect(start, second Line) (consume, pause int) {
 }
 
 type UnorderedListItem struct {
-	Blocks   []Block
+	Blocks
 	splitter Splitter
 }
 
@@ -428,7 +434,7 @@ func (b *UnorderedList) PostProcess(line Line) {
 }
 
 type OrderedListItem struct {
-	Blocks   []Block
+	Blocks
 	splitter Splitter
 }
 

@@ -17,9 +17,9 @@ type Block struct {
 
 type Splitter struct {
 	Detectors []Detector
-	Blocks    []Block
-	current   Block
-	window    []Line
+	Blocks
+	current Block
+	window  []Line
 }
 
 func (s *Splitter) WriteLine(line []byte) error {
