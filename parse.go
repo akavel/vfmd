@@ -39,9 +39,9 @@ func Parse(r io.Reader) ([]Block, error) {
 				lines = append(lines, line)
 				prep.Chunks = prep.Chunks[i+1:]
 				i = 0
-				err = blocks.WriteLine(line)
-				if err != nil {
-					return nil, err
+				err2 := blocks.WriteLine(line)
+				if err2 != nil {
+					return nil, err2
 				}
 				continue
 			}
@@ -51,14 +51,14 @@ func Parse(r io.Reader) ([]Block, error) {
 			if i > 0 {
 				line = buildLine(line, prep.Chunks)
 				lines = append(lines, line)
-				err = blocks.WriteLine(line)
-				if err != nil {
-					return nil, err
+				err2 := blocks.WriteLine(line)
+				if err2 != nil {
+					return nil, err2
 				}
 			}
-			err = blocks.Close()
-			if err != nil {
-				return nil, err
+			err2 := blocks.Close()
+			if err2 != nil {
+				return nil, err2
 			}
 		}
 
@@ -72,6 +72,7 @@ func Parse(r io.Reader) ([]Block, error) {
 	}
 }
 
+// FIXME(akavel): that looks too weird and hackish
 type blockser interface {
 	GetBlocks() block.Blocks
 }

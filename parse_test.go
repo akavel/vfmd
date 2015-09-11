@@ -23,6 +23,7 @@ func TestParse(test *testing.T) {
 		files = append(files, m...)
 	}
 	for _, f := range files {
+		fmt.Println(f)
 		fh, err := os.Open(f)
 		if err != nil {
 			panic(err)
@@ -32,7 +33,8 @@ func TestParse(test *testing.T) {
 		if err != nil {
 			test.Error(err)
 		}
-		fmt.Println(blocks)
+		HTML(blocks, os.Stdout)
+		// spew.Dump(blocks)
 		return // TMP
 	}
 }
