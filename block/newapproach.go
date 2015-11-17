@@ -16,6 +16,8 @@ type Run struct {
 	Bytes []byte // with Line, allows to find out position in line
 }
 
+// func (r Run) String() string { return string(r.Bytes) }
+
 type Prose Region
 
 func (p Prose) Prose() Region { return Region(p) }
@@ -49,6 +51,10 @@ func QuickParse(r io.Reader) ([]Tag, error) {
 	}
 	if scan.Err() != nil {
 		return nil, scan.Err()
+	}
+	err := split.Close()
+	if err != nil {
+		return nil, err
 	}
 
 	// Translate results of splitting with old approach to new approach.

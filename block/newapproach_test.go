@@ -1,4 +1,4 @@
-package block
+package block_test
 
 import (
 	"bytes"
@@ -6,7 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"gopkg.in/akavel/vfmd.v0"
+	. "gopkg.in/akavel/vfmd.v0/block"
 	"gopkg.in/akavel/vfmd.v0/span"
 )
 
@@ -46,7 +49,7 @@ var newApproach_flatOutput = []Tag{
 	&AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
 	&span.EmphasisBegin{Level: 2},
-	&Link{},
+	&span.LinkBegin{},
 	Prose{mkrun(1, "new")},
 	End{}, // Link
 	End{}, // Emph
@@ -99,11 +102,9 @@ End{}, // UL
 End{}, // Quote
 }`
 
-var newApproach_input = `
-> * some text **specifically *interesting*** for us.
+var newApproach_input = `> * some text **specifically *interesting*** for us.
 > * ## Hello, **[new](http://vfmd.org)** _world._
-![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)
-`
+![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)`
 
 func TestNewApproach(test *testing.T) {
 	prep, _ := vfmd.QuickPrep(strings.NewReader(newApproach_input))
@@ -115,6 +116,6 @@ func TestNewApproach(test *testing.T) {
 	expected := newApproach_flatOutput
 	if !reflect.DeepEqual(result, expected) {
 		// TODO(akavel): spew.Dump?
-		test.Error("expected:\n%#v\ngot:\n%#v")
+		test.Errorf("expected:\n%v\ngot:\n%v", spew.Sdump(expected), spew.Sdump(result))
 	}
 }
