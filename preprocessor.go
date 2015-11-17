@@ -1,11 +1,34 @@
 package vfmd // import "gopkg.in/akavel/vfmd.v0"
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"unicode/utf8"
 )
+
+func QuickPrep(r io.Reader) ([]byte, error) {
+	prep := Preprocessor{}
+	br := bufio.NewReader(r)
+	for {
+		b, err := br.ReadByte()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		prep.WriteByte(b)
+	}
+	prep.Close()
+
+	buf := bytes.NewBuffer(nil)
+	for _, c := range prep.Chunks {
+		buf.Write(c.Bytes)
+	}
+	return buf.Bytes(), nil
+}
 
 type Preprocessor struct {
 	Chunks  []Chunk
