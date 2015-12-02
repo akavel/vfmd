@@ -5,6 +5,15 @@ import (
 	"io"
 )
 
+type Mode int
+
+const (
+	// TODO(akavel): make sure they're ordered & named as I wanted
+	BlocksAndSpans Mode = iota
+	BlocksOnly
+	TopBlocks
+)
+
 type Tag interface{}
 type End struct{}
 
@@ -36,6 +45,7 @@ func QuickParse(r io.Reader) ([]Tag, error) {
 	scan, split, lines := bufio.NewScanner(r), Splitter{}, Region{}
 	scan.Split(splitLinesWithEOL)
 	for i := 0; scan.Scan(); i++ {
+		// Copy the line contents so that scan.Scan() doesn't invalidate it
 		line := append([]byte(nil), scan.Bytes()...)
 		// Store full copy of line for later.
 		lines = append(lines, Run{i, line})
