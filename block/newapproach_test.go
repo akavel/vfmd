@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/diff"
 
 	"gopkg.in/akavel/vfmd.v0"
 	. "gopkg.in/akavel/vfmd.v0/block"
@@ -106,6 +107,10 @@ var newApproach_input = `> * some text **specifically *interesting*** for us.
 > * ## Hello, **[new](http://vfmd.org)** _world._
 ![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)`
 
+func init() {
+	spew.Config.Indent = "  "
+}
+
 func TestNewApproach(test *testing.T) {
 	prep, _ := vfmd.QuickPrep(strings.NewReader(newApproach_input))
 	result, err := QuickParse(bytes.NewReader(prep))
@@ -116,6 +121,7 @@ func TestNewApproach(test *testing.T) {
 	expected := newApproach_flatOutput
 	if !reflect.DeepEqual(result, expected) {
 		// TODO(akavel): spew.Dump?
-		test.Errorf("expected:\n%v\ngot:\n%v", spew.Sdump(expected), spew.Sdump(result))
+		test.Errorf("expected vs. got DIFF:\n%s",
+			diff.Diff(spew.Sdump(expected), spew.Sdump(result)))
 	}
 }
