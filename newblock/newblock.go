@@ -42,21 +42,26 @@ type Context interface {
 	Emit(Tag)
 }
 
+type defaultContext struct {
+	mode Mode
+	tags []Tag
+}
+
+func (c *defaultContext) GetMode() Mode { return c.mode }
+func (c *defaultContext) Emit(tag Tag)  { c.tags = append(c.tags, tag) }
+
 type Parser struct {
-	Mode      Mode
 	Detectors Detectors
-	Tags      []Tag
+	Context
 
 	start   *Line
 	handler Handler
 }
 
-func (p *Parser) GetMode() Mode { return p.Mode }
-func (p *Parser) Emit(tag Tag)  { p.Tags = append(p.Tags, tag) }
-func (p *Parser) Close() error  { return p.WriteLine(Line{}) }
+func (p *Parser) Close() error { return p.WriteLine(Line{}) }
 func (p *Parser) WriteLine(line Line) error {
 	if p.Detectors == nil {
-		p.Detectors = DefaultDetectors
+		p.Detectors = *defaultDetectors
 	}
 
 	// Continue previous block if appropriate.
@@ -103,8 +108,11 @@ func (p *Parser) WriteLine(line Line) error {
 func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
 	scan := bufio.NewScanner(r)
 	scan.Split(splitKeepingEOLs)
+	context := &defaultContext{
+		mode: mode,
+	}
 	parser := Parser{
-		Mode:      mode,
+		Context:   context,
 		Detectors: detectors,
 	}
 	for i := 0; scan.Scan(); i++ {
@@ -124,7 +132,7 @@ func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parser.Tags, nil
+	return context.tags, nil
 }
 
 // Line is a Run that may have at most one '\n', as last byte
@@ -155,12 +163,12 @@ type Handler interface {
 }
 
 type DetectorFunc func(first, second Line, detectors Detectors) Handler
-type HandlerFunc func(Line, Context) (consumed bool)
+type HandlerFunc func(Line, Context) (consumed bool, err error)
 
 func (f DetectorFunc) Detect(first, second Line, detectors Detectors) Handler {
 	return f(first, second, detectors)
 }
-func (f HandlerFunc) Handle(line Line, context Context) bool {
+func (f HandlerFunc) Handle(line Line, context Context) (bool, error) {
 	return f(line, context)
 }
 
@@ -197,6 +205,12 @@ var DefaultDetectors = Detectors{
 	// &OrderedList{},
 	// &Paragraph{},
 }
+
+// defaultDetectors helps break initialization loop for elements of
+// DefaultDetectors referencing DefaultDetectors.
+var defaultDetectors *Detectors
+
+func init() { defaultDetectors = &DefaultDetectors }
 
 func (ds Detectors) Find(first, second Line) Handler {
 	for _, d := range ds {

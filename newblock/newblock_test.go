@@ -33,9 +33,9 @@ func mkrun(line int, s string) Run { return Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []Tag{
 	&Quote{},
-	&UnorderedList{},
-	&UnorderedListItem{},
-	&Paragraph{InQuote: true, InList: true},
+	// &UnorderedList{},
+	// &UnorderedListItem{},
+	// &Paragraph{InQuote: true, InList: true},
 	Prose{mkrun(0, "some text ")},
 	&span.EmphasisBegin{Level: 2},
 	Prose{mkrun(0, "specifically ")},
@@ -46,8 +46,8 @@ var newApproach_flatOutput = []Tag{
 	Prose{mkrun(0, " for us.")},
 	End{}, // Para
 	End{}, // Item
-	&UnorderedListItem{},
-	&AtxHeader{Level: 2},
+	// &UnorderedListItem{},
+	// &AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
 	&span.EmphasisBegin{Level: 2},
 	&span.LinkBegin{},
@@ -58,7 +58,7 @@ var newApproach_flatOutput = []Tag{
 	Prose{mkrun(1, " world.")},
 	End{}, // Emph
 	End{}, // Atx
-	&Paragraph{},
+	// &Paragraph{},
 	&span.Image{},
 	// no End, Image is self-closing!
 	End{}, // Para
