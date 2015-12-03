@@ -22,10 +22,7 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		// TODO(akavel): verify it's coded ok, it was converted from a different approach
 		if next.EOF() {
-			// bool result will be ignored anyway.
-			err := parser.WriteLine(next)
-			ctx.Emit(End{})
-			return false, err
+			return end(parser, ctx)
 		}
 		prev := carry
 		carry = &next
@@ -36,18 +33,18 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 				Context:   ctx,
 				Detectors: detectors,
 			}
-			return true, parser.WriteLine(Line{next.Line, trimQuote(next.Bytes)})
+			return pass(parser, next, trimQuote(next.Bytes))
 		}
 		if prev.isBlank() {
 			if next.isBlank() ||
 				next.hasFourSpacePrefix() ||
 				bytes.TrimLeft(next.Bytes, " ")[0] != '>' {
-				return false, nil
+				return end(parser, ctx)
 			}
 		} else if !next.hasFourSpacePrefix() &&
 			reHorizontalRule.Match(next.Bytes) {
-			return false, nil
+			return end(parser, ctx)
 		}
-		return true, parser.WriteLine(Line{next.Line, trimQuote(next.Bytes)})
+		return pass(parser, next, trimQuote(next.Bytes))
 	})
 }

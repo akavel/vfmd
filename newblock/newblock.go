@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 type Mode int
@@ -201,7 +202,7 @@ var DefaultDetectors = Detectors{
 	// &AtxHeader{},
 	DetectorFunc(DetectQuote),
 	// HorizontalRule{},
-	// &UnorderedList{},
+	DetectorFunc(DetectUnorderedList),
 	// &OrderedList{},
 	// &Paragraph{},
 }
@@ -220,4 +221,26 @@ func (ds Detectors) Find(first, second Line) Handler {
 		}
 	}
 	return nil
+}
+
+func end(parser *Parser, ctx Context) (bool, error) {
+	err := parser.Close()
+	ctx.Emit(End{})
+	return false, err
+}
+func end2(parser *Parser, ctx Context) (bool, error) {
+	err := parser.Close()
+	ctx.Emit(End{})
+	ctx.Emit(End{})
+	return false, err
+}
+func pass(parser *Parser, next Line, bytes []byte) (bool, error) {
+	return true, parser.WriteLine(Line{next.Line, bytes})
+}
+func trimLeftN(s []byte, cutset string, nmax int) []byte {
+	for nmax > 0 && len(s) > 0 && strings.IndexByte(cutset, s[0]) != -1 {
+		nmax--
+		s = s[1:]
+	}
+	return s
 }

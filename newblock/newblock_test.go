@@ -33,8 +33,8 @@ func mkrun(line int, s string) Run { return Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []Tag{
 	&Quote{},
-	// &UnorderedList{},
-	// &UnorderedListItem{},
+	&UnorderedList{},
+	&Item{},
 	// &Paragraph{InQuote: true, InList: true},
 	Prose{mkrun(0, "some text ")},
 	&span.EmphasisBegin{Level: 2},
@@ -46,7 +46,7 @@ var newApproach_flatOutput = []Tag{
 	Prose{mkrun(0, " for us.")},
 	End{}, // Para
 	End{}, // Item
-	// &UnorderedListItem{},
+	&Item{},
 	// &AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
 	&span.EmphasisBegin{Level: 2},
