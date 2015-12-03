@@ -2,6 +2,7 @@ package block
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 )
@@ -105,11 +106,38 @@ func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
 
 // Line is a Run that may have at most one '\n', as last byte
 type Line Run
+
+func (line Line) isBlank() bool {
+	return len(bytes.Trim(line.Bytes, " \t\n")) == 0
+}
+func (line Line) hasNonSpaceInPrefix(n int) bool {
+	bs := line.Bytes
+	for i := 0; i < n && i < len(bs) && bs[i] != '\n'; i++ {
+		if bs[i] != ' ' {
+			return true
+		}
+	}
+	return false
+}
+func (line Line) hasFourSpacePrefix() bool {
+	return bytes.HasPrefix(line.Bytes, []byte("    "))
+}
+
 type Detector interface {
 	Detect(first, second *Line, detectors Detectors) Handler
 }
 type Handler interface {
 	Handle(*Line, Context) (consumed bool)
+}
+
+type DetectorFunc func(first, second *Line, detectors Detectors) Handler
+type HandlerFunc func(*Line, Context) (consumed bool)
+
+func (f DetectorFunc) Detect(first, second *Line, detectors Detectors) Handler {
+	return f(first, second, detectors)
+}
+func (f HandlerFunc) Handle(line *Line, context Context) bool {
+	return f(line, context)
 }
 
 type context struct {
@@ -138,8 +166,21 @@ func splitKeepingEOLs(data []byte, atEOF bool) (advance int, token []byte, err e
 
 type Detectors []Detector
 
+// DefaultDetectors contains the list of default detectors in order in which
+// they should be normally applied.
 // FIXME(akavel): fill DefaultDetectors
-var DefaultDetectors Detectors
+var DefaultDetectors = Detectors{
+	// Null{},
+	// &ReferenceResolution{},
+	// &SetextHeader{},
+	// &Code{},
+	// &AtxHeader{},
+	&Quote{},
+	// HorizontalRule{},
+	// &UnorderedList{},
+	// &OrderedList{},
+	// &Paragraph{},
+}
 
 func (ds Detectors) Find(first, second *Line) Handler {
 	for _, d := range ds {
