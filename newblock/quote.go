@@ -1,23 +1,25 @@
 package block
 
+import "bytes"
+
 type Quote struct {
 }
 
-func	DetectQuote(first, second *Line, detectors Detectors) Handler {
+func DetectQuote(first, second Line, detectors Detectors) Handler {
 	ltrim := bytes.TrimLeft(first.Bytes, " ")
 	if len(ltrim) == 0 || ltrim[0] != '>' {
 		return nil
 	}
 	var carry *Line
-	return HandlerFunc(func(next *Line, ctx *Context) bool{
+	return HandlerFunc(func(next Line, ctx *Context) bool {
 		// TODO(akavel): verify it's coded ok, it was converted from a different approach
-		if next == nil {
+		if next.EOF() {
 			// EOF; returned result will be ignored anyway.
 			return false
 		}
 		prev := carry
-		carry = next
-		if prev==nil {
+		carry = &next
+		if prev == nil {
 			// First line of block.
 			// FIXME(akavel): ctx.Emit(Quote{})
 			// FIXME(akavel): start processing sub-blocks...
@@ -37,30 +39,6 @@ func	DetectQuote(first, second *Line, detectors Detectors) Handler {
 	})
 }
 
-func (Quote) Detect(start, second Line) (consume, pause int) {
-	ltrim := bytes.TrimLeft(start, " ")
-	if len(ltrim) > 0 && ltrim[0] == '>' {
-		return 0, 1
-	}
-	return 0, 0
-}
-func (Quote) Continue(paused []Line, next Line) (consume, pause int) {
-	// TODO(akavel): verify it's coded ok, it was converted from a different approach
-	if next == nil {
-		return len(paused), 0
-	}
-	if paused[0].isBlank() {
-		if next.isBlank() ||
-			next.hasFourSpacePrefix() ||
-			bytes.TrimLeft(next, " ")[0] != '>' {
-			return len(paused), 0
-		}
-	} else if !next.hasFourSpacePrefix() &&
-		reHorizontalRule.Match(next) {
-		return len(paused), 0
-	}
-	return len(paused), 1
-}
 func (q *Quote) PostProcess(line Line) {
 	if line == nil {
 		// FIXME(akavel): handle error

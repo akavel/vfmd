@@ -38,75 +38,99 @@ type Proser interface {
 }
 
 type Context interface {
-	Mode() Mode
+	GetMode() Mode
 	Emit(Tag)
+}
+
+type Parser struct {
+	Mode      Mode
+	Detectors Detectors
+	Tags      []Tag
+
+	start   *Line
+	handler Handler
+}
+
+func (p *Parser) GetMode() Mode { return p.Mode }
+func (p *Parser) Emit(tag Tag)  { p.Tags = append(p.Tags, tag) }
+func (p *Parser) Close() error  { return p.WriteLine(Line{}) }
+func (p *Parser) WriteLine(line Line) error {
+	if p.Detectors == nil {
+		p.Detectors = DefaultDetectors
+	}
+
+	// Continue previous block if appropriate.
+	if p.handler != nil {
+		// NOTE(akavel): assert(p.start==nil)
+		consumed, err := p.handler.Handle(line, p)
+		if err != nil {
+			return err
+		}
+		if line.EOF() {
+			return nil
+		}
+		if consumed {
+			return nil
+		}
+	}
+	p.handler = nil
+
+	// New block needs 2 lines for detection.
+	if p.start == nil {
+		if line.EOF() {
+			return nil
+		}
+		p.start = &line
+		return nil
+	}
+	p.handler = p.Detectors.Find(*p.start, line)
+	if p.handler == nil {
+		// TODO(akavel): return error object with line number and contents
+		return fmt.Errorf("vfmd: no block detector matched line %d: %q", p.start.Line, string(p.start.Bytes))
+	}
+	consumed, err := p.handler.Handle(*p.start, p)
+	if err != nil {
+		return err
+	}
+	if !consumed {
+		return fmt.Errorf("vfmd: detector %T failed to handle first line %d: %q", p.handler, p.start.Line, string(p.start.Bytes))
+	}
+	p.start = nil
+	return p.WriteLine(line)
 }
 
 // Important: r must be pre-processed with vfmd.QuickPrep or vfmd.Preprocessor
 func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
-	// TODO(akavel): extract below block to a struct
 	scan := bufio.NewScanner(r)
 	scan.Split(splitKeepingEOLs)
-	i := 0
-	scanLine := func() *Line {
-		if !scan.Scan() {
-			return nil
-		}
-		i++
-		return &Line{
-			Line: i - 1,
+	parser := Parser{
+		Mode:      mode,
+		Detectors: detectors,
+	}
+	for i := 0; scan.Scan(); i++ {
+		err := parser.WriteLine(Line{
+			Line: i,
 			// Copy the line contents so that scan.Scan() doesn't invalidate it
 			Bytes: append([]byte(nil), scan.Bytes()...),
+		})
+		if err != nil {
+			return nil, err
 		}
-	}
-
-	// Preparations.
-	if detectors == nil {
-		detectors = DefaultDetectors
-	}
-	context := &context{mode: mode}
-	var handler Handler
-	var line *Line
-	for {
-		if line == nil {
-			line = scanLine()
-			if line == nil {
-				break
-			}
-		}
-		if handler != nil && handler.Handle(line, context) {
-			line = nil
-			continue
-		}
-		handler = nil
-
-		// Fetch second line and detect a block.
-		second := scanLine()
-		handler = detectors.Find(line, second)
-		if handler == nil {
-			// TODO(akavel): return error object with line number and contents
-			return nil, fmt.Errorf("vfmd: no block detector matched line %d: %q", line.Line, string(line.Bytes))
-		}
-		if !handler.Handle(line, context) {
-			return nil, fmt.Errorf("vfmd: detector %T failed to handle first line %d: %q", handler, line.Line, string(line.Bytes))
-		}
-		if second == nil {
-			break
-		}
-		line = second
 	}
 	if scan.Err() != nil {
 		return nil, scan.Err()
 	}
-	if handler != nil {
-		handler.Handle(nil, context)
+	err := parser.Close()
+	if err != nil {
+		return nil, err
 	}
-	return context.tags, nil
+	return parser.Tags, nil
 }
 
 // Line is a Run that may have at most one '\n', as last byte
 type Line Run
 
+func (line Line) EOF() bool { return line.Bytes == nil }
 func (line Line) isBlank() bool {
 	return len(bytes.Trim(line.Bytes, " \t\n")) == 0
 }
@@ -124,29 +148,21 @@ func (line Line) hasFourSpacePrefix() bool {
 }
 
 type Detector interface {
-	Detect(first, second *Line, detectors Detectors) Handler
+	Detect(first, second Line, detectors Detectors) Handler
 }
 type Handler interface {
-	Handle(*Line, Context) (consumed bool)
+	Handle(Line, Context) (consumed bool, err error)
 }
 
-type DetectorFunc func(first, second *Line, detectors Detectors) Handler
-type HandlerFunc func(*Line, Context) (consumed bool)
+type DetectorFunc func(first, second Line, detectors Detectors) Handler
+type HandlerFunc func(Line, Context) (consumed bool)
 
-func (f DetectorFunc) Detect(first, second *Line, detectors Detectors) Handler {
+func (f DetectorFunc) Detect(first, second Line, detectors Detectors) Handler {
 	return f(first, second, detectors)
 }
-func (f HandlerFunc) Handle(line *Line, context Context) bool {
+func (f HandlerFunc) Handle(line Line, context Context) bool {
 	return f(line, context)
 }
-
-type context struct {
-	mode Mode
-	tags []Tag
-}
-
-func (c *context) Mode() Mode   { return c.mode }
-func (c *context) Emit(tag Tag) { c.tags = append(c.tags, tag) }
 
 func splitKeepingEOLs(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	for i, c := range data {
@@ -175,14 +191,14 @@ var DefaultDetectors = Detectors{
 	// &SetextHeader{},
 	// &Code{},
 	// &AtxHeader{},
-	&Quote{},
+	DetectorFunc(DetectQuote),
 	// HorizontalRule{},
 	// &UnorderedList{},
 	// &OrderedList{},
 	// &Paragraph{},
 }
 
-func (ds Detectors) Find(first, second *Line) Handler {
+func (ds Detectors) Find(first, second Line) Handler {
 	for _, d := range ds {
 		handler := d.Detect(first, second, ds)
 		if handler != nil {
