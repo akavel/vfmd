@@ -26,7 +26,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 			// if carry == nil {
 			// 	panic("empty carry")
 			// }
-			return end(parser, ctx)
+			return end2(parser, ctx)
 		}
 		prev := carry
 		carry = &next
@@ -37,7 +37,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 				Context:   ctx,
 				Detectors: detectors,
 			}
-			return pass(parser, next, trimLeftN(next.Bytes, " ", len(starter)))
+			return pass(parser, next, next.Bytes[len(starter):])
 		}
 
 		if prev.isBlank() {
@@ -65,6 +65,10 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 				return false, err
 			}
 			ctx.Emit(Item{})
+			parser = &Parser{
+				Context:   ctx,
+				Detectors: detectors,
+			}
 			return pass(parser, next, next.Bytes[len(starter):])
 		}
 		return pass(parser, next, trimLeftN(next.Bytes, " ", len(starter)))
