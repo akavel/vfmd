@@ -54,19 +54,21 @@ type Proser interface {
 
 type Context interface {
 	GetMode() Mode
+	GetDetectors() Detectors
 	Emit(Tag)
 }
 
 type defaultContext struct {
-	mode Mode
-	tags []Tag
+	mode      Mode
+	tags      []Tag
+	detectors Detectors
 }
 
-func (c *defaultContext) GetMode() Mode { return c.mode }
-func (c *defaultContext) Emit(tag Tag)  { c.tags = append(c.tags, tag) }
+func (c *defaultContext) GetMode() Mode           { return c.mode }
+func (c *defaultContext) GetDetectors() Detectors { return c.detectors }
+func (c *defaultContext) Emit(tag Tag)            { c.tags = append(c.tags, tag) }
 
 type Parser struct {
-	Detectors Detectors
 	Context
 
 	start   *Line
@@ -77,9 +79,6 @@ type Parser struct {
 func (p *Parser) Close() error { return p.WriteLine(Line{}) }
 func (p *Parser) WriteLine(line Line) error {
 	unstack()
-	if p.Detectors == nil {
-		p.Detectors = *defaultDetectors
-	}
 
 	// Continue previous block if appropriate.
 	if p.handler != nil {
@@ -107,7 +106,7 @@ func (p *Parser) WriteLine(line Line) error {
 		p.start = &line
 		return nil
 	}
-	p.handler = p.Detectors.Find(*p.start, line)
+	p.handler = p.GetDetectors().Find(*p.start, line)
 	if p.handler == nil {
 		// TODO(akavel): return error object with line number and contents
 		return fmt.Errorf("vfmd: no block detector matched line %d: %q", p.start.Line, string(p.start.Bytes))
@@ -129,12 +128,15 @@ func (p *Parser) WriteLine(line Line) error {
 func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
 	scan := bufio.NewScanner(r)
 	scan.Split(splitKeepingEOLs)
+	if detectors == nil {
+		detectors = DefaultDetectors
+	}
 	context := &defaultContext{
-		mode: mode,
+		mode:      mode,
+		detectors: detectors,
 	}
 	parser := Parser{
-		Context:   context,
-		Detectors: detectors,
+		Context: context,
 	}
 	for i := 0; scan.Scan(); i++ {
 		// fmt.Print(scan.Text())
@@ -227,12 +229,6 @@ var DefaultDetectors = Detectors{
 	// &OrderedList{},
 	Paragraph{},
 }
-
-// defaultDetectors helps break initialization loop for elements of
-// DefaultDetectors referencing DefaultDetectors.
-var defaultDetectors *Detectors
-
-func init() { defaultDetectors = &DefaultDetectors }
 
 func (ds Detectors) Find(first, second Line) Handler {
 	for _, d := range ds {

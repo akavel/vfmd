@@ -34,8 +34,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 			ctx.Emit(UnorderedList{})
 			ctx.Emit(Item{})
 			parser = &Parser{
-				Context:   ctx,
-				Detectors: detectors,
+				Context: ctx,
 			}
 			return pass(parser, next, next.Bytes[len(starter):])
 		}
@@ -66,8 +65,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 			}
 			ctx.Emit(Item{})
 			parser = &Parser{
-				Context:   ctx,
-				Detectors: detectors,
+				Context: ctx,
 			}
 			return pass(parser, next, next.Bytes[len(starter):])
 		}

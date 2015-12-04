@@ -30,8 +30,7 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 			// First line of block.
 			ctx.Emit(Quote{})
 			parser = &Parser{
-				Context:   ctx,
-				Detectors: detectors,
+				Context: ctx,
 			}
 			return pass(parser, next, trimQuote(next.Bytes))
 		}
