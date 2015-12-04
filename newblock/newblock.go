@@ -8,6 +8,20 @@ import (
 	"strings"
 )
 
+// func unstack() {
+// 	pc, _, _, _ := runtime.Caller(2)
+// 	for i, j := 2, 0; i < 100; i++ {
+// 		ipc, _, _, _ := runtime.Caller(i)
+// 		if ipc == pc {
+// 			j++
+// 		}
+// 		if j == 10 {
+// 			panic("stack too high")
+// 		}
+// 	}
+// }
+func unstack() {}
+
 type Mode int
 
 const (
@@ -59,8 +73,10 @@ type Parser struct {
 	handler Handler
 }
 
+// func (p *Parser) Emit(tag Tag) { unstack(); p.Context.Emit(tag) }
 func (p *Parser) Close() error { return p.WriteLine(Line{}) }
 func (p *Parser) WriteLine(line Line) error {
+	unstack()
 	if p.Detectors == nil {
 		p.Detectors = *defaultDetectors
 	}
@@ -68,7 +84,9 @@ func (p *Parser) WriteLine(line Line) error {
 	// Continue previous block if appropriate.
 	if p.handler != nil {
 		// NOTE(akavel): assert(p.start==nil)
+		// fmt.Printf("...handle? %d %q\n", line.Line, string(line.Bytes))
 		consumed, err := p.handler.Handle(line, p)
+		// fmt.Printf("...handled %v\n", consumed)
 		if err != nil {
 			return err
 		}
@@ -94,7 +112,9 @@ func (p *Parser) WriteLine(line Line) error {
 		// TODO(akavel): return error object with line number and contents
 		return fmt.Errorf("vfmd: no block detector matched line %d: %q", p.start.Line, string(p.start.Bytes))
 	}
+	// fmt.Printf(".:.handle? %d %q\n", p.start.Line, string(p.start.Bytes))
 	consumed, err := p.handler.Handle(*p.start, p)
+	// fmt.Printf(".:.handled %v\n", consumed)
 	if err != nil {
 		return err
 	}
@@ -117,6 +137,7 @@ func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
 		Detectors: detectors,
 	}
 	for i := 0; scan.Scan(); i++ {
+		// fmt.Print(scan.Text())
 		err := parser.WriteLine(Line{
 			Line: i,
 			// Copy the line contents so that scan.Scan() doesn't invalidate it

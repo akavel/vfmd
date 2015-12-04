@@ -23,6 +23,9 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		// func (b *UnorderedList) Continue(paused []Line, next Line) (consume, pause int) {
 		if next.EOF() {
+			// if carry == nil {
+			// 	panic("empty carry")
+			// }
 			return end(parser, ctx)
 		}
 		prev := carry
