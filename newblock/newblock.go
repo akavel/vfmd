@@ -225,7 +225,7 @@ var DefaultDetectors = Detectors{
 	// HorizontalRule{},
 	DetectorFunc(DetectUnorderedList),
 	// &OrderedList{},
-	// &Paragraph{},
+	Paragraph{},
 }
 
 // defaultDetectors helps break initialization loop for elements of

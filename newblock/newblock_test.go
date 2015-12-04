@@ -32,21 +32,21 @@ plus see below:
 func mkrun(line int, s string) Run { return Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []Tag{
-	&Quote{},
-	&UnorderedList{},
-	&Item{},
-	// &Paragraph{InQuote: true, InList: true},
+	Quote{},
+	UnorderedList{},
+	Item{},
+	Paragraph{InQuote: true, InList: true},
 	Prose{mkrun(0, "some text ")},
-	&span.EmphasisBegin{Level: 2},
+	span.EmphasisBegin{Level: 2},
 	Prose{mkrun(0, "specifically ")},
-	&span.EmphasisBegin{Level: 1},
+	span.EmphasisBegin{Level: 1},
 	Prose{mkrun(0, "interesting")},
 	End{}, // Emph
 	End{}, // Emph
 	Prose{mkrun(0, " for us.")},
 	End{}, // Para
 	End{}, // Item
-	&Item{},
+	Item{},
 	// &AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
 	&span.EmphasisBegin{Level: 2},
@@ -54,12 +54,12 @@ var newApproach_flatOutput = []Tag{
 	Prose{mkrun(1, "new")},
 	End{}, // Link
 	End{}, // Emph
-	&span.EmphasisBegin{Level: 1},
+	span.EmphasisBegin{Level: 1},
 	Prose{mkrun(1, " world.")},
 	End{}, // Emph
 	End{}, // Atx
-	// &Paragraph{},
-	&span.Image{},
+	Paragraph{},
+	span.Image{},
 	// no End, Image is self-closing!
 	End{}, // Para
 	End{}, // Item
