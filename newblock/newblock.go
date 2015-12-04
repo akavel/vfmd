@@ -220,7 +220,7 @@ var DefaultDetectors = Detectors{
 	// &ReferenceResolution{},
 	// &SetextHeader{},
 	// &Code{},
-	// &AtxHeader{},
+	DetectorFunc(DetectAtxHeader),
 	DetectorFunc(DetectQuote),
 	// HorizontalRule{},
 	DetectorFunc(DetectUnorderedList),

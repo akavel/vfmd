@@ -47,7 +47,7 @@ var newApproach_flatOutput = []Tag{
 	End{}, // Para
 	End{}, // Item
 	Item{},
-	// &AtxHeader{Level: 2},
+	AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
 	&span.EmphasisBegin{Level: 2},
 	&span.LinkBegin{},
