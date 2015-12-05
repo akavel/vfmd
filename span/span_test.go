@@ -708,7 +708,7 @@ func TestSpan(test *testing.T) {
 		fmt.Printf("\ncase %s\n", c.fname)
 		spans := []Span{}
 		for _, b := range c.blocks {
-			spans = append(spans, Split(b, nil)...)
+			spans = append(spans, Parse(b, nil)...)
 		}
 		if !reflect.DeepEqual(c.spans, spans) {
 			test.Errorf("case %s expected:\n%s",

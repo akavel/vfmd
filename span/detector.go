@@ -11,12 +11,12 @@ import (
 )
 
 type Detector interface {
-	Detect(*Splitter) (consumed int)
+	Detect(*Context) (consumed int)
 }
 
-type DetectorFunc func(*Splitter) (consumed int)
+type DetectorFunc func(*Context) (consumed int)
 
-func (d DetectorFunc) Detect(s *Splitter) (consumed int) { return d(s) }
+func (d DetectorFunc) Detect(s *Context) (consumed int) { return d(s) }
 
 var DefaultDetectors = []Detector{
 	DetectorFunc(DetectEscapedChar),
@@ -28,7 +28,7 @@ var DefaultDetectors = []Detector{
 	// TODO(akavel): DetectHTML,
 }
 
-func DetectEscapedChar(s *Splitter) (consumed int) {
+func DetectEscapedChar(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if len(rest) >= 2 && rest[0] == '\\' {
 		return 2
@@ -37,7 +37,7 @@ func DetectEscapedChar(s *Splitter) (consumed int) {
 	}
 }
 
-func DetectLink(s *Splitter) (consumed int) {
+func DetectLink(s *Context) (consumed int) {
 	// [#procedure-for-identifying-link-tags]
 	c := s.Buf[s.Pos]
 	if c != '[' && c != ']' {
@@ -70,7 +70,7 @@ var (
 	reEmptyRef = regexp.MustCompile(`^(\]\s*\[\s*\])`)
 )
 
-func closingLinkTag(s *Splitter) (consumed int) {
+func closingLinkTag(s *Context) (consumed int) {
 	if s.Openings.NullTopmostOfType(LinkNode) {
 		return 1 // consume the ']'
 	}
@@ -156,7 +156,7 @@ func closingLinkTag(s *Splitter) (consumed int) {
 
 type Link struct{ ReferenceID, URL, Title string }
 
-func DetectEmphasis(s *Splitter) (consumed int) {
+func DetectEmphasis(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if !isEmph(rest[0]) {
 		return 0
@@ -202,7 +202,7 @@ func DetectEmphasis(s *Splitter) (consumed int) {
 	return len(indicator)
 }
 
-func closingEmphasisTags(s *Splitter, tags [][]byte) {
+func closingEmphasisTags(s *Context, tags [][]byte) {
 	for len(tags) > 0 {
 		// find topmost opening of matching emphasis type
 		tag := tags[0]
@@ -224,7 +224,7 @@ func closingEmphasisTags(s *Splitter, tags [][]byte) {
 		}
 	}
 }
-func matchEmphasisTag(s *Splitter, tag []byte) []byte {
+func matchEmphasisTag(s *Context, tag []byte) []byte {
 	top := s.Openings.Peek()
 	if len(top.Tag) > len(tag) {
 		n := len(tag)
@@ -259,7 +259,7 @@ func emphasisFringeRank(r rune) int {
 
 type Emphasis struct{ Level int }
 
-func DetectCode(s *Splitter) (consumed int) {
+func DetectCode(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if rest[0] != '`' {
 		return 0
@@ -293,7 +293,7 @@ func DetectCode(s *Splitter) (consumed int) {
 
 type Code struct{ Code []byte }
 
-func DetectImage(s *Splitter) (consumed int) {
+func DetectImage(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if !bytes.HasPrefix(rest, []byte(`![`)) {
 		return 0
@@ -360,7 +360,7 @@ var (
 	reImageEmptyRef = regexp.MustCompile(`^(\]\s*\[\s*\])`)
 )
 
-func imageParen(s *Splitter, altText []byte, prefix int, residual []byte) (consumed int) {
+func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consumed int) {
 	// fmt.Println("imageParen @", s.Pos, string(s.Buf[s.Pos:s.Pos+prefix]))
 	// e.g.: "] ("
 	if !reImageParen.Match(residual) {
@@ -413,7 +413,7 @@ type Image struct {
 	AltText     []byte
 }
 
-func DetectAutomaticLink(s *Splitter) (consumed int) {
+func DetectAutomaticLink(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if s.Pos > 0 && rest[0] != '<' {
 		r, _ := utf8.DecodeLastRune(s.Buf[:s.Pos])

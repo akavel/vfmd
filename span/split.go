@@ -75,18 +75,18 @@ type Span struct {
 	Tag interface{}
 }
 
-type Splitter struct {
+type Context struct {
 	Buf      []byte
 	Pos      int
 	Openings OpeningsStack
 	Spans    []Span
 }
 
-func Split(buf []byte, detectors []Detector) []Span {
+func Parse(buf []byte, detectors []Detector) []Span {
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
-	s := Splitter{Buf: buf}
+	s := Context{Buf: buf}
 walk:
 	for s.Pos < len(s.Buf) {
 		for _, d := range detectors {
@@ -119,6 +119,6 @@ func (s sortedSpans) Less(i, j int) bool {
 	return len(iext) > len(jext)
 }
 
-func (s *Splitter) Emit(slice []byte, tag interface{}) {
+func (s *Context) Emit(slice []byte, tag interface{}) {
 	s.Spans = append(s.Spans, Span{slice, tag})
 }
