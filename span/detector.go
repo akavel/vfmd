@@ -84,10 +84,10 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 			s.Openings.Pop()
 		}
 		// emit a link
-		s.Emit(s.Openings.Peek().Tag, LinkBegin{})
-		s.Emit(m[0], LinkEnd{
+		s.Emit(s.Openings.Peek().Tag, Link{
 			ReferenceID: utils.Simplify(m[1]),
 		})
+		s.Emit(m[0], End{})
 		s.Openings.Pop()
 		// cancel all unclosed links
 		s.Openings.deleteLinks()
@@ -119,12 +119,12 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 				s.Openings.Pop()
 			}
 			// emit a link
-			s.Emit(s.Openings.Peek().Tag, LinkBegin{})
-			closing := rest[:len(rest)-len(residual)+len(t[0])]
-			s.Emit(closing, LinkEnd{
+			s.Emit(s.Openings.Peek().Tag, Link{
 				URL:   linkURL,
 				Title: title,
 			})
+			closing := rest[:len(rest)-len(residual)+len(t[0])]
+			s.Emit(closing, End{})
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
@@ -144,18 +144,17 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 	}
 	// emit a link
 	begin := s.Openings.Peek()
-	s.Emit(begin.Tag, LinkBegin{})
-	s.Emit(m[0], LinkEnd{
+	s.Emit(begin.Tag, Link{
 		ReferenceID: utils.Simplify(s.Buf[begin.LinkStart:s.Pos]),
 	})
+	s.Emit(m[0], End{})
 	s.Openings.Pop()
 	// cancel all unclosed links
 	s.Openings.deleteLinks()
 	return len(m[0])
 }
 
-type LinkBegin struct{}
-type LinkEnd struct{ ReferenceID, URL, Title string }
+type Link struct{ ReferenceID, URL, Title string }
 
 type EmphasisTags struct{}
 
@@ -231,15 +230,15 @@ func matchEmphasisTag(s *Splitter, tag []byte) []byte {
 	top := s.Openings.Peek()
 	if len(top.Tag) > len(tag) {
 		n := len(tag)
-		s.Emit(top.Tag[len(top.Tag)-n:], EmphasisBegin{Level: n})
-		s.Emit(tag, EmphasisEnd{Level: n})
+		s.Emit(top.Tag[len(top.Tag)-n:], Emphasis{Level: n})
+		s.Emit(tag, End{})
 		top.Tag = top.Tag[:len(top.Tag)-n]
 		return nil
 	}
 	// now len(top.Tag) <= len(tag)
 	n := len(top.Tag)
-	s.Emit(top.Tag, EmphasisBegin{Level: n})
-	s.Emit(tag[:n], EmphasisEnd{Level: n})
+	s.Emit(top.Tag, Emphasis{Level: n})
+	s.Emit(tag[:n], End{})
 	s.Openings.Pop()
 	return tag[n:]
 }
@@ -260,8 +259,7 @@ func emphasisFringeRank(r rune) int {
 	}
 }
 
-type EmphasisBegin struct{ Level int }
-type EmphasisEnd struct{ Level int }
+type Emphasis struct{ Level int }
 
 type CodeTags struct{}
 

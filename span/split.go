@@ -67,6 +67,8 @@ func (s *OpeningsStack) deleteLinks() {
 	*s = filtered
 }
 
+type End struct{}
+
 type Span struct {
 	// Pos is a subslice of the original input buffer
 	Pos []byte

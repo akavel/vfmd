@@ -49,7 +49,7 @@ func htmls(b Block, w io.Writer) {
 func htmlss(s span.Span, w io.Writer) {
 	wr := func(s string) { w.Write([]byte(s)) }
 	switch t := s.Tag.(type) {
-	case span.EmphasisBegin:
+	case span.Emphasis:
 		switch t.Level {
 		case 1:
 			wr("<em>")

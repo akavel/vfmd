@@ -37,27 +37,27 @@ var newApproach_flatOutput = []Tag{
 	Item{},
 	Paragraph{InQuote: true, InList: true},
 	Prose{mkrun(0, "some text ")},
-	span.EmphasisBegin{Level: 2},
+	span.Emphasis{Level: 2},
 	Prose{mkrun(0, "specifically ")},
-	span.EmphasisBegin{Level: 1},
+	span.Emphasis{Level: 1},
 	Prose{mkrun(0, "interesting")},
-	End{}, // Emph
-	End{}, // Emph
+	span.End{}, // Emph
+	span.End{}, // Emph
 	Prose{mkrun(0, " for us.")},
 	End{}, // Para
 	End{}, // Item
 	Item{},
 	AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
-	&span.EmphasisBegin{Level: 2},
-	&span.LinkBegin{},
+	&span.Emphasis{Level: 2},
+	&span.Link{},
 	Prose{mkrun(1, "new")},
-	End{}, // Link
-	End{}, // Emph
-	span.EmphasisBegin{Level: 1},
+	span.End{}, // Link
+	span.End{}, // Emph
+	span.Emphasis{Level: 1},
 	Prose{mkrun(1, " world.")},
-	End{}, // Emph
-	End{}, // Atx
+	span.End{}, // Emph
+	End{},      // Atx
 	Paragraph{},
 	span.Image{},
 	// no End, Image is self-closing!
