@@ -44,8 +44,8 @@ var newApproach_flatOutput = []Tag{
 	md.End{}, // Emph
 	md.End{}, // Emph
 	Prose{mkrun(0, " for us.")},
-	md.EndBlock{}, // Para
-	md.EndBlock{}, // Item
+	md.End{}, // Para
+	md.End{}, // Item
 	md.ItemBlock{},
 	md.AtxHeaderBlock{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
@@ -56,15 +56,15 @@ var newApproach_flatOutput = []Tag{
 	md.End{}, // Emph
 	md.Emphasis{Level: 1},
 	Prose{mkrun(1, " world.")},
-	md.End{},      // Emph
-	md.EndBlock{}, // Atx
+	md.End{}, // Emph
+	md.End{}, // Atx
 	md.ParagraphBlock{},
 	md.Image{},
 	// no End, Image is self-closing!
-	md.EndBlock{}, // Para
-	md.EndBlock{}, // Item
-	md.EndBlock{}, // List
-	md.EndBlock{}, // Quote
+	md.End{}, // Para
+	md.End{}, // Item
+	md.End{}, // List
+	md.End{}, // Quote
 }
 
 var newApproach_outputSketch = `[]interface{}{

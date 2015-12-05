@@ -21,6 +21,3 @@ type AtxHeaderBlock struct {
 	Level int
 }
 type ParagraphBlock struct{}
-
-// TODO(akavel): drop EndBlock, leave only End?
-type EndBlock struct{}

@@ -243,13 +243,13 @@ func (ds Detectors) Find(first, second Line) Handler {
 
 func end(parser *Parser, ctx Context) (bool, error) {
 	err := parser.Close()
-	ctx.Emit(md.EndBlock{})
+	ctx.Emit(md.End{})
 	return false, err
 }
 func end2(parser *Parser, ctx Context) (bool, error) {
 	err := parser.Close()
-	ctx.Emit(md.EndBlock{})
-	ctx.Emit(md.EndBlock{})
+	ctx.Emit(md.End{})
+	ctx.Emit(md.End{})
 	return false, err
 }
 func pass(parser *Parser, next Line, bytes []byte) (bool, error) {

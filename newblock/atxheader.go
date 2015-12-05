@@ -27,7 +27,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 		}
 		ctx.Emit(a)
 		// TODO(akavel): ctx.Emit(spans & text contents)
-		ctx.Emit(md.EndBlock{})
+		ctx.Emit(md.End{})
 		return true, nil
 	})
 }

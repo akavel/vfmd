@@ -16,7 +16,7 @@ func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handl
 	var carry *Line
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		if next.EOF() {
-			ctx.Emit(md.EndBlock{})
+			ctx.Emit(md.End{})
 			return false, nil
 		}
 		prev := carry
@@ -27,7 +27,7 @@ func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handl
 		}
 		// TODO(akavel): support HTML parser & related interactions [#paragraph-line-sequence]
 		if prev.isBlank() {
-			ctx.Emit(md.EndBlock{})
+			ctx.Emit(md.End{})
 			return false, nil
 		}
 		if !next.hasFourSpacePrefix() {
@@ -35,7 +35,7 @@ func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handl
 				(p.InQuote && bytes.HasPrefix(bytes.TrimLeft(next.Bytes, " "), []byte(">"))) ||
 				(p.InList && reOrderedList.Match(next.Bytes)) ||
 				(p.InList && reUnorderedList.Match(next.Bytes)) {
-				ctx.Emit(md.EndBlock{})
+				ctx.Emit(md.End{})
 				return false, nil
 			}
 		}
