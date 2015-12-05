@@ -4,36 +4,16 @@ import "sort"
 
 type NodeType int
 
-const (
-	EmphasisNode NodeType = iota
-	LinkNode
-	// RawHTMLNode // TODO(akavel): HTML
-)
-
 type OpeningsStack []MaybeOpening
 type MaybeOpening struct {
-	Tag []byte
-	NodeType
-	LinkStart int
-	// HTMLTag
+	Tag string
+	Pos int
+	// TODO(akavel): HTMLTag
 }
 
-func (s OpeningsStack) IsTopmostOfType(i int) bool {
-	if i < 0 || i > len(s) {
-		return false
-	}
-	for _, over := range s[i+1:] {
-		if over.NodeType == s[i].NodeType {
-			return false
-		}
-	}
-	// TODO(akavel): HTML
-	return true
-}
-
-func (s OpeningsStack) NullTopmostOfType(t NodeType) bool {
+func (s OpeningsStack) NullTopmostTagged(tag string) bool {
 	for _, node := range s {
-		if node.NodeType == t {
+		if node.Tag == tag {
 			return false
 		}
 	}
@@ -60,7 +40,7 @@ func (s *OpeningsStack) Pop() {
 func (s *OpeningsStack) deleteLinks() {
 	filtered := make(OpeningsStack, 0, len(*s))
 	for _, o := range *s {
-		if o.NodeType != LinkNode {
+		if o.Tag != "[" {
 			filtered = append(filtered, o)
 		}
 	}
