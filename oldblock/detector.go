@@ -1,4 +1,4 @@
-package block // import "gopkg.in/akavel/vfmd.v0/block"
+package block // import "gopkg.in/akavel/vfmd.v0/oldblock"
 
 import (
 	"bytes"

@@ -3,7 +3,7 @@ package vfmd
 import (
 	"io"
 
-	"gopkg.in/akavel/vfmd.v0/block"
+	"gopkg.in/akavel/vfmd.v0/oldblock"
 	"gopkg.in/akavel/vfmd.v0/span"
 )
 

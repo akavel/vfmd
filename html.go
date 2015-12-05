@@ -6,8 +6,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"gopkg.in/akavel/vfmd.v0/block"
 	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/oldblock"
 	"gopkg.in/akavel/vfmd.v0/span"
 )
 
