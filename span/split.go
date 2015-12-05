@@ -1,6 +1,10 @@
 package span
 
-import "sort"
+import (
+	"sort"
+
+	"gopkg.in/akavel/vfmd.v0/md"
+)
 
 type NodeType int
 
@@ -47,20 +51,14 @@ func (s *OpeningsStack) deleteLinks() {
 	*s = filtered
 }
 
-type Span struct {
-	// Pos is a subslice of the original input buffer
-	Pos []byte
-	Tag interface{}
-}
-
 type Context struct {
-	Buf      []byte
-	Pos      int
-	Openings OpeningsStack
-	Spans    []Span
+	Region    md.Region
+	Run, Byte int
+	Openings  OpeningsStack
+	Tags      []md.Tag
 }
 
-func Parse(buf []byte, detectors []Detector) []Span {
+func Parse(buf []byte, detectors []Detector) []md.Tag {
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
