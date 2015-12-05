@@ -29,33 +29,33 @@ func (Prose) GetProse() Region
 
 plus see below:
 */
-func mkrun(line int, s string) Run { return Run{line, []byte(s)} }
+func mkrun(line int, s string) md.Run { return md.Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []Tag{
 	md.QuoteBlock{},
 	md.UnorderedListBlock{},
 	md.ItemBlock{},
 	md.ParagraphBlock{},
-	Prose{mkrun(0, "some text ")},
+	md.Prose{mkrun(0, "some text ")},
 	md.Emphasis{Level: 2},
-	Prose{mkrun(0, "specifically ")},
+	md.Prose{mkrun(0, "specifically ")},
 	md.Emphasis{Level: 1},
-	Prose{mkrun(0, "interesting")},
+	md.Prose{mkrun(0, "interesting")},
 	md.End{}, // Emph
 	md.End{}, // Emph
-	Prose{mkrun(0, " for us.")},
+	md.Prose{mkrun(0, " for us.")},
 	md.End{}, // Para
 	md.End{}, // Item
 	md.ItemBlock{},
 	md.AtxHeaderBlock{Level: 2},
-	Prose{mkrun(1, "Hello, ")},
+	md.Prose{mkrun(1, "Hello, ")},
 	md.Emphasis{Level: 2},
 	md.Link{},
-	Prose{mkrun(1, "new")},
+	md.Prose{mkrun(1, "new")},
 	md.End{}, // Link
 	md.End{}, // Emph
 	md.Emphasis{Level: 1},
-	Prose{mkrun(1, " world.")},
+	md.Prose{mkrun(1, " world.")},
 	md.End{}, // Emph
 	md.End{}, // Atx
 	md.ParagraphBlock{},

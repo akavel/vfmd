@@ -35,24 +35,6 @@ const (
 
 type Tag interface{}
 
-type Region []Run
-
-// TODO(akavel): rename Run to something prettier?
-type Run struct {
-	Line  int
-	Bytes []byte // with Line, allows to find out position in line
-}
-
-// func (r Run) String() string { return string(r.Bytes) }
-
-type Prose Region
-
-func (p Prose) Prose() Region { return Region(p) }
-
-type Proser interface {
-	Prose() Region
-}
-
 type Context interface {
 	GetMode() Mode
 	GetDetectors() Detectors
@@ -161,7 +143,7 @@ func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
 }
 
 // Line is a Run that may have at most one '\n', as last byte
-type Line Run
+type Line md.Run
 
 func (line Line) EOF() bool { return line.Bytes == nil }
 func (line Line) isBlank() bool {
