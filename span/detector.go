@@ -47,9 +47,8 @@ func DetectLink(s *Context) (consumed int) {
 	// "opening link tag"?
 	if c == '[' {
 		s.Openings.Push(MaybeOpening{
-			Tag:       s.Buf[s.Pos : s.Pos+1],
-			NodeType:  LinkNode,
-			LinkStart: s.Pos + 1,
+			Tag: "[",
+			Pos: s.Pos,
 		})
 		return 1
 	}
@@ -72,7 +71,7 @@ var (
 )
 
 func closingLinkTag(s *Context) (consumed int) {
-	if s.Openings.NullTopmostOfType(LinkNode) {
+	if s.Openings.NullTopmostTagged("[") {
 		return 1 // consume the ']'
 	}
 	rest := s.Buf[s.Pos:]
@@ -81,11 +80,12 @@ func closingLinkTag(s *Context) (consumed int) {
 	m := reClosingTagRef.FindSubmatch(rest)
 	if m != nil {
 		// cancel all unclosed spans inside the link
-		for s.Openings.Peek().NodeType != LinkNode {
+		for s.Openings.Peek().Tag != "[" {
 			s.Openings.Pop()
 		}
 		// emit a link
-		s.Emit(s.Openings.Peek().Tag, md.Link{
+		opening := s.Openings.Peek()
+		s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
 			ReferenceID: utils.Simplify(m[1]),
 		})
 		s.Emit(m[0], md.End{})
@@ -116,11 +116,12 @@ func closingLinkTag(s *Context) (consumed int) {
 				title = strings.Replace(string(unquoted), "\u000a", "", -1)
 			}
 			// cancel all unclosed spans inside the link
-			for s.Openings.Peek().NodeType != LinkNode {
+			for s.Openings.Peek().Tag != "[" {
 				s.Openings.Pop()
 			}
 			// emit a link
-			s.Emit(s.Openings.Peek().Tag, md.Link{
+			opening := s.Openings.Peek()
+			s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
 				URL:   linkURL,
 				Title: title,
 			})
@@ -140,13 +141,13 @@ func closingLinkTag(s *Context) (consumed int) {
 		m = [][]byte{rest[:1]}
 	}
 	// cancel all unclosed spans inside the link
-	for s.Openings.Peek().NodeType != LinkNode {
+	for s.Openings.Peek().Tag != "[" {
 		s.Openings.Pop()
 	}
 	// emit a link
 	begin := s.Openings.Peek()
-	s.Emit(begin.Tag, md.Link{
-		ReferenceID: utils.Simplify(s.Buf[begin.LinkStart:s.Pos]),
+	s.Emit(s.Buf[begin.Pos:][:len(begin.Tag)], md.Link{
+		ReferenceID: utils.Simplify(s.Buf[begin.Pos+len(begin.Tag) : s.Pos]),
 	})
 	s.Emit(m[0], md.End{})
 	s.Openings.Pop()
@@ -188,9 +189,10 @@ func DetectEmphasis(s *Context) (consumed int) {
 	// left-flanking? if yes, add some openings
 	if flanking < 0 {
 		for _, tag := range tags {
+			pos, _ := utils.OffsetIn(s.Buf, tag)
 			s.Openings.Push(MaybeOpening{
-				Tag:      tag,
-				NodeType: EmphasisNode,
+				Tag: string(tag),
+				Pos: pos,
 			})
 		}
 		return len(indicator)
@@ -206,7 +208,7 @@ func closingEmphasisTags(s *Context, tags [][]byte) {
 		// find topmost opening of matching emphasis type
 		tag := tags[0]
 		i := len(s.Openings) - 1
-		for i >= 0 && (s.Openings[i].NodeType != EmphasisNode || !bytes.HasPrefix(s.Openings[i].Tag, tag[:1])) {
+		for i >= 0 && !strings.HasPrefix(s.Openings[i].Tag, string(tag[:1])) {
 			i--
 		}
 		// no opening node of this type, try next tag
@@ -227,17 +229,17 @@ func matchEmphasisTag(s *Context, tag []byte) []byte {
 	top := s.Openings.Peek()
 	if len(top.Tag) > len(tag) {
 		n := len(tag)
-		s.Emit(top.Tag[len(top.Tag)-n:], md.Emphasis{Level: n})
+		s.Emit(s.Buf[top.Pos:][len(top.Tag)-n:len(top.Tag)], md.Emphasis{Level: n})
 		s.Emit(tag, md.End{})
 		top.Tag = top.Tag[:len(top.Tag)-n]
 		return nil
+	} else { // len(top.Tag) <= len(tag)
+		n := len(top.Tag)
+		s.Emit(s.Buf[top.Pos:][:len(top.Tag)], md.Emphasis{Level: n})
+		s.Emit(tag[:n], md.End{})
+		s.Openings.Pop()
+		return tag[n:]
 	}
-	// now len(top.Tag) <= len(tag)
-	n := len(top.Tag)
-	s.Emit(top.Tag, md.Emphasis{Level: n})
-	s.Emit(tag[:n], md.End{})
-	s.Openings.Pop()
-	return tag[n:]
 }
 
 func isEmph(c byte) bool { return c == '*' || c == '_' }
