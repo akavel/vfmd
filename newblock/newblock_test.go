@@ -10,8 +10,8 @@ import (
 	"github.com/kylelemons/godebug/diff"
 
 	"gopkg.in/akavel/vfmd.v0"
+	"gopkg.in/akavel/vfmd.v0/md"
 	. "gopkg.in/akavel/vfmd.v0/newblock"
-	"gopkg.in/akavel/vfmd.v0/span"
 )
 
 /*
@@ -37,29 +37,29 @@ var newApproach_flatOutput = []Tag{
 	Item{},
 	Paragraph{InQuote: true, InList: true},
 	Prose{mkrun(0, "some text ")},
-	span.Emphasis{Level: 2},
+	md.Emphasis{Level: 2},
 	Prose{mkrun(0, "specifically ")},
-	span.Emphasis{Level: 1},
+	md.Emphasis{Level: 1},
 	Prose{mkrun(0, "interesting")},
-	span.End{}, // Emph
-	span.End{}, // Emph
+	md.End{}, // Emph
+	md.End{}, // Emph
 	Prose{mkrun(0, " for us.")},
 	End{}, // Para
 	End{}, // Item
 	Item{},
 	AtxHeader{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
-	&span.Emphasis{Level: 2},
-	&span.Link{},
+	md.Emphasis{Level: 2},
+	md.Link{},
 	Prose{mkrun(1, "new")},
-	span.End{}, // Link
-	span.End{}, // Emph
-	span.Emphasis{Level: 1},
+	md.End{}, // Link
+	md.End{}, // Emph
+	md.Emphasis{Level: 1},
 	Prose{mkrun(1, " world.")},
-	span.End{}, // Emph
-	End{},      // Atx
+	md.End{}, // Emph
+	End{},    // Atx
 	Paragraph{},
-	span.Image{},
+	md.Image{},
 	// no End, Image is self-closing!
 	End{}, // Para
 	End{}, // Item

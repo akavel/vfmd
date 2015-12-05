@@ -7,6 +7,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"gopkg.in/akavel/vfmd.v0/block"
+	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/span"
 )
 
@@ -49,7 +50,7 @@ func htmls(b Block, w io.Writer) {
 func htmlss(s span.Span, w io.Writer) {
 	wr := func(s string) { w.Write([]byte(s)) }
 	switch t := s.Tag.(type) {
-	case span.Emphasis:
+	case md.Emphasis:
 		switch t.Level {
 		case 1:
 			wr("<em>")

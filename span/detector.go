@@ -7,6 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
@@ -84,10 +85,10 @@ func closingLinkTag(s *Context) (consumed int) {
 			s.Openings.Pop()
 		}
 		// emit a link
-		s.Emit(s.Openings.Peek().Tag, Link{
+		s.Emit(s.Openings.Peek().Tag, md.Link{
 			ReferenceID: utils.Simplify(m[1]),
 		})
-		s.Emit(m[0], End{})
+		s.Emit(m[0], md.End{})
 		s.Openings.Pop()
 		// cancel all unclosed links
 		s.Openings.deleteLinks()
@@ -119,12 +120,12 @@ func closingLinkTag(s *Context) (consumed int) {
 				s.Openings.Pop()
 			}
 			// emit a link
-			s.Emit(s.Openings.Peek().Tag, Link{
+			s.Emit(s.Openings.Peek().Tag, md.Link{
 				URL:   linkURL,
 				Title: title,
 			})
 			closing := rest[:len(rest)-len(residual)+len(t[0])]
-			s.Emit(closing, End{})
+			s.Emit(closing, md.End{})
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
@@ -144,17 +145,15 @@ func closingLinkTag(s *Context) (consumed int) {
 	}
 	// emit a link
 	begin := s.Openings.Peek()
-	s.Emit(begin.Tag, Link{
+	s.Emit(begin.Tag, md.Link{
 		ReferenceID: utils.Simplify(s.Buf[begin.LinkStart:s.Pos]),
 	})
-	s.Emit(m[0], End{})
+	s.Emit(m[0], md.End{})
 	s.Openings.Pop()
 	// cancel all unclosed links
 	s.Openings.deleteLinks()
 	return len(m[0])
 }
-
-type Link struct{ ReferenceID, URL, Title string }
 
 func DetectEmphasis(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
@@ -228,15 +227,15 @@ func matchEmphasisTag(s *Context, tag []byte) []byte {
 	top := s.Openings.Peek()
 	if len(top.Tag) > len(tag) {
 		n := len(tag)
-		s.Emit(top.Tag[len(top.Tag)-n:], Emphasis{Level: n})
-		s.Emit(tag, End{})
+		s.Emit(top.Tag[len(top.Tag)-n:], md.Emphasis{Level: n})
+		s.Emit(tag, md.End{})
 		top.Tag = top.Tag[:len(top.Tag)-n]
 		return nil
 	}
 	// now len(top.Tag) <= len(tag)
 	n := len(top.Tag)
-	s.Emit(top.Tag, Emphasis{Level: n})
-	s.Emit(tag[:n], End{})
+	s.Emit(top.Tag, md.Emphasis{Level: n})
+	s.Emit(tag[:n], md.End{})
 	s.Openings.Pop()
 	return tag[n:]
 }
@@ -256,8 +255,6 @@ func emphasisFringeRank(r rune) int {
 		return 2
 	}
 }
-
-type Emphasis struct{ Level int }
 
 func DetectCode(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
@@ -280,7 +277,7 @@ func DetectCode(s *Context) (consumed int) {
 			// found closing tag!
 			code := rest[len(opening) : i-len(opening)]
 			code = bytes.Trim(code, utils.Whites)
-			s.Emit(rest[:i], Code{Code: code})
+			s.Emit(rest[:i], md.Code{Code: code})
 			return i
 		}
 		for i < len(rest) && rest[i] == '`' {
@@ -290,8 +287,6 @@ func DetectCode(s *Context) (consumed int) {
 		}
 	}
 }
-
-type Code struct{ Code []byte }
 
 func DetectImage(s *Context) (consumed int) {
 	rest := s.Buf[s.Pos:]
@@ -314,7 +309,7 @@ func DetectImage(s *Context) (consumed int) {
 		if refID == "" {
 			refID = utils.Simplify(altText)
 		}
-		s.Emit(tag, Image{
+		s.Emit(tag, md.Image{
 			AltText:     altText,
 			ReferenceID: refID,
 		})
@@ -334,7 +329,7 @@ func DetectImage(s *Context) (consumed int) {
 		closing = r[0]
 	}
 	tag := rest[:len(rest)-len(residual)+len(closing)]
-	s.Emit(tag, Image{
+	s.Emit(tag, md.Image{
 		ReferenceID: utils.Simplify(altText),
 		AltText:     altText,
 	})
@@ -397,20 +392,13 @@ func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consum
 
 	rest := s.Buf[s.Pos:]
 	tag := rest[:prefix+(len(residual)-len(attrs))+len(a[0])]
-	s.Emit(tag, Image{
+	s.Emit(tag, md.Image{
 		// TODO(akavel): keep only raw slices as fields, add methods to return processed strings
 		URL:     utils.DelWhites(string(unprocessedSrc)),
 		Title:   title,
 		AltText: altText,
 	})
 	return len(tag)
-}
-
-type Image struct {
-	ReferenceID string
-	URL         string
-	Title       string
-	AltText     []byte
 }
 
 func DetectAutomaticLink(s *Context) (consumed int) {
@@ -432,7 +420,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 	}
 	if m != nil {
 		url := utils.DelWhites(string(m[1]))
-		s.Emit(m[0], AutomaticLink{
+		s.Emit(m[0], md.AutomaticLink{
 			URL:  url,
 			Text: url,
 		})
@@ -442,7 +430,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 	// e.g.: "<someone@example.net>"
 	m = reMailWithinAngle.FindSubmatch(rest)
 	if m != nil {
-		s.Emit(m[0], AutomaticLink{
+		s.Emit(m[0], md.AutomaticLink{
 			URL:  "mailto:" + string(m[1]),
 			Text: string(m[1]),
 		})
@@ -470,7 +458,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 		if len(tag) <= len(scheme) {
 			return len(scheme)
 		}
-		s.Emit(tag, AutomaticLink{
+		s.Emit(tag, md.AutomaticLink{
 			URL:  string(tag),
 			Text: string(tag),
 		})
@@ -498,5 +486,3 @@ func isWordSep(r rune) bool {
 func isSpeculativeURLEnd(r rune) bool {
 	return r != '\u002f' && isWordSep(r)
 }
-
-type AutomaticLink struct{ URL, Text string }

@@ -104,7 +104,7 @@ func postProcess(b blockser, lines []block.Line) []Block {
 				buf = append(buf, s...)
 				buf = append(buf, '\n')
 			}
-			b.Spans = span.Split(buf, nil)
+			b.Spans = span.Parse(buf, nil)
 		}
 		result = append(result, b)
 	}
