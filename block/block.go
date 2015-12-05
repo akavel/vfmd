@@ -33,23 +33,21 @@ const (
 	TopBlocks
 )
 
-type Tag interface{}
-
 type Context interface {
 	GetMode() Mode
 	GetDetectors() Detectors
-	Emit(Tag)
+	Emit(md.Tag)
 }
 
 type defaultContext struct {
 	mode      Mode
-	tags      []Tag
+	tags      []md.Tag
 	detectors Detectors
 }
 
 func (c *defaultContext) GetMode() Mode           { return c.mode }
 func (c *defaultContext) GetDetectors() Detectors { return c.detectors }
-func (c *defaultContext) Emit(tag Tag)            { c.tags = append(c.tags, tag) }
+func (c *defaultContext) Emit(tag md.Tag)         { c.tags = append(c.tags, tag) }
 
 type Parser struct {
 	Context
@@ -108,7 +106,7 @@ func (p *Parser) WriteLine(line Line) error {
 }
 
 // Important: r must be pre-processed with vfmd.QuickPrep or vfmd.Preprocessor
-func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]Tag, error) {
+func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]md.Tag, error) {
 	scan := bufio.NewScanner(r)
 	scan.Split(splitKeepingEOLs)
 	if detectors == nil {

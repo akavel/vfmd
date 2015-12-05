@@ -31,7 +31,7 @@ plus see below:
 */
 func mkrun(line int, s string) md.Run { return md.Run{line, []byte(s)} }
 
-var newApproach_flatOutput = []Tag{
+var newApproach_flatOutput = []md.Tag{
 	md.QuoteBlock{},
 	md.UnorderedListBlock{},
 	md.ItemBlock{},

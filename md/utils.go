@@ -17,3 +17,5 @@ func (p Prose) Prose() Region { return Region(p) }
 type Proser interface {
 	Prose() Region
 }
+
+type Tag interface{}
