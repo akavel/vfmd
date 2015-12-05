@@ -432,7 +432,7 @@ func DetectAutomaticLink(s *Splitter) (consumed int) {
 	}
 	if m != nil {
 		url := utils.DelWhites(string(m[1]))
-		s.Emit(m[0], AutoLink{
+		s.Emit(m[0], AutomaticLink{
 			URL:  url,
 			Text: url,
 		})
@@ -442,7 +442,7 @@ func DetectAutomaticLink(s *Splitter) (consumed int) {
 	// e.g.: "<someone@example.net>"
 	m = reMailWithinAngle.FindSubmatch(rest)
 	if m != nil {
-		s.Emit(m[0], AutoLink{
+		s.Emit(m[0], AutomaticLink{
 			URL:  "mailto:" + string(m[1]),
 			Text: string(m[1]),
 		})
@@ -470,7 +470,7 @@ func DetectAutomaticLink(s *Splitter) (consumed int) {
 		if len(tag) <= len(scheme) {
 			return len(scheme)
 		}
-		s.Emit(tag, AutoLink{
+		s.Emit(tag, AutomaticLink{
 			URL:  string(tag),
 			Text: string(tag),
 		})
@@ -499,4 +499,4 @@ func isSpeculativeURLEnd(r rune) bool {
 	return r != '\u002f' && isWordSep(r)
 }
 
-type AutoLink struct{ URL, Text string }
+type AutomaticLink struct{ URL, Text string }

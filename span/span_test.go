@@ -89,70 +89,70 @@ func emE(tag string) Span { return Span{bb(tag), End{}} }
 func TestSpan(test *testing.T) {
 	cases := []spanCase{
 		lines(`automatic_links/angle_brackets_in_link.md`, spans{
-			{bb("http://exampl"), AutoLink{URL: `http://exampl`, Text: `http://exampl`}},
+			{bb("http://exampl"), AutomaticLink{URL: `http://exampl`, Text: `http://exampl`}},
 			// TODO(akavel): below is expected by testdata/, but
 			// invalid according to spec, because preceding "<" is
 			// not a 'word-separator' character (it has unicode
 			// general class Sm - "Symbol, math"); try to resolve
 			// this with the spec author.
-			// {bb("http://exampl"), AutoLink{URL: `http://exampl`, Text: `http://exampl`}},
+			// {bb("http://exampl"), AutomaticLink{URL: `http://exampl`, Text: `http://exampl`}},
 		}),
 		lines("automatic_links/ending_with_punctuation.md", spans{
-			{bb("http://example.net"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
-			{bb("http://example.net/"), AutoLink{URL: "http://example.net/", Text: "http://example.net/"}},
-			{bb("http://example.net"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
-			{bb("http://example.net/"), AutoLink{URL: "http://example.net/", Text: "http://example.net/"}},
+			{bb("http://example.net"), AutomaticLink{URL: "http://example.net", Text: "http://example.net"}},
+			{bb("http://example.net/"), AutomaticLink{URL: "http://example.net/", Text: "http://example.net/"}},
+			{bb("http://example.net"), AutomaticLink{URL: "http://example.net", Text: "http://example.net"}},
+			{bb("http://example.net/"), AutomaticLink{URL: "http://example.net/", Text: "http://example.net/"}},
 
-			{bb("<http://example.net,>"), AutoLink{URL: "http://example.net,", Text: "http://example.net,"}},
-			{bb("<http://example.net/,>"), AutoLink{URL: "http://example.net/,", Text: "http://example.net/,"}},
-			{bb("<http://example.net)>"), AutoLink{URL: "http://example.net)", Text: "http://example.net)"}},
-			{bb("<http://example.net/)>"), AutoLink{URL: "http://example.net/)", Text: "http://example.net/)"}},
+			{bb("<http://example.net,>"), AutomaticLink{URL: "http://example.net,", Text: "http://example.net,"}},
+			{bb("<http://example.net/,>"), AutomaticLink{URL: "http://example.net/,", Text: "http://example.net/,"}},
+			{bb("<http://example.net)>"), AutomaticLink{URL: "http://example.net)", Text: "http://example.net)"}},
+			{bb("<http://example.net/)>"), AutomaticLink{URL: "http://example.net/)", Text: "http://example.net/)"}},
 		}),
 		lines("automatic_links/mail_url_in_angle_brackets.md", spans{
-			{bb("<mailto:someone@example.net>"), AutoLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
-			{bb("<someone@example.net>"), AutoLink{URL: "mailto:someone@example.net", Text: "someone@example.net"}},
+			{bb("<mailto:someone@example.net>"), AutomaticLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
+			{bb("<someone@example.net>"), AutomaticLink{URL: "mailto:someone@example.net", Text: "someone@example.net"}},
 		}),
 		lines("automatic_links/mail_url_without_angle_brackets.md", spans{
 			// NOTE(akavel): below line is unexpected according to
 			// testdata/, but from spec this seems totally expected,
 			// so I added it
-			{bb("mailto:someone@example.net"), AutoLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
+			{bb("mailto:someone@example.net"), AutomaticLink{URL: "mailto:someone@example.net", Text: "mailto:someone@example.net"}},
 		}),
 		lines("automatic_links/url_schemes.md", spans{
-			{bb("http://example.net"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
-			{bb("<http://example.net>"), AutoLink{URL: "http://example.net", Text: "http://example.net"}},
-			{bb("file:///tmp/tmp.html"), AutoLink{URL: "file:///tmp/tmp.html", Text: "file:///tmp/tmp.html"}},
-			{bb("<file:///tmp/tmp.html>"), AutoLink{URL: "file:///tmp/tmp.html", Text: "file:///tmp/tmp.html"}},
-			{bb("feed://example.net/rss.xml"), AutoLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
-			{bb("<feed://example.net/rss.xml>"), AutoLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
-			{bb("googlechrome://example.net/"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
-			{bb("<googlechrome://example.net/>"), AutoLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
+			{bb("http://example.net"), AutomaticLink{URL: "http://example.net", Text: "http://example.net"}},
+			{bb("<http://example.net>"), AutomaticLink{URL: "http://example.net", Text: "http://example.net"}},
+			{bb("file:///tmp/tmp.html"), AutomaticLink{URL: "file:///tmp/tmp.html", Text: "file:///tmp/tmp.html"}},
+			{bb("<file:///tmp/tmp.html>"), AutomaticLink{URL: "file:///tmp/tmp.html", Text: "file:///tmp/tmp.html"}},
+			{bb("feed://example.net/rss.xml"), AutomaticLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
+			{bb("<feed://example.net/rss.xml>"), AutomaticLink{URL: "feed://example.net/rss.xml", Text: "feed://example.net/rss.xml"}},
+			{bb("googlechrome://example.net/"), AutomaticLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
+			{bb("<googlechrome://example.net/>"), AutomaticLink{URL: "googlechrome://example.net/", Text: "googlechrome://example.net/"}},
 			{bb("`<>`"), Code{bb("<>")}},
 			// NOTE(akavel): below line is unexpected according to
 			// testdata/, but from spec this seems totally expected,
 			// so I added it
-			{bb("mailto:me@example.net"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
-			{bb("<mailto:me@example.net>"), AutoLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
+			{bb("mailto:me@example.net"), AutomaticLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
+			{bb("<mailto:me@example.net>"), AutomaticLink{URL: "mailto:me@example.net", Text: "mailto:me@example.net"}},
 		}),
 		lines("automatic_links/url_special_chars.md", spans{
-			{bb(`http://example.net/*#$%^&\~/blah`), AutoLink{URL: `http://example.net/*#$%^&\~/blah`, Text: `http://example.net/*#$%^&\~/blah`}},
-			{bb(`<http://example.net/*#$%^&\~)/blah>`), AutoLink{URL: `http://example.net/*#$%^&\~)/blah`, Text: `http://example.net/*#$%^&\~)/blah`}},
+			{bb(`http://example.net/*#$%^&\~/blah`), AutomaticLink{URL: `http://example.net/*#$%^&\~/blah`, Text: `http://example.net/*#$%^&\~/blah`}},
+			{bb(`<http://example.net/*#$%^&\~)/blah>`), AutomaticLink{URL: `http://example.net/*#$%^&\~)/blah`, Text: `http://example.net/*#$%^&\~)/blah`}},
 			// NOTE(akavel): testdata expects below commented entry,
 			// but this seems wrong compared to spec; I've added
 			// fixed entry
-			// {bb(`http://example.net/blah/`), AutoLink{URL: `http://example.net/blah/`, Text: `http://example.net/blah/`}},
-			{bb(`http://example.net/blah/*#$%^&\~`), AutoLink{URL: `http://example.net/blah/*#$%^&\~`, Text: `http://example.net/blah/*#$%^&\~`}},
-			{bb(`<http://example.net/blah/*#$%^&\~)>`), AutoLink{URL: `http://example.net/blah/*#$%^&\~)`, Text: `http://example.net/blah/*#$%^&\~)`}},
+			// {bb(`http://example.net/blah/`), AutomaticLink{URL: `http://example.net/blah/`, Text: `http://example.net/blah/`}},
+			{bb(`http://example.net/blah/*#$%^&\~`), AutomaticLink{URL: `http://example.net/blah/*#$%^&\~`, Text: `http://example.net/blah/*#$%^&\~`}},
+			{bb(`<http://example.net/blah/*#$%^&\~)>`), AutomaticLink{URL: `http://example.net/blah/*#$%^&\~)`, Text: `http://example.net/blah/*#$%^&\~)`}},
 		}),
 		lines("automatic_links/web_url_in_angle_brackets.md", spans{
-			{bb("<http://example.net/path/>"), AutoLink{URL: "http://example.net/path/", Text: "http://example.net/path/"}},
-			{bb("<https://example.net/path/>"), AutoLink{URL: "https://example.net/path/", Text: "https://example.net/path/"}},
-			{bb("<ftp://example.net/path/>"), AutoLink{URL: "ftp://example.net/path/", Text: "ftp://example.net/path/"}},
+			{bb("<http://example.net/path/>"), AutomaticLink{URL: "http://example.net/path/", Text: "http://example.net/path/"}},
+			{bb("<https://example.net/path/>"), AutomaticLink{URL: "https://example.net/path/", Text: "https://example.net/path/"}},
+			{bb("<ftp://example.net/path/>"), AutomaticLink{URL: "ftp://example.net/path/", Text: "ftp://example.net/path/"}},
 		}),
 		lines("automatic_links/web_url_without_angle_brackets.md", spans{
-			{bb("http://example.net/path/"), AutoLink{URL: "http://example.net/path/", Text: "http://example.net/path/"}},
-			{bb("https://example.net/path/"), AutoLink{URL: "https://example.net/path/", Text: "https://example.net/path/"}},
-			{bb("ftp://example.net/path/"), AutoLink{URL: "ftp://example.net/path/", Text: "ftp://example.net/path/"}},
+			{bb("http://example.net/path/"), AutomaticLink{URL: "http://example.net/path/", Text: "http://example.net/path/"}},
+			{bb("https://example.net/path/"), AutomaticLink{URL: "https://example.net/path/", Text: "https://example.net/path/"}},
+			{bb("ftp://example.net/path/"), AutomaticLink{URL: "ftp://example.net/path/", Text: "ftp://example.net/path/"}},
 		}),
 		lines("code/end_of_codespan.md", spans{
 			{bb("`code span`"), Code{bb("code span")}},
