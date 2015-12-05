@@ -7,10 +7,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/diff"
+
 	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/utils"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func bb(s string) []byte { return []byte(s) }
@@ -67,21 +68,6 @@ func blocks(filename string, spans spans, opts ...opt) spanCase {
 		blocks: bytes.Split(buf, []byte("\n\n")),
 		spans:  spans,
 	}
-}
-
-func diff(ok, bad []Span) string {
-	for i := range ok {
-		if i >= len(bad) {
-			return fmt.Sprintf("ends abruptly at position %d, expected:\n%s",
-				i, spew.Sdump(ok[i]))
-		}
-		if !reflect.DeepEqual(ok[i], bad[i]) {
-			return fmt.Sprintf("position %d, expected:\n%sgot:\n%s",
-				i, spew.Sdump(ok[i]), spew.Sdump(bad[i]))
-		}
-	}
-	return fmt.Sprintf("too many nodes, starting at position %d:\n%s",
-		len(ok), spew.Sdump(bad[len(ok)]))
 }
 
 func emB(tag string) Span { return Span{bb(tag), md.Emphasis{len(tag)}} }
@@ -721,9 +707,14 @@ func TestSpan(test *testing.T) {
 					i, off, err, spew.Sdump(span))
 			}
 			test.Errorf("blocks:\n%s", spew.Sdump(c.blocks))
-			test.Errorf("QUICK DIFF: %s\n", diff(c.spans, spans))
+			test.Errorf("expected vs. got DIFF:\n%s",
+				diff.Diff(spew.Sdump(c.spans), spew.Sdump(spans)))
 		}
 	}
+}
+
+func init() {
+	spew.Config.Indent = "  "
 }
 
 /*
