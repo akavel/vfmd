@@ -14,19 +14,21 @@ type Detector interface {
 	Detect(*Splitter) (consumed int)
 }
 
+type DetectorFunc func(*Splitter) (consumed int)
+
+func (d DetectorFunc) Detect(s *Splitter) (consumed int) { return d(s) }
+
 var DefaultDetectors = []Detector{
-	EscapedChar{},
-	LinkTags{},
-	EmphasisTags{},
-	CodeTags{},
-	ImageTags{},
-	AutomaticLinks{},
-	// TODO(akavel): HTMLTags{},
+	DetectorFunc(DetectEscapedChar),
+	DetectorFunc(DetectLink),
+	DetectorFunc(DetectEmphasis),
+	DetectorFunc(DetectCode),
+	DetectorFunc(DetectImage),
+	DetectorFunc(DetectAutomaticLink),
+	// TODO(akavel): DetectHTML,
 }
 
-type EscapedChar struct{}
-
-func (EscapedChar) Detect(s *Splitter) (consumed int) {
+func DetectEscapedChar(s *Splitter) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if len(rest) >= 2 && rest[0] == '\\' {
 		return 2
@@ -35,9 +37,7 @@ func (EscapedChar) Detect(s *Splitter) (consumed int) {
 	}
 }
 
-type LinkTags struct{}
-
-func (LinkTags) Detect(s *Splitter) (consumed int) {
+func DetectLink(s *Splitter) (consumed int) {
 	// [#procedure-for-identifying-link-tags]
 	c := s.Buf[s.Pos]
 	if c != '[' && c != ']' {
@@ -53,7 +53,7 @@ func (LinkTags) Detect(s *Splitter) (consumed int) {
 		return 1
 	}
 	// "closing link tag", c==']'
-	return LinkTags{}.closingLinkTag(s)
+	return closingLinkTag(s)
 }
 
 var (
@@ -70,7 +70,7 @@ var (
 	reEmptyRef = regexp.MustCompile(`^(\]\s*\[\s*\])`)
 )
 
-func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
+func closingLinkTag(s *Splitter) (consumed int) {
 	if s.Openings.NullTopmostOfType(LinkNode) {
 		return 1 // consume the ']'
 	}
@@ -156,9 +156,7 @@ func (LinkTags) closingLinkTag(s *Splitter) (consumed int) {
 
 type Link struct{ ReferenceID, URL, Title string }
 
-type EmphasisTags struct{}
-
-func (EmphasisTags) Detect(s *Splitter) (consumed int) {
+func DetectEmphasis(s *Splitter) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if !isEmph(rest[0]) {
 		return 0
@@ -261,9 +259,7 @@ func emphasisFringeRank(r rune) int {
 
 type Emphasis struct{ Level int }
 
-type CodeTags struct{}
-
-func (CodeTags) Detect(s *Splitter) (consumed int) {
+func DetectCode(s *Splitter) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if rest[0] != '`' {
 		return 0
@@ -297,9 +293,7 @@ func (CodeTags) Detect(s *Splitter) (consumed int) {
 
 type Code struct{ Code []byte }
 
-type ImageTags struct{}
-
-func (ImageTags) Detect(s *Splitter) (consumed int) {
+func DetectImage(s *Splitter) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if !bytes.HasPrefix(rest, []byte(`![`)) {
 		return 0
@@ -419,9 +413,7 @@ type Image struct {
 	AltText     []byte
 }
 
-type AutomaticLinks struct{}
-
-func (AutomaticLinks) Detect(s *Splitter) (consumed int) {
+func DetectAutomaticLink(s *Splitter) (consumed int) {
 	rest := s.Buf[s.Pos:]
 	if s.Pos > 0 && rest[0] != '<' {
 		r, _ := utf8.DecodeLastRune(s.Buf[:s.Pos])
