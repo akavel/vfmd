@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"gopkg.in/akavel/vfmd.v0/md"
 )
 
 // func unstack() {
@@ -32,7 +34,6 @@ const (
 )
 
 type Tag interface{}
-type End struct{}
 
 type Region []Run
 
@@ -227,7 +228,7 @@ var DefaultDetectors = Detectors{
 	// HorizontalRule{},
 	DetectorFunc(DetectUnorderedList),
 	// &OrderedList{},
-	Paragraph{},
+	ParagraphDetector{},
 }
 
 func (ds Detectors) Find(first, second Line) Handler {
@@ -242,13 +243,13 @@ func (ds Detectors) Find(first, second Line) Handler {
 
 func end(parser *Parser, ctx Context) (bool, error) {
 	err := parser.Close()
-	ctx.Emit(End{})
+	ctx.Emit(md.EndBlock{})
 	return false, err
 }
 func end2(parser *Parser, ctx Context) (bool, error) {
 	err := parser.Close()
-	ctx.Emit(End{})
-	ctx.Emit(End{})
+	ctx.Emit(md.EndBlock{})
+	ctx.Emit(md.EndBlock{})
 	return false, err
 }
 func pass(parser *Parser, next Line, bytes []byte) (bool, error) {

@@ -3,12 +3,9 @@ package block
 import (
 	"bytes"
 
+	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/utils"
 )
-
-type AtxHeader struct {
-	Level int
-}
 
 func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 	if !bytes.HasPrefix(first.Bytes, []byte("#")) {
@@ -20,7 +17,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 			return false, nil
 		}
 		done = true
-		a := AtxHeader{}
+		a := md.AtxHeaderBlock{}
 		text := bytes.Trim(line.Bytes, "#")
 		if len(text) > 0 {
 			a.Level, _ = utils.OffsetIn(line.Bytes, text)
@@ -30,7 +27,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 		}
 		ctx.Emit(a)
 		// TODO(akavel): ctx.Emit(spans & text contents)
-		ctx.Emit(End{})
+		ctx.Emit(md.EndBlock{})
 		return true, nil
 	})
 }

@@ -1,9 +1,10 @@
 package block
 
-import "bytes"
+import (
+	"bytes"
 
-type Quote struct {
-}
+	"gopkg.in/akavel/vfmd.v0/md"
+)
 
 func trimQuote(line []byte) []byte {
 	line = bytes.TrimLeft(line, " ")
@@ -28,7 +29,7 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 		carry = &next
 		if prev == nil {
 			// First line of block.
-			ctx.Emit(Quote{})
+			ctx.Emit(md.QuoteBlock{})
 			parser = &Parser{
 				Context: ctx,
 			}

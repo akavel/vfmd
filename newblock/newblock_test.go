@@ -32,10 +32,10 @@ plus see below:
 func mkrun(line int, s string) Run { return Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []Tag{
-	Quote{},
-	UnorderedList{},
-	Item{},
-	Paragraph{InQuote: true, InList: true},
+	md.QuoteBlock{},
+	md.UnorderedListBlock{},
+	md.ItemBlock{},
+	md.ParagraphBlock{},
 	Prose{mkrun(0, "some text ")},
 	md.Emphasis{Level: 2},
 	Prose{mkrun(0, "specifically ")},
@@ -44,10 +44,10 @@ var newApproach_flatOutput = []Tag{
 	md.End{}, // Emph
 	md.End{}, // Emph
 	Prose{mkrun(0, " for us.")},
-	End{}, // Para
-	End{}, // Item
-	Item{},
-	AtxHeader{Level: 2},
+	md.EndBlock{}, // Para
+	md.EndBlock{}, // Item
+	md.ItemBlock{},
+	md.AtxHeaderBlock{Level: 2},
 	Prose{mkrun(1, "Hello, ")},
 	md.Emphasis{Level: 2},
 	md.Link{},
@@ -56,15 +56,15 @@ var newApproach_flatOutput = []Tag{
 	md.End{}, // Emph
 	md.Emphasis{Level: 1},
 	Prose{mkrun(1, " world.")},
-	md.End{}, // Emph
-	End{},    // Atx
-	Paragraph{},
+	md.End{},      // Emph
+	md.EndBlock{}, // Atx
+	md.ParagraphBlock{},
 	md.Image{},
 	// no End, Image is self-closing!
-	End{}, // Para
-	End{}, // Item
-	End{}, // List
-	End{}, // Quote
+	md.EndBlock{}, // Para
+	md.EndBlock{}, // Item
+	md.EndBlock{}, // List
+	md.EndBlock{}, // Quote
 }
 
 var newApproach_outputSketch = `[]interface{}{

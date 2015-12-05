@@ -3,12 +3,9 @@ package block
 import (
 	"bytes"
 	"regexp"
-)
 
-type UnorderedList struct {
-	// Starter []byte
-}
-type Item struct{}
+	"gopkg.in/akavel/vfmd.v0/md"
+)
 
 var reUnorderedList = regexp.MustCompile(`^( *[\*\-\+] +)[^ ]`)
 
@@ -31,8 +28,8 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 		prev := carry
 		carry = &next
 		if prev == nil {
-			ctx.Emit(UnorderedList{})
-			ctx.Emit(Item{})
+			ctx.Emit(md.UnorderedListBlock{})
+			ctx.Emit(md.ItemBlock{})
 			parser = &Parser{
 				Context: ctx,
 			}
@@ -63,7 +60,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 			if err != nil {
 				return false, err
 			}
-			ctx.Emit(Item{})
+			ctx.Emit(md.ItemBlock{})
 			parser = &Parser{
 				Context: ctx,
 			}
