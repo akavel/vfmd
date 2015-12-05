@@ -1,6 +1,7 @@
 package span
 
 import (
+	"io"
 	"sort"
 
 	"gopkg.in/akavel/vfmd.v0/md"
@@ -52,10 +53,19 @@ func (s *OpeningsStack) deleteLinks() {
 }
 
 type Context struct {
-	Region    md.Region
-	Run, Byte int
-	Openings  OpeningsStack
-	Tags      []md.Tag
+	Region   md.Region
+	Pos      int
+	Openings OpeningsStack
+	tags     []PositionedTag
+}
+
+func (c *Context) Reader() io.Reader {
+	return c.Region.Reader(c.Pos)
+}
+
+type PositionedTag struct {
+	Tag md.Tag
+	Pos int
 }
 
 func Parse(buf []byte, detectors []Detector) []md.Tag {
@@ -77,24 +87,16 @@ walk:
 		}
 		s.Pos++
 	}
-	sort.Sort(sortedSpans(s.Spans))
+	sort.Sort(sortedTags(s.tags))
 	return s.Spans
 }
 
-type sortedSpans []Span
+type sortedTags []PositionedTag
 
-func (s sortedSpans) Len() int      { return len(s) }
-func (s sortedSpans) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s sortedSpans) Less(i, j int) bool {
-	iext, jext := s[i].Pos, s[j].Pos
-	iext, jext = iext[:cap(iext)], jext[:cap(jext)]
-	if &iext[cap(iext)-1] != &jext[cap(jext)-1] {
-		// TODO(akavel): panic
-		return false
-	}
-	return len(iext) > len(jext)
-}
+func (s sortedTags) Len() int           { return len(s) }
+func (s sortedTags) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s sortedTags) Less(i, j int) bool { return s[i].pos < s[j].pos }
 
-func (s *Context) Emit(slice []byte, tag interface{}) {
-	s.Spans = append(s.Spans, Span{slice, tag})
+func (s *Context) Emit(pos int, tag md.Tag) {
+	s.tags = append(s.tags, PositionedTag{Pos: pos, Tag: tag})
 }

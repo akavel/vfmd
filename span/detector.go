@@ -2,6 +2,7 @@ package span // import "gopkg.in/akavel/vfmd.v0/span"
 
 import (
 	"bytes"
+	"io"
 	"regexp"
 	"strings"
 	"unicode"
@@ -30,8 +31,9 @@ var DefaultDetectors = []Detector{
 }
 
 func DetectEscapedChar(s *Context) (consumed int) {
-	rest := s.Buf[s.Pos:]
-	if len(rest) >= 2 && rest[0] == '\\' {
+	buf := [2]byte{}
+	n, _ := io.ReadFull(s.Reader(), buf[:])
+	if n == 2 && buf[0] == '\\' {
 		return 2
 	} else {
 		return 0
@@ -40,7 +42,13 @@ func DetectEscapedChar(s *Context) (consumed int) {
 
 func DetectLink(s *Context) (consumed int) {
 	// [#procedure-for-identifying-link-tags]
-	c := s.Buf[s.Pos]
+	buf := [1]byte{}
+	n, _ := io.ReadFull(s.Reader(), buf[:])
+	if n < 1 {
+		// FIXME(akavel): this should never happen, so probably unnecessary?
+		return 0
+	}
+	c := buf[0]
 	if c != '[' && c != ']' {
 		return 0
 	}
