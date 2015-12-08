@@ -32,8 +32,7 @@ var DefaultDetectors = []Detector{
 
 func DetectEscapedChar(s *Context) (consumed int) {
 	buf := [2]byte{}
-	n, _ := io.ReadFull(s.Reader(), buf[:])
-	if n == 2 && buf[0] == '\\' {
+	if s.readFull(buf[:]) && buf[0] == '\\' {
 		return 2
 	} else {
 		return 0
@@ -43,8 +42,7 @@ func DetectEscapedChar(s *Context) (consumed int) {
 func DetectLink(s *Context) (consumed int) {
 	// [#procedure-for-identifying-link-tags]
 	buf := [1]byte{}
-	n, _ := io.ReadFull(s.Reader(), buf[:])
-	if n < 1 {
+	if !s.readFull(buf[:]) {
 		// FIXME(akavel): this should never happen, so probably unnecessary?
 		return 0
 	}
@@ -55,8 +53,9 @@ func DetectLink(s *Context) (consumed int) {
 	// "opening link tag"?
 	if c == '[' {
 		s.Openings.Push(MaybeOpening{
-			Tag: "[",
-			Pos: s.Pos,
+			Tag:  "[",
+			Run:  s.Run,
+			Byte: s.Byte,
 		})
 		return 1
 	}
@@ -82,10 +81,9 @@ func closingLinkTag(s *Context) (consumed int) {
 	if s.Openings.NullTopmostTagged("[") {
 		return 1 // consume the ']'
 	}
-	rest := s.Buf[s.Pos:]
 
 	// e.g.: "] [ref id]" ?
-	m := reClosingTagRef.FindSubmatch(rest)
+	m := reClosingTagRef.FindReaderSubmatchIndex(s.reader())
 	if m != nil {
 		// cancel all unclosed spans inside the link
 		for s.Openings.Peek().Tag != "[" {
@@ -496,3 +494,34 @@ func isWordSep(r rune) bool {
 func isSpeculativeURLEnd(r rune) bool {
 	return r != '\u002f' && isWordSep(r)
 }
+
+type regionReader struct {
+	r      md.Region
+	i, off int
+}
+
+func (r *regionReader) Read(b []byte) (int, error) {
+	if r.i >= len(r.r) {
+		return 0, io.EOF
+	}
+	if r.off >= len(r.r[r.i].Bytes) {
+		r.off = 0
+		r.i++
+		return r.Read(b)
+	}
+	n := copy(b, r.r[r.i].Bytes)
+	r.off += n
+	return n, nil
+}
+func (r *regionReader) skip(off int) {
+	for r.i < len(r.r) {
+		if r.off+off < len(r.r[r.i]) {
+			r.off += off
+			return
+		}
+		off -= len(r.r[r.i]) - r.off
+		r.off = 0
+		r.i++
+	}
+}
+func 

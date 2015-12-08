@@ -12,7 +12,7 @@ type NodeType int
 type OpeningsStack []MaybeOpening
 type MaybeOpening struct {
 	Tag string
-	Pos int
+	Pos RegionPos
 	// TODO(akavel): HTMLTag
 }
 
@@ -54,18 +54,26 @@ func (s *OpeningsStack) deleteLinks() {
 
 type Context struct {
 	Region   md.Region
-	Pos      int
+	Pos      RegionPos
 	Openings OpeningsStack
-	tags     []PositionedTag
+	tags     []positionedTag
 }
 
-func (c *Context) Reader() io.Reader {
-	return c.Region.Reader(c.Pos)
+func (c *Context) reader() regionReader {
+	return regionReader{c.Region, c.Pos}
+}
+func (c *Context) readFull(b []byte) bool {
+	n, _ := io.ReadFull(c.reader(), b)
+	return n == len(b)
 }
 
-type PositionedTag struct {
-	Tag md.Tag
-	Pos int
+type RegionPos struct {
+	Run, Byte int
+}
+
+type positionedTag struct {
+	tag md.Tag
+	pos RegionPos
 }
 
 func Parse(buf []byte, detectors []Detector) []md.Tag {
@@ -91,12 +99,16 @@ walk:
 	return s.Spans
 }
 
-type sortedTags []PositionedTag
+type sortedTags []positionedTag
 
-func (s sortedTags) Len() int           { return len(s) }
-func (s sortedTags) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s sortedTags) Less(i, j int) bool { return s[i].pos < s[j].pos }
-
-func (s *Context) Emit(pos int, tag md.Tag) {
-	s.tags = append(s.tags, PositionedTag{Pos: pos, Tag: tag})
+func (s sortedTags) Len() int      { return len(s) }
+func (s sortedTags) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s sortedTags) Less(i, j int) bool {
+	if s[i].pos.Run != s[j].pos.Run {
+		return s[i].pos.Run < s[j].pos.Run
+	}
+	return s[i].pos.Byte < s[j].pos.Byte
+}
+func (s *Context) Emit(pos RegionPos, tag md.Tag) {
+	s.tags = append(s.tags, positionedTag{pos: pos, tag: tag})
 }
