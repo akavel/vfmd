@@ -14,10 +14,18 @@ type End struct{}
 
 type UnorderedListBlock struct {
 	// Starter []byte
+	Raw Region
 }
-type QuoteBlock struct{}
-type ItemBlock struct{}
+type QuoteBlock struct {
+	Raw Region
+}
+type ItemBlock struct {
+	Raw Region
+}
 type AtxHeaderBlock struct {
 	Level int
+	Raw   Region
 }
-type ParagraphBlock struct{}
+type ParagraphBlock struct {
+	Raw Region
+}
