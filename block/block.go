@@ -250,3 +250,15 @@ func trimLeftN(s []byte, cutset string, nmax int) []byte {
 	}
 	return s
 }
+
+func parseSpans(region md.Region, ctx Context) {
+	// FIXME(akavel): parse the spans correctly w.r.t. region Run boundaries and collect proper Run.Line values
+	buf := []byte{}
+	for _, run := range region {
+		buf = append(buf, run.Bytes...) // FIXME(akavel): quick & dirty & foul prototyping hack
+	}
+	spans := span.Parse(buf, ctx.GetSpanDetectors())
+	for _, span := range spans {
+		ctx.Emit(span)
+	}
+}

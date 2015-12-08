@@ -13,34 +13,38 @@ type ParagraphDetector struct {
 }
 
 func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handler {
-	var carry *Line
+	block := md.ParagraphBlock{}
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		if next.EOF() {
-			ctx.Emit(md.End{})
-			return false, nil
+			return p.close(block, ctx)
 		}
-		prev := carry
-		carry = &next
-		if prev == nil {
-			ctx.Emit(md.ParagraphBlock{})
+		if len(block.Raw) == 0 {
+			block.Raw = append(block.Raw, md.Run(next))
 			return true, nil
 		}
+		prev := Line(block.Raw[len(block.Raw)-1])
 		// TODO(akavel): support HTML parser & related interactions [#paragraph-line-sequence]
 		if prev.isBlank() {
-			ctx.Emit(md.End{})
-			return false, nil
+			return p.close(block, ctx)
 		}
 		if !next.hasFourSpacePrefix() {
 			if reHorizontalRule.Match(next.Bytes) ||
 				(p.InQuote && bytes.HasPrefix(bytes.TrimLeft(next.Bytes, " "), []byte(">"))) ||
 				(p.InList && reOrderedList.Match(next.Bytes)) ||
 				(p.InList && reUnorderedList.Match(next.Bytes)) {
-				ctx.Emit(md.End{})
-				return false, nil
+				return p.close(block, ctx)
 			}
 		}
+		block.Raw = append(block.Raw, md.Run(next))
 		return true, nil
 	})
+}
+
+func (ParagraphDetector) close(block md.ParagraphBlock, ctx Context) (bool, error) {
+	ctx.Emit(block)
+	parseSpans(block.Raw, ctx)
+	ctx.Emit(md.End{})
+	return false, nil
 }
 
 // func (b *Paragraph) PostProcess(line Line) {
