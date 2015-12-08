@@ -207,7 +207,7 @@ type Detectors []Detector
 // they should be normally applied.
 // FIXME(akavel): fill DefaultDetectors
 var DefaultDetectors = Detectors{
-	// Null{},
+	DetectorFunc(DetectNull),
 	// &ReferenceResolution{},
 	// &SetextHeader{},
 	// &Code{},
@@ -230,18 +230,28 @@ func (ds Detectors) Find(first, second Line) Handler {
 }
 
 func end(parser *Parser, ctx Context) (bool, error) {
-	err := parser.Close()
+	var err error
+	if parser != nil {
+		err = parser.Close()
+	}
 	ctx.Emit(md.End{})
 	return false, err
 }
 func end2(parser *Parser, ctx Context) (bool, error) {
-	err := parser.Close()
-	ctx.Emit(md.End{})
+	var err error
+	if parser != nil {
+		err = parser.Close()
+		ctx.Emit(md.End{})
+	}
 	ctx.Emit(md.End{})
 	return false, err
 }
 func pass(parser *Parser, next Line, bytes []byte) (bool, error) {
-	return true, parser.WriteLine(Line{next.Line, bytes})
+	if parser != nil {
+		return true, parser.WriteLine(Line{next.Line, bytes})
+	} else {
+		return true, nil
+	}
 }
 func trimLeftN(s []byte, cutset string, nmax int) []byte {
 	for nmax > 0 && len(s) > 0 && strings.IndexByte(cutset, s[0]) != -1 {
@@ -251,7 +261,7 @@ func trimLeftN(s []byte, cutset string, nmax int) []byte {
 	return s
 }
 
-func parseSpans(region md.Region, ctx Context) {
+func parseSpans(region md.Raw, ctx Context) {
 	// FIXME(akavel): parse the spans correctly w.r.t. region Run boundaries and collect proper Run.Line values
 	buf := []byte{}
 	for _, run := range region {

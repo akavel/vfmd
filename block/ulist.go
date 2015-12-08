@@ -29,9 +29,11 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 		carry = &next
 		if prev == nil {
 			ctx.Emit(md.UnorderedListBlock{})
-			ctx.Emit(md.ItemBlock{})
-			parser = &Parser{
-				Context: ctx,
+			if ctx.GetMode() != TopBlocks {
+				ctx.Emit(md.ItemBlock{})
+				parser = &Parser{
+					Context: ctx,
+				}
 			}
 			return pass(parser, next, next.Bytes[len(starter):])
 		}
@@ -56,13 +58,15 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 			}
 		}
 		if bytes.HasPrefix(next.Bytes, starter) {
-			_, err := end(parser, ctx)
-			if err != nil {
-				return false, err
-			}
-			ctx.Emit(md.ItemBlock{})
-			parser = &Parser{
-				Context: ctx,
+			if ctx.GetMode() != TopBlocks {
+				_, err := end(parser, ctx)
+				if err != nil {
+					return false, err
+				}
+				ctx.Emit(md.ItemBlock{})
+				parser = &Parser{
+					Context: ctx,
+				}
 			}
 			return pass(parser, next, next.Bytes[len(starter):])
 		}

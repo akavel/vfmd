@@ -12,20 +12,41 @@ type Image struct {
 }
 type End struct{}
 
-type UnorderedListBlock struct {
-	// Starter []byte
-	Raw Region
+type NullBlock struct {
+	Raw
 }
-type QuoteBlock struct {
-	Raw Region
+type SetextHeaderBlock struct {
+	Level int
+	Raw
 }
-type ItemBlock struct {
-	Raw Region
+type CodeBlock struct {
+	Raw
 }
 type AtxHeaderBlock struct {
 	Level int
-	Raw   Region
+	Raw
+}
+type QuoteBlock struct {
+	Raw
+}
+type HorizontalRuleBlock struct {
+	Raw
+}
+type UnorderedListBlock struct {
+	// Starter []byte
+	Raw
+}
+type OrderedListBlock struct {
+	// Starter []byte
+	Raw
+}
+type ItemBlock struct {
+	Raw
 }
 type ParagraphBlock struct {
-	Raw Region
+	Raw
 }
+
+type Raw Region
+
+func (r Raw) GetRaw() Region { return Region(r) }

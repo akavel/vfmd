@@ -42,7 +42,9 @@ func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handl
 
 func (ParagraphDetector) close(block md.ParagraphBlock, ctx Context) (bool, error) {
 	ctx.Emit(block)
-	parseSpans(block.Raw, ctx)
+	if ctx.GetMode() == BlocksAndSpans {
+		parseSpans(block.Raw, ctx)
+	}
 	ctx.Emit(md.End{})
 	return false, nil
 }

@@ -18,7 +18,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 		}
 		done = true
 		block := md.AtxHeaderBlock{
-			Raw: md.Region{md.Run(line)},
+			Raw: md.Raw{md.Run(line)},
 		}
 		text := bytes.Trim(line.Bytes, "#")
 		if len(text) > 0 {
@@ -28,12 +28,14 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 			}
 		}
 
-		spanRegion := md.Region{md.Run{
+		spanRegion := md.Raw{md.Run{
 			Line:  line.Line,
 			Bytes: bytes.Trim(text, utils.Whites),
 		}}
 		ctx.Emit(block)
-		parseSpans(spanRegion, ctx)
+		if ctx.GetMode() == BlocksAndSpans {
+			parseSpans(spanRegion, ctx)
+		}
 		ctx.Emit(md.End{})
 		return true, nil
 	})
