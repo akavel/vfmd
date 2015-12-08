@@ -32,10 +32,20 @@ plus see below:
 func mkrun(line int, s string) md.Run { return md.Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []md.Tag{
-	md.QuoteBlock{},
-	md.UnorderedListBlock{},
-	md.ItemBlock{},
-	md.ParagraphBlock{},
+	md.QuoteBlock{Raw: md.Region{
+		mkrun(0, "> * some text **specifically *interesting*** for us.\n"),
+		mkrun(1, "> * ## Hello, **[new](http://vfmd.org)** _world._\n"),
+	}},
+	md.UnorderedListBlock{Raw: md.Region{
+		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
+		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+	}},
+	md.ItemBlock{Raw: md.Region{
+		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
+	}},
+	md.ParagraphBlock{Raw: md.Region{
+		mkrun(0, "some text **specifically *interesting*** for us.\n"),
+	}},
 	md.Prose{mkrun(0, "some text ")},
 	md.Emphasis{Level: 2},
 	md.Prose{mkrun(0, "specifically ")},
@@ -46,8 +56,12 @@ var newApproach_flatOutput = []md.Tag{
 	md.Prose{mkrun(0, " for us.")},
 	md.End{}, // Para
 	md.End{}, // Item
-	md.ItemBlock{},
-	md.AtxHeaderBlock{Level: 2},
+	md.ItemBlock{Raw: md.Region{
+		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+	}},
+	md.AtxHeaderBlock{Level: 2, Raw: md.Region{
+		mkrun(1, "## Hello, **[new](http://vfmd.org)** _world._\n"),
+	}},
 	md.Prose{mkrun(1, "Hello, ")},
 	md.Emphasis{Level: 2},
 	md.Link{},
@@ -59,7 +73,9 @@ var newApproach_flatOutput = []md.Tag{
 	md.Prose{mkrun(1, "world.")},
 	md.End{}, // Emph
 	md.End{}, // Atx
-	md.ParagraphBlock{},
+	md.ParagraphBlock{Raw: md.Region{
+		mkrun(2, "![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)"),
+	}},
 	md.Image{},
 	// no End, Image is self-closing!
 	md.End{}, // Para
