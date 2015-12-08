@@ -54,8 +54,9 @@ var newApproach_flatOutput = []md.Tag{
 	md.Prose{mkrun(1, "new")},
 	md.End{}, // Link
 	md.End{}, // Emph
+	md.Prose{mkrun(1, " ")},
 	md.Emphasis{Level: 1},
-	md.Prose{mkrun(1, " world.")},
+	md.Prose{mkrun(1, "world.")},
 	md.End{}, // Emph
 	md.End{}, // Atx
 	md.ParagraphBlock{},
@@ -113,7 +114,7 @@ func init() {
 
 func TestNewApproach(test *testing.T) {
 	prep, _ := vfmd.QuickPrep(strings.NewReader(newApproach_input))
-	result, err := QuickParse(bytes.NewReader(prep), BlocksAndSpans, nil)
+	result, err := QuickParse(bytes.NewReader(prep), BlocksAndSpans, nil, nil)
 	if err != nil {
 		test.Fatal(err)
 	}

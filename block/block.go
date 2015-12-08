@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/span"
 )
 
 // func unstack() {
@@ -36,18 +37,21 @@ const (
 type Context interface {
 	GetMode() Mode
 	GetDetectors() Detectors
+	GetSpanDetectors() []span.Detector
 	Emit(md.Tag)
 }
 
 type defaultContext struct {
-	mode      Mode
-	tags      []md.Tag
-	detectors Detectors
+	mode          Mode
+	tags          []md.Tag
+	detectors     Detectors
+	spanDetectors []span.Detector
 }
 
-func (c *defaultContext) GetMode() Mode           { return c.mode }
-func (c *defaultContext) GetDetectors() Detectors { return c.detectors }
-func (c *defaultContext) Emit(tag md.Tag)         { c.tags = append(c.tags, tag) }
+func (c *defaultContext) GetMode() Mode                     { return c.mode }
+func (c *defaultContext) GetDetectors() Detectors           { return c.detectors }
+func (c *defaultContext) GetSpanDetectors() []span.Detector { return c.spanDetectors }
+func (c *defaultContext) Emit(tag md.Tag)                   { c.tags = append(c.tags, tag) }
 
 type Parser struct {
 	Context
@@ -106,15 +110,19 @@ func (p *Parser) WriteLine(line Line) error {
 }
 
 // Important: r must be pre-processed with vfmd.QuickPrep or vfmd.Preprocessor
-func QuickParse(r io.Reader, mode Mode, detectors Detectors) ([]md.Tag, error) {
+func QuickParse(r io.Reader, mode Mode, detectors Detectors, spanDetectors []span.Detector) ([]md.Tag, error) {
 	scan := bufio.NewScanner(r)
 	scan.Split(splitKeepingEOLs)
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
+	if spanDetectors == nil {
+		spanDetectors = span.DefaultDetectors
+	}
 	context := &defaultContext{
-		mode:      mode,
-		detectors: detectors,
+		mode:          mode,
+		detectors:     detectors,
+		spanDetectors: spanDetectors,
 	}
 	parser := Parser{
 		Context: context,

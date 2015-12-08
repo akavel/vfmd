@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/span"
 	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
@@ -27,6 +28,13 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 		}
 		ctx.Emit(a)
 		// TODO(akavel): ctx.Emit(spans & text contents)
+
+		text = bytes.Trim(text, utils.Whites)
+		spans := span.Parse(text, ctx.GetSpanDetectors())
+		for _, span := range spans {
+			ctx.Emit(span)
+		}
+
 		ctx.Emit(md.End{})
 		return true, nil
 	})

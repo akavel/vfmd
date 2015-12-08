@@ -1,6 +1,11 @@
 package span
 
-import "sort"
+import (
+	"sort"
+
+	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/utils"
+)
 
 type NodeType int
 
@@ -50,7 +55,7 @@ func (s *OpeningsStack) deleteLinks() {
 type Span struct {
 	// Pos is a subslice of the original input buffer
 	Pos []byte
-	Tag interface{}
+	Tag md.Tag
 }
 
 type Context struct {
@@ -60,7 +65,7 @@ type Context struct {
 	Spans    []Span
 }
 
-func Parse(buf []byte, detectors []Detector) []Span {
+func Parse(buf []byte, detectors []Detector) []md.Tag {
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
@@ -80,7 +85,26 @@ walk:
 		s.Pos++
 	}
 	sort.Sort(sortedSpans(s.Spans))
-	return s.Spans
+	tags := []md.Tag{}
+	endOffset := 0
+	for _, span := range s.Spans {
+		offset, _ := utils.OffsetIn(buf, span.Pos)
+		if offset > endOffset {
+			tags = append(tags, md.Prose{
+				// FIXME(akavel): fix Line in md.Run
+				md.Run{-1, buf[endOffset:offset]},
+			})
+		}
+		tags = append(tags, span.Tag)
+		endOffset = offset + len(span.Pos)
+	}
+	if endOffset < len(buf) {
+		tags = append(tags, md.Prose{
+			// FIXME(akavel): fix Line in md.Run
+			md.Run{-1, buf[endOffset:]},
+		})
+	}
+	return tags
 }
 
 type sortedSpans []Span
