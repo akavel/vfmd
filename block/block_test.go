@@ -56,7 +56,7 @@ var newApproach_flatOutput = []md.Tag{
 	md.Prose{mkrun(0, "interesting")},
 	md.End{}, // Emph
 	md.End{}, // Emph
-	md.Prose{mkrun(0, " for us.")},
+	md.Prose{mkrun(0, " for us.\n")},
 	md.End{}, // Para
 	md.End{}, // Item
 	md.ItemBlock{Raw: md.Region{
@@ -68,7 +68,7 @@ var newApproach_flatOutput = []md.Tag{
 	}},
 	md.Prose{mkrun(1, "Hello, ")},
 	md.Emphasis{Level: 2},
-	md.Link{},
+	md.Link{URL: "http://vfmd.org"},
 	md.Prose{mkrun(1, "new")},
 	md.End{}, // Link
 	md.End{}, // Emph
@@ -80,7 +80,7 @@ var newApproach_flatOutput = []md.Tag{
 	md.ParagraphBlock{Raw: md.Region{
 		mkrun(2, "![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)"),
 	}},
-	md.Image{},
+	md.Image{URL: "https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png"},
 	// no End, Image is self-closing!
 	md.End{}, // Para
 	md.End{}, // Item
