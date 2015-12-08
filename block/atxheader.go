@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/span"
 	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
@@ -18,23 +17,23 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 			return false, nil
 		}
 		done = true
-		a := md.AtxHeaderBlock{}
+		block := md.AtxHeaderBlock{
+			Raw: md.Region{md.Run(line)},
+		}
 		text := bytes.Trim(line.Bytes, "#")
 		if len(text) > 0 {
-			a.Level, _ = utils.OffsetIn(line.Bytes, text)
-		}
-		if a.Level > 6 {
-			a.Level = 6
-		}
-		ctx.Emit(a)
-		// TODO(akavel): ctx.Emit(spans & text contents)
-
-		text = bytes.Trim(text, utils.Whites)
-		spans := span.Parse(text, ctx.GetSpanDetectors())
-		for _, span := range spans {
-			ctx.Emit(span)
+			block.Level, _ = utils.OffsetIn(line.Bytes, text)
+			if block.Level > 6 {
+				block.Level = 6
+			}
 		}
 
+		spanRegion := md.Region{md.Run{
+			Line:  line.Line,
+			Bytes: bytes.Trim(text, utils.Whites),
+		}}
+		ctx.Emit(block)
+		parseSpans(spanRegion, ctx)
 		ctx.Emit(md.End{})
 		return true, nil
 	})

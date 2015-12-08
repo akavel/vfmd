@@ -33,15 +33,18 @@ func mkrun(line int, s string) md.Run { return md.Run{line, []byte(s)} }
 
 var newApproach_flatOutput = []md.Tag{
 	md.QuoteBlock{Raw: md.Region{
-		mkrun(0, "> * some text **specifically *interesting*** for us.\n"),
-		mkrun(1, "> * ## Hello, **[new](http://vfmd.org)** _world._\n"),
+	// TODO(akavel)
+	// mkrun(0, "> * some text **specifically *interesting*** for us.\n"),
+	// mkrun(1, "> * ## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
 	md.UnorderedListBlock{Raw: md.Region{
-		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
-		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+	// TODO(akavel)
+	// mkrun(0, "* some text **specifically *interesting*** for us.\n"),
+	// mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
 	md.ItemBlock{Raw: md.Region{
-		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
+	// TODO(akavel)
+	// mkrun(0, "* some text **specifically *interesting*** for us.\n"),
 	}},
 	md.ParagraphBlock{Raw: md.Region{
 		mkrun(0, "some text **specifically *interesting*** for us.\n"),
@@ -57,7 +60,8 @@ var newApproach_flatOutput = []md.Tag{
 	md.End{}, // Para
 	md.End{}, // Item
 	md.ItemBlock{Raw: md.Region{
-		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+	// TODO(akavel)
+	// mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
 	md.AtxHeaderBlock{Level: 2, Raw: md.Region{
 		mkrun(1, "## Hello, **[new](http://vfmd.org)** _world._\n"),
