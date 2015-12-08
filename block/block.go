@@ -213,7 +213,7 @@ var DefaultDetectors = Detectors{
 	DetectorFunc(DetectCode),
 	DetectorFunc(DetectAtxHeader),
 	DetectorFunc(DetectQuote),
-	// HorizontalRule{},
+	DetectorFunc(DetectHorizontalRule),
 	DetectorFunc(DetectUnorderedList),
 	// &OrderedList{},
 	ParagraphDetector{},
