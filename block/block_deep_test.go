@@ -34,13 +34,14 @@ func bb(s string) []byte              { return []byte(s) }
 
 var newApproach_flatOutput = []md.Tag{
 	md.QuoteBlock{Raw: md.Raw{
-	// TODO(akavel)
-	// mkrun(0, "> * some text **specifically *interesting*** for us.\n"),
-	// mkrun(1, "> * ## Hello, **[new](http://vfmd.org)** _world._\n"),
+		mkrun(0, "> * some text **specifically *interesting*** for us.\n"),
+		mkrun(1, "> * ## Hello, **[new](http://vfmd.org)** _world._\n"),
+		mkrun(2, "![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)"),
 	}},
 	md.UnorderedListBlock{Raw: md.Raw{
 		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
 		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+		mkrun(2, "![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)"),
 	}, Starter: mkrun(0, "* "),
 	},
 	md.ItemBlock{Raw: md.Raw{

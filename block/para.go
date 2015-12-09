@@ -27,11 +27,12 @@ func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handl
 		if prev.isBlank() {
 			return p.close(block, ctx)
 		}
+		nextBytes := bytes.TrimRight(next.Bytes, "\n")
 		if !next.hasFourSpacePrefix() {
-			if reHorizontalRule.Match(next.Bytes) ||
+			if reHorizontalRule.Match(nextBytes) ||
 				(p.InQuote && bytes.HasPrefix(bytes.TrimLeft(next.Bytes, " "), []byte(">"))) ||
-				(p.InList && reOrderedList.Match(next.Bytes)) ||
-				(p.InList && reUnorderedList.Match(next.Bytes)) {
+				(p.InList && reOrderedList.Match(nextBytes)) ||
+				(p.InList && reUnorderedList.Match(nextBytes)) {
 				return p.close(block, ctx)
 			}
 		}

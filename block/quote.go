@@ -18,21 +18,29 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 	if len(ltrim) == 0 || ltrim[0] != '>' {
 		return nil
 	}
+	var buf *defaultContext
+	block := md.QuoteBlock{}
 	var carry *Line
 	var parser *Parser
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		// TODO(akavel): verify it's coded ok, it was converted from a different approach
 		if next.EOF() {
-			return end(parser, ctx)
+			ctx.Emit(block)
+			return quoteEnd(parser, buf, ctx)
 		}
 		prev := carry
 		carry = &next
+		// First line?
 		if prev == nil {
-			// First line of block.
-			ctx.Emit(md.QuoteBlock{})
+			buf = &defaultContext{
+				mode:          ctx.GetMode(),
+				detectors:     ctx.GetDetectors(),
+				spanDetectors: ctx.GetSpanDetectors(),
+			}
+			block.Raw = append(block.Raw, md.Run(next))
 			if ctx.GetMode() != TopBlocks {
 				parser = &Parser{
-					Context: ctx,
+					Context: buf,
 				}
 			}
 			return pass(parser, next, trimQuote(next.Bytes))
@@ -41,12 +49,23 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 			if next.isBlank() ||
 				next.hasFourSpacePrefix() ||
 				bytes.TrimLeft(next.Bytes, " ")[0] != '>' {
-				return end(parser, ctx)
+				ctx.Emit(block)
+				return quoteEnd(parser, buf, ctx)
 			}
 		} else if !next.hasFourSpacePrefix() &&
-			reHorizontalRule.Match(next.Bytes) {
-			return end(parser, ctx)
+			reHorizontalRule.Match(bytes.TrimRight(next.Bytes, "\n")) {
+			ctx.Emit(block)
+			return quoteEnd(parser, buf, ctx)
 		}
+		block.Raw = append(block.Raw, md.Run(next))
 		return pass(parser, next, trimQuote(next.Bytes))
 	})
+}
+
+func quoteEnd(parser *Parser, buf *defaultContext, ctx Context) (bool, error) {
+	b, err := end(parser, buf)
+	for _, t := range buf.tags {
+		ctx.Emit(t)
+	}
+	return b, err
 }
