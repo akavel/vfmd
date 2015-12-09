@@ -25,7 +25,7 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 	var parser *Parser
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		if next.EOF() {
-			return listEnd2(parser, buf.tags, ctx)
+			return listEnd2(parser, buf, ctx)
 		}
 		prev := carry
 		carry = &next
@@ -51,11 +51,11 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 		nextBytes := bytes.TrimRight(next.Bytes, "\n")
 		if prev.isBlank() {
 			if next.isBlank() {
-				return listEnd2(parser, buf.tags, ctx)
+				return listEnd2(parser, buf, ctx)
 			}
 			if !reOrderedList.Match(nextBytes) &&
 				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) {
-				return listEnd2(parser, buf.tags, ctx)
+				return listEnd2(parser, buf, ctx)
 			}
 		} else {
 			if !reOrderedList.Match(nextBytes) &&
@@ -63,7 +63,7 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 				!next.hasFourSpacePrefix() &&
 				(reUnorderedList.Match(nextBytes) ||
 					reHorizontalRule.Match(nextBytes)) {
-				return listEnd2(parser, buf.tags, ctx)
+				return listEnd2(parser, buf, ctx)
 			}
 		}
 
@@ -95,8 +95,9 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 	})
 }
 
-func listEnd2(parser *Parser, bufTags []md.Tag, ctx Context) (bool, error) {
-	for _, t := range bufTags {
+func listEnd2(parser *Parser, buf *defaultContext, ctx Context) (bool, error) {
+	b, err := end2(parser, buf)
+	for _, t := range buf.tags {
 		switch t := t.(type) {
 		case *md.OrderedListBlock:
 			ctx.Emit(*t)
@@ -108,5 +109,5 @@ func listEnd2(parser *Parser, bufTags []md.Tag, ctx Context) (bool, error) {
 			ctx.Emit(t)
 		}
 	}
-	return end2(parser, ctx)
+	return b, err
 }

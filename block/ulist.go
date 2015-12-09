@@ -23,10 +23,11 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 	var parser *Parser
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		if next.EOF() {
-			return listEnd2(parser, buf.tags, ctx)
+			return listEnd2(parser, buf, ctx)
 		}
 		prev := carry
 		carry = &next
+		// First line? Init stuff and accept unconditionally, already tested.
 		if prev == nil {
 			buf = &defaultContext{
 				mode:          ctx.GetMode(),
@@ -48,12 +49,12 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 
 		if prev.isBlank() {
 			if next.isBlank() {
-				return listEnd2(parser, buf.tags, ctx)
+				return listEnd2(parser, buf, ctx)
 			}
 			if !bytes.HasPrefix(next.Bytes, block.Starter.Bytes) &&
 				// FIXME(akavel): spec refers to runes ("characters"), not bytes; fix this everywhere
 				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) {
-				return listEnd2(parser, buf.tags, ctx)
+				return listEnd2(parser, buf, ctx)
 			}
 		} else {
 			nextBytes := bytes.TrimRight(next.Bytes, "\n")
@@ -63,7 +64,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 				(reUnorderedList.Match(nextBytes) ||
 					reOrderedList.Match(nextBytes) ||
 					reHorizontalRule.Match(nextBytes)) {
-				return listEnd2(parser, buf.tags, ctx)
+				return listEnd2(parser, buf, ctx)
 			}
 		}
 

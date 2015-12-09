@@ -30,6 +30,7 @@ func (Prose) GetProse() Region
 plus see below:
 */
 func mkrun(line int, s string) md.Run { return md.Run{line, []byte(s)} }
+func bb(s string) []byte              { return []byte(s) }
 
 var newApproach_flatOutput = []md.Tag{
 	md.QuoteBlock{Raw: md.Raw{
@@ -40,7 +41,8 @@ var newApproach_flatOutput = []md.Tag{
 	md.UnorderedListBlock{Raw: md.Raw{
 		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
 		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
-	}},
+	}, Starter: mkrun(0, "* "),
+	},
 	md.ItemBlock{Raw: md.Raw{
 		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
 	}},
