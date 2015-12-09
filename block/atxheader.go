@@ -33,9 +33,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 			Bytes: bytes.Trim(text, utils.Whites),
 		}}
 		ctx.Emit(block)
-		if ctx.GetMode() == BlocksAndSpans {
-			parseSpans(spanRegion, ctx)
-		}
+		parseSpans(spanRegion, ctx)
 		ctx.Emit(md.End{})
 		return true, nil
 	})

@@ -262,6 +262,9 @@ func trimLeftN(s []byte, cutset string, nmax int) []byte {
 }
 
 func parseSpans(region md.Raw, ctx Context) {
+	if ctx.GetMode() != BlocksAndSpans {
+		return
+	}
 	// FIXME(akavel): parse the spans correctly w.r.t. region Run boundaries and collect proper Run.Line values
 	buf := []byte{}
 	for _, run := range region {
