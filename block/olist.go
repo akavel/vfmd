@@ -51,20 +51,21 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 			return pass(parser, next, next.Bytes[len(block.Starter.Bytes):])
 		}
 
+		nextBytes := bytes.TrimRight(next.Bytes, "\n")
 		if prev.isBlank() {
 			if next.isBlank() {
 				return listEnd2(parser, buf.tags, ctx)
 			}
-			if !reOrderedList.Match(next.Bytes) &&
+			if !reOrderedList.Match(nextBytes) &&
 				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) {
 				return listEnd2(parser, buf.tags, ctx)
 			}
 		} else {
-			if !reOrderedList.Match(next.Bytes) &&
+			if !reOrderedList.Match(nextBytes) &&
 				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) &&
 				!next.hasFourSpacePrefix() &&
-				(reUnorderedList.Match(next.Bytes) ||
-					reHorizontalRule.Match(next.Bytes)) {
+				(reUnorderedList.Match(nextBytes) ||
+					reHorizontalRule.Match(nextBytes)) {
 				return listEnd2(parser, buf.tags, ctx)
 			}
 		}

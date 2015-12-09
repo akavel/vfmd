@@ -48,12 +48,13 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 				return end2(parser, ctx)
 			}
 		} else {
+			nextBytes := bytes.TrimRight(next.Bytes, "\n")
 			if !bytes.HasPrefix(next.Bytes, starter) &&
 				next.hasNonSpaceInPrefix(len(starter)) &&
 				!next.hasFourSpacePrefix() &&
-				(reUnorderedList.Match(next.Bytes) ||
-					reOrderedList.Match(next.Bytes) ||
-					reHorizontalRule.Match(next.Bytes)) {
+				(reUnorderedList.Match(nextBytes) ||
+					reOrderedList.Match(nextBytes) ||
+					reHorizontalRule.Match(nextBytes)) {
 				return end2(parser, ctx)
 			}
 		}
