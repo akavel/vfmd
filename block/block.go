@@ -209,7 +209,7 @@ type Detectors []Detector
 var DefaultDetectors = Detectors{
 	DetectorFunc(DetectNull),
 	// &ReferenceResolution{},
-	// &SetextHeader{},
+	DetectorFunc(DetectSetextHeader),
 	DetectorFunc(DetectCode),
 	DetectorFunc(DetectAtxHeader),
 	DetectorFunc(DetectQuote),
