@@ -37,7 +37,7 @@ type UnorderedListBlock struct {
 	Raw
 }
 type OrderedListBlock struct {
-	// Starter []byte
+	Starter Run
 	Raw
 }
 type ItemBlock struct {

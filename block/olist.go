@@ -15,70 +15,100 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 	if m == nil {
 		return nil
 	}
-	starter := m[1]
-	// firstNumber, _ := strconv.Atoi(string(m[2]))
+	var buf *defaultContext
+	block := &md.OrderedListBlock{
+		Starter: md.Run{start.Line, m[1]},
+		// firstNumber, _ := strconv.Atoi(string(m[2]))
+	}
+	var item *md.ItemBlock
 	var carry *Line
 	var parser *Parser
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
-		// func (b *UnorderedList) Continue(paused []Line, next Line) (consume, pause int) {
 		if next.EOF() {
 			// if carry == nil {
 			// 	panic("empty carry")
 			// }
-			return end2(parser, ctx)
+			return listEnd2(parser, buf.tags, ctx)
 		}
 		prev := carry
 		carry = &next
 		if prev == nil {
-			ctx.Emit(md.OrderedListBlock{})
+			buf = &defaultContext{
+				mode:          ctx.GetMode(),
+				detectors:     ctx.GetDetectors(),
+				spanDetectors: ctx.GetSpanDetectors(),
+			}
+			buf.Emit(block)
+			block.Raw = append(block.Raw, md.Run(next))
 			if ctx.GetMode() != TopBlocks {
-				ctx.Emit(md.ItemBlock{})
+				item = &md.ItemBlock{}
+				item.Raw = append(item.Raw, md.Run(next))
+				buf.Emit(item)
 				parser = &Parser{
-					Context: ctx,
+					Context: buf,
 				}
 			}
-			return pass(parser, next, next.Bytes[len(starter):])
+			return pass(parser, next, next.Bytes[len(block.Starter.Bytes):])
 		}
 
 		if prev.isBlank() {
 			if next.isBlank() {
-				return end2(parser, ctx)
+				return listEnd2(parser, buf.tags, ctx)
 			}
 			if !reOrderedList.Match(next.Bytes) &&
-				next.hasNonSpaceInPrefix(len(starter)) {
-				return end2(parser, ctx)
+				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) {
+				return listEnd2(parser, buf.tags, ctx)
 			}
 		} else {
 			if !reOrderedList.Match(next.Bytes) &&
-				next.hasNonSpaceInPrefix(len(starter)) &&
+				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) &&
 				!next.hasFourSpacePrefix() &&
 				(reUnorderedList.Match(next.Bytes) ||
 					reHorizontalRule.Match(next.Bytes)) {
-				return end2(parser, ctx)
+				return listEnd2(parser, buf.tags, ctx)
 			}
 		}
+		block.Raw = append(block.Raw, md.Run(next))
 
 		m := reOrderedList.FindSubmatch(next.Bytes)
 		if m != nil {
 			text := bytes.TrimLeft(m[1], " ")
 			spaces, _ := utils.OffsetIn(m[1], text)
-			if spaces >= len(starter) {
+			if spaces >= len(block.Starter.Bytes) {
 				m = nil
 			}
 		}
 		if m != nil {
 			if ctx.GetMode() != TopBlocks {
-				_, err := end(parser, ctx)
+				_, err := end(parser, buf)
 				if err != nil {
 					return false, err
 				}
-				ctx.Emit(md.ItemBlock{})
+				item = &md.ItemBlock{}
+				item.Raw = append(item.Raw, md.Run(next))
+				buf.Emit(item)
 				parser = &Parser{
-					Context: ctx,
+					Context: buf,
 				}
 			}
 			return pass(parser, next, next.Bytes[len(m[1]):])
 		}
-		return pass(parser, next, trimLeftN(next.Bytes, " ", len(starter)))
+		return pass(parser, next, trimLeftN(next.Bytes, " ", len(block.Starter.Bytes)))
 	})
+}
+
+func listEnd2(parser *Parser, bufTags []md.Tag, ctx Context) (bool, error) {
+	for _, t := range bufTags {
+		switch t := t.(type) {
+		case *md.OrderedListBlock:
+			ctx.Emit(*t)
+		case *md.UnorderedListBlock:
+			ctx.Emit(*t)
+		case *md.ItemBlock:
+			ctx.Emit(*t)
+		default:
+			ctx.Emit(t)
+		}
+	}
+	return end2(parser, ctx)
 }
