@@ -20,12 +20,15 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 		block := md.AtxHeaderBlock{
 			Raw: md.Raw{md.Run(line)},
 		}
-		text := bytes.Trim(line.Bytes, "#")
+		text := bytes.TrimRight(line.Bytes, "\n")
+		text = bytes.Trim(text, "#")
 		if len(text) > 0 {
 			block.Level, _ = utils.OffsetIn(line.Bytes, text)
-			if block.Level > 6 {
-				block.Level = 6
-			}
+		} else {
+			block.Level = len(bytes.TrimRight(line.Bytes, "\n"))
+		}
+		if block.Level > 6 {
+			block.Level = 6
 		}
 
 		spanRegion := md.Raw{md.Run{
