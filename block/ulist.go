@@ -14,63 +14,75 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 	if m == nil {
 		return nil
 	}
-	starter := m[1]
+	var buf *defaultContext
+	block := &md.UnorderedListBlock{
+		Starter: md.Run{start.Line, m[1]},
+	}
+	var item *md.ItemBlock
 	var carry *Line
 	var parser *Parser
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
-		// func (b *UnorderedList) Continue(paused []Line, next Line) (consume, pause int) {
 		if next.EOF() {
-			// if carry == nil {
-			// 	panic("empty carry")
-			// }
-			return end2(parser, ctx)
+			return listEnd2(parser, buf.tags, ctx)
 		}
 		prev := carry
 		carry = &next
 		if prev == nil {
-			ctx.Emit(md.UnorderedListBlock{})
+			buf = &defaultContext{
+				mode:          ctx.GetMode(),
+				detectors:     ctx.GetDetectors(),
+				spanDetectors: ctx.GetSpanDetectors(),
+			}
+			block.Raw = append(block.Raw, md.Run(next))
+			buf.Emit(block)
 			if ctx.GetMode() != TopBlocks {
-				ctx.Emit(md.ItemBlock{})
+				item = &md.ItemBlock{}
+				item.Raw = append(item.Raw, md.Run(next))
+				buf.Emit(item)
 				parser = &Parser{
-					Context: ctx,
+					Context: buf,
 				}
 			}
-			return pass(parser, next, next.Bytes[len(starter):])
+			return pass(parser, next, next.Bytes[len(block.Starter.Bytes):])
 		}
 
 		if prev.isBlank() {
 			if next.isBlank() {
-				return end2(parser, ctx)
+				return listEnd2(parser, buf.tags, ctx)
 			}
-			if !bytes.HasPrefix(next.Bytes, starter) &&
+			if !bytes.HasPrefix(next.Bytes, block.Starter.Bytes) &&
 				// FIXME(akavel): spec refers to runes ("characters"), not bytes; fix this everywhere
-				next.hasNonSpaceInPrefix(len(starter)) {
-				return end2(parser, ctx)
+				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) {
+				return listEnd2(parser, buf.tags, ctx)
 			}
 		} else {
 			nextBytes := bytes.TrimRight(next.Bytes, "\n")
-			if !bytes.HasPrefix(next.Bytes, starter) &&
-				next.hasNonSpaceInPrefix(len(starter)) &&
+			if !bytes.HasPrefix(next.Bytes, block.Starter.Bytes) &&
+				next.hasNonSpaceInPrefix(len(block.Starter.Bytes)) &&
 				!next.hasFourSpacePrefix() &&
 				(reUnorderedList.Match(nextBytes) ||
 					reOrderedList.Match(nextBytes) ||
 					reHorizontalRule.Match(nextBytes)) {
-				return end2(parser, ctx)
+				return listEnd2(parser, buf.tags, ctx)
 			}
 		}
-		if bytes.HasPrefix(next.Bytes, starter) {
+
+		block.Raw = append(block.Raw, md.Run(next))
+		if bytes.HasPrefix(next.Bytes, block.Starter.Bytes) {
 			if ctx.GetMode() != TopBlocks {
-				_, err := end(parser, ctx)
+				_, err := end(parser, buf)
 				if err != nil {
 					return false, err
 				}
-				ctx.Emit(md.ItemBlock{})
+				item = &md.ItemBlock{}
+				item.Raw = append(item.Raw, md.Run(next))
+				buf.Emit(item)
 				parser = &Parser{
-					Context: ctx,
+					Context: buf,
 				}
 			}
-			return pass(parser, next, next.Bytes[len(starter):])
+			return pass(parser, next, next.Bytes[len(block.Starter.Bytes):])
 		}
-		return pass(parser, next, trimLeftN(next.Bytes, " ", len(starter)))
+		return pass(parser, next, trimLeftN(next.Bytes, " ", len(block.Starter.Bytes)))
 	})
 }

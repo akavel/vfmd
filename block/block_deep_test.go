@@ -38,13 +38,11 @@ var newApproach_flatOutput = []md.Tag{
 	// mkrun(1, "> * ## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
 	md.UnorderedListBlock{Raw: md.Raw{
-	// TODO(akavel)
-	// mkrun(0, "* some text **specifically *interesting*** for us.\n"),
-	// mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
+		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
 	md.ItemBlock{Raw: md.Raw{
-	// TODO(akavel)
-	// mkrun(0, "* some text **specifically *interesting*** for us.\n"),
+		mkrun(0, "* some text **specifically *interesting*** for us.\n"),
 	}},
 	md.ParagraphBlock{Raw: md.Raw{
 		mkrun(0, "some text **specifically *interesting*** for us.\n"),
@@ -60,8 +58,7 @@ var newApproach_flatOutput = []md.Tag{
 	md.End{}, // Para
 	md.End{}, // Item
 	md.ItemBlock{Raw: md.Raw{
-	// TODO(akavel)
-	// mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
 	md.AtxHeaderBlock{Level: 2, Raw: md.Raw{
 		mkrun(1, "## Hello, **[new](http://vfmd.org)** _world._\n"),

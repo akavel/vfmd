@@ -25,9 +25,6 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 	var parser *Parser
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		if next.EOF() {
-			// if carry == nil {
-			// 	panic("empty carry")
-			// }
 			return listEnd2(parser, buf.tags, ctx)
 		}
 		prev := carry
@@ -38,8 +35,8 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 				detectors:     ctx.GetDetectors(),
 				spanDetectors: ctx.GetSpanDetectors(),
 			}
-			buf.Emit(block)
 			block.Raw = append(block.Raw, md.Run(next))
+			buf.Emit(block)
 			if ctx.GetMode() != TopBlocks {
 				item = &md.ItemBlock{}
 				item.Raw = append(item.Raw, md.Run(next))
@@ -69,8 +66,8 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 				return listEnd2(parser, buf.tags, ctx)
 			}
 		}
-		block.Raw = append(block.Raw, md.Run(next))
 
+		block.Raw = append(block.Raw, md.Run(next))
 		m := reOrderedList.FindSubmatch(next.Bytes)
 		if m != nil {
 			text := bytes.TrimLeft(m[1], " ")

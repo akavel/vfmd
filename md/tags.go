@@ -33,7 +33,7 @@ type HorizontalRuleBlock struct {
 	Raw
 }
 type UnorderedListBlock struct {
-	// Starter []byte
+	Starter Run
 	Raw
 }
 type OrderedListBlock struct {
