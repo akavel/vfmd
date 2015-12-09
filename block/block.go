@@ -215,7 +215,7 @@ var DefaultDetectors = Detectors{
 	DetectorFunc(DetectQuote),
 	DetectorFunc(DetectHorizontalRule),
 	DetectorFunc(DetectUnorderedList),
-	// &OrderedList{},
+	DetectorFunc(DetectOrderedList),
 	ParagraphDetector{},
 }
 

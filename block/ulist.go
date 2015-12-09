@@ -40,7 +40,7 @@ func DetectUnorderedList(start, second Line, detectors Detectors) Handler {
 
 		if prev.isBlank() {
 			if next.isBlank() {
-				return end(parser, ctx)
+				return end2(parser, ctx)
 			}
 			if !bytes.HasPrefix(next.Bytes, starter) &&
 				// FIXME(akavel): spec refers to runes ("characters"), not bytes; fix this everywhere
