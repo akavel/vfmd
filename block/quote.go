@@ -7,10 +7,12 @@ import (
 )
 
 func trimQuote(line []byte) []byte {
-	line = bytes.TrimLeft(line, " ")
-	line = bytes.TrimPrefix(line, []byte{'>'})
-	line = bytes.TrimPrefix(line, []byte{' '})
-	return line
+	trimmed := bytes.TrimLeft(line, " ")
+	if bytes.HasPrefix(trimmed, []byte{'>'}) {
+		return bytes.TrimPrefix(trimmed[1:], []byte{' '})
+	} else {
+		return line
+	}
 }
 
 func DetectQuote(first, second Line, detectors Detectors) Handler {

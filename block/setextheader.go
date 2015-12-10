@@ -27,7 +27,7 @@ func DetectSetextHeader(first, second Line, detectors Detectors) Handler {
 	return HandlerFunc(func(next Line, ctx Context) (bool, error) {
 		if done == 2 {
 			ctx.Emit(block)
-			parseSpans(md.Raw{block.Raw[0]}, ctx)
+			parseSpans(trim(md.Raw{block.Raw[0]}), ctx)
 			ctx.Emit(md.End{})
 			return false, nil
 		}
