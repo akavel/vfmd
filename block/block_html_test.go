@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -176,37 +177,6 @@ func TestHTMLFiles(test *testing.T) {
 		{"unordered_list/with_setext_header.md"},
 	}
 
-	replacer := strings.NewReplacer(
-		// "</h6>\n\n", "</h6>\n", // atx_header/left_only.md
-		"</p>\n<h1>", "</p>\n\n<h1>", // blockquote/containing_setext_header.md
-		"</h1>\n<h2>", "</h1>\n\n<h2>", // blockquote/containing_setext_header.md
-		// blockquote/containing_list.md
-		"</ol>\n<p>", "</ol>\n\n<p>",
-		"</ul>\n<p>", "</ul>\n\n<p>",
-		"</p>\n<ol>", "</p>\n\n<ol>",
-		"</p>\n<ul>", "</p>\n\n<ul>",
-		"</p>\n<p>", "</p>\n\n<p>",
-		// blockquote/containing_hr.md
-		"</p>\n<hr />", "</p>\n\n<hr />",
-		// blockquote/containing_codeblock.md
-		"</p>\n<pre>", "</p>\n\n<pre>",
-		"&#39;&gt;&#39;", "'&gt;'",
-		// blockquote/containing_blockquote.md
-		"</p>\n<blockquote>", "</p>\n\n<blockquote>",
-		// "</p>\n</blockquote>", "</p>\n\n</blockquote>",
-		"</blockquote>\n<p>", "</blockquote>\n\n<p>",
-		// ...
-		// "</h6>\n<h6>", "</h6>\n\n<h6>",
-		"</blockquote>\n<pre>", "</blockquote>\n\n<pre>",
-		"</blockquote>\n<h1>", "</blockquote>\n\n<h1>",
-		"</blockquote>\n<h2>", "</blockquote>\n\n<h2>",
-		"</blockquote>\n<hr />", "</blockquote>\n\n<hr />",
-		"</blockquote>\n<ul>", "</blockquote>\n\n<ul>",
-		"</ul>\n<blockquote>", "</ul>\n\n<blockquote>",
-		"</blockquote>\n<ol>", "</blockquote>\n\n<ol>",
-		"</ol>\n<blockquote>", "</ol>\n\n<blockquote>",
-	)
-
 	for i, c := range cases {
 		test.Log(c.path)
 		subdir, fname := path.Split(c.path)
@@ -229,12 +199,14 @@ func TestHTMLFiles(test *testing.T) {
 			continue
 		}
 
-		html := replacer.Replace(string(quickHtml(blocks)))
-		if html != string(expectedOutput) {
+		html := quickHtml(blocks)
+		html = simplifyHtml(html)
+		expectedOutput = simplifyHtml(expectedOutput)
+		if !bytes.Equal(html, expectedOutput) {
 			test.Errorf("case %s blocks:\n%s",
 				c.path, spew.Sdump(blocks))
 			test.Errorf("case %s expected vs. got DIFF:\n%s",
-				c.path, diff.Diff(string(expectedOutput), html))
+				c.path, diff.Diff(string(expectedOutput), string(html)))
 		}
 
 		if i >= 30 {
@@ -415,4 +387,12 @@ func htmlSpans(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
 			return tags, err
 		}
 	}
+}
+
+var reSimplifyHtml = regexp.MustCompile(`>\s*<`)
+
+// simplifyHtml performs a quick & dirty HTML unification in a similar way
+// as the fallback approach in the "run_tests" script in testdata dir.
+func simplifyHtml(buf []byte) []byte {
+	return bytes.TrimSpace(reSimplifyHtml.ReplaceAllLiteral(buf, []byte(">\n<")))
 }
