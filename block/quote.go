@@ -36,7 +36,7 @@ func DetectQuote(first, second Line, detectors Detectors) Handler {
 		if prev == nil {
 			buf = &defaultContext{
 				mode:          ctx.GetMode(),
-				detectors:     ctx.GetDetectors(),
+				detectors:     changedParagraphDetector(ctx, true, false),
 				spanDetectors: ctx.GetSpanDetectors(),
 			}
 			block.Raw = append(block.Raw, md.Run(next))
@@ -70,4 +70,19 @@ func quoteEnd(parser *Parser, buf *defaultContext, ctx Context) (bool, error) {
 		ctx.Emit(t)
 	}
 	return b, err
+}
+
+func changedParagraphDetector(ctx Context, inQuote, inList bool) Detectors {
+	ds := append(Detectors{}, ctx.GetDetectors()...)
+	for i := range ds {
+		_, ok := ds[i].(ParagraphDetector)
+		if !ok {
+			continue
+		}
+		ds[i] = ParagraphDetector{
+			InQuote: inQuote,
+			InList:  inList,
+		}
+	}
+	return ds
 }
