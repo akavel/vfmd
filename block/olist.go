@@ -32,7 +32,7 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 		if prev == nil {
 			buf = &defaultContext{
 				mode:          ctx.GetMode(),
-				detectors:     ctx.GetDetectors(),
+				detectors:     changedParagraphDetector(ctx, false, true),
 				spanDetectors: ctx.GetSpanDetectors(),
 			}
 			block.Raw = append(block.Raw, md.Run(next))
@@ -90,6 +90,9 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 				}
 			}
 			return pass(parser, next, next.Bytes[len(m[1]):])
+		}
+		if ctx.GetMode() != TopBlocks {
+			item.Raw = append(item.Raw, md.Run(next))
 		}
 		return pass(parser, next, trimLeftN(next.Bytes, " ", len(block.Starter.Bytes)))
 	})

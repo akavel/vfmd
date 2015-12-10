@@ -209,7 +209,7 @@ func TestHTMLFiles(test *testing.T) {
 				c.path, diff.Diff(string(expectedOutput), string(html)))
 		}
 
-		if i >= 30 {
+		if i >= 70 {
 			test.Fatal("NIY, TODO finish the test")
 		}
 	}
@@ -304,20 +304,21 @@ func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw) ([]md.Tag, error
 		opt := 0
 		// top-packed?
 		n, m := len(t.Raw), len(parentRegion)
-		N, M := cap(t.Raw), cap(parentRegion)
+		ifirst, ilast := t.Raw[0].Line, t.Raw[n-1].Line
+		lfirst, llast := parentRegion[0].Line, parentRegion[m-1].Line
 		if n == m {
 			opt = 1
-		} else if &t.Raw[0] == &parentRegion[0] && !isBlank(t.Raw[n-1]) {
+		} else if ifirst == lfirst && !isBlank(t.Raw[n-1]) {
 			opt = 1
-		} else if &t.Raw[0] != &parentRegion[0] && !isBlank(parentRegion[:M][M-N-1]) {
+		} else if ifirst > lfirst && !isBlank(parentRegion[ifirst-lfirst-1]) {
 			opt = 1
 		}
 		// bottom-packed?
 		if n == m {
 			opt |= 2
-		} else if &t.Raw[n-1] == &parentRegion[m-1] && !isBlank(parentRegion[:M][M-N-1]) {
+		} else if ilast == llast && !isBlank(parentRegion[ifirst-lfirst-1]) {
 			opt |= 2
-		} else if &t.Raw[n-1] != &parentRegion[m-1] && !isBlank(t.Raw[n-1]) {
+		} else if ilast < llast && !isBlank(t.Raw[n-1]) {
 			opt |= 2
 		}
 
