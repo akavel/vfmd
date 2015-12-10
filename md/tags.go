@@ -20,6 +20,7 @@ type SetextHeaderBlock struct {
 	Raw
 }
 type CodeBlock struct {
+	Prose
 	Raw
 }
 type AtxHeaderBlock struct {

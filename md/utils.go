@@ -12,10 +12,10 @@ type Run struct {
 
 type Prose Region
 
-func (p Prose) Prose() Region { return Region(p) }
+func (p Prose) GetProse() Region { return Region(p) }
 
 type Proser interface {
-	Prose() Region
+	GetProse() Region
 }
 
 type Tag interface{}

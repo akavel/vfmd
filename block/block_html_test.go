@@ -3,6 +3,7 @@ package block_test
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"os"
@@ -199,11 +200,13 @@ func TestHTMLFiles(test *testing.T) {
 
 		html := quickHtml(blocks)
 		if !bytes.Equal(html, expectedOutput) {
+			test.Errorf("case %s blocks:\n%s",
+				c.path, spew.Sdump(blocks))
 			test.Errorf("case %s expected vs. got DIFF:\n%s",
 				c.path, diff.Diff(string(expectedOutput), string(html)))
 		}
 
-		if i >= 1 {
+		if i >= 12 {
 			test.Fatal("NIY, TODO finish the test")
 		}
 	}
@@ -214,7 +217,7 @@ func quickHtml(blocks []md.Tag) []byte {
 	var err error
 	tags := blocks
 	for len(tags) > 0 {
-		tags, err = htmlBlock(tags, buf)
+		tags, err = htmlBlock(tags, buf, 0)
 		if err != nil {
 			i := len(blocks) - len(tags)
 			fmt.Fprintf(os.Stderr, "%s\n%s\n%s\n",
@@ -225,16 +228,155 @@ func quickHtml(blocks []md.Tag) []byte {
 	return buf.Bytes()
 }
 
-func htmlBlock(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
+func htmlBlock(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
+	var err error
 	switch t := tags[0].(type) {
 	case md.AtxHeaderBlock:
 		fmt.Fprintf(w, "<h%d>", t.Level)
+		tags, err = htmlSpans(tags[1:], w)
 		fmt.Fprintf(w, "</h%d>\n", t.Level)
-		return tags[2:], nil
+		return tags, err
 	case md.NullBlock:
 		fmt.Fprintln(w)
 		return tags[2:], nil
+	case md.QuoteBlock:
+		fmt.Fprintf(w, "<blockquote>\n  ")
+		tags, err = htmlBlocks(tags[1:], w, 0)
+		fmt.Fprintf(w, "</blockquote>\n")
+		return tags, err
+	case md.ParagraphBlock:
+		n := len(t.Raw)
+		no_p := (opt&1 != 0) ||
+			(opt&2 != 0 && t.Raw[n-1].Line == opt>>2)
+		if !no_p {
+			fmt.Fprintf(w, "<p>")
+		}
+		tags, err = htmlSpans(tags[1:], w)
+		if !no_p {
+			fmt.Fprintf(w, "</p>\n")
+		}
+		return tags, err
+	case md.CodeBlock:
+		fmt.Fprintf(w, "<pre><code>")
+		for _, r := range t.Prose {
+			fmt.Fprint(w, html.EscapeString(string(r.Bytes)))
+		}
+		fmt.Fprintf(w, "</code></pre>\n")
+		return tags[2:], nil
+	case md.HorizontalRuleBlock:
+		fmt.Fprintf(w, "<hr />\n")
+		return tags[2:], nil
+	case md.OrderedListBlock:
+		fmt.Fprintf(w, "<ol>\n")
+		tags, err = htmlItems(tags[1:], w, t.Raw)
+		fmt.Fprintf(w, "</ol>\n")
+		return tags, err
+	case md.UnorderedListBlock:
+		fmt.Fprintf(w, "<ul>\n")
+		tags, err = htmlItems(tags[1:], w, t.Raw)
+		fmt.Fprintf(w, "</ul>\n")
+		return tags, err
 	default:
-		return tags, fmt.Errorf("tag type %T not supported yet", t)
+		return tags, fmt.Errorf("block type %T not supported yet", t)
+	}
+}
+
+func isBlank(line md.Run) bool {
+	return len(bytes.Trim(line.Bytes, " \t\n")) == 0
+}
+
+func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw) ([]md.Tag, error) {
+	var err error
+	for {
+		if (tags[0] == md.End{}) {
+			return tags[1:], nil
+		}
+
+		t := tags[0].(md.ItemBlock)
+		opt := 0
+		// top-packed?
+		n, m := len(t.Raw), len(parentRegion)
+		N, M := cap(t.Raw), cap(parentRegion)
+		if n == m {
+			opt = 1
+		} else if &t.Raw[0] == &parentRegion[0] && !isBlank(t.Raw[n-1]) {
+			opt = 1
+		} else if &t.Raw[0] != &parentRegion[0] && !isBlank(parentRegion[:M][M-N-1]) {
+			opt = 1
+		}
+		// bottom-packed?
+		if n == m {
+			opt |= 2
+		} else if &t.Raw[n-1] == &parentRegion[m-1] && !isBlank(parentRegion[:M][M-N-1]) {
+			opt |= 2
+		} else if &t.Raw[n-1] != &parentRegion[m-1] && !isBlank(t.Raw[n-1]) {
+			opt |= 2
+		}
+
+		fmt.Fprintf(w, "<li>")
+		tags, err = htmlBlocks(tags[1:], w, opt|(t.Raw[n-1].Line<<2))
+		fmt.Fprintf(w, "</li>\n")
+		if err != nil {
+			return tags, err
+		}
+	}
+}
+
+func htmlBlocks(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
+	var err error
+	for i := 0; len(tags) > 0; i++ {
+		if (tags[0] == md.End{}) {
+			return tags[1:], nil
+		}
+		oopt := opt
+		if i != 0 {
+			// top-packedness disables <p> only if 1st element
+			oopt &= ^int(1)
+		}
+		if i == 1 {
+			// bottom-packedness doesn't disable <p> for 2nd element
+			oopt &= ^int(2)
+		}
+		tags, err = htmlBlock(tags, w, oopt)
+		if err != nil {
+			return tags, err
+		}
+	}
+	return tags, nil
+}
+
+func htmlSpans(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
+	var err error
+	for {
+		switch t := tags[0].(type) {
+		case md.Prose:
+			for _, r := range t {
+				w.Write(r.Bytes)
+			}
+			tags = tags[1:]
+		case md.Emphasis:
+			fmt.Fprint(w, map[int]string{
+				1: "<em>",
+				2: "<strong>",
+			}[t.Level])
+			tags, err = htmlSpans(tags[1:], w)
+			fmt.Fprint(w, map[int]string{
+				1: "</em>",
+				2: "</strong>",
+			}[t.Level])
+		case md.AutomaticLink:
+			fmt.Fprintf(w, `<a href="%s">%s</a>`,
+				// FIXME(akavel): fully correct escaping
+				t.URL, html.EscapeString(t.Text))
+			tags = tags[1:]
+
+		case md.End:
+			return tags[1:], nil
+		default:
+			return tags, fmt.Errorf("span type %T not supported yet", t)
+		}
+		if err != nil {
+			return tags, err
+		}
 	}
 }

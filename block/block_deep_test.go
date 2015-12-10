@@ -57,7 +57,7 @@ var newApproach_flatOutput = []md.Tag{
 	md.Prose{mkrun(0, "interesting")},
 	md.End{}, // Emph
 	md.End{}, // Emph
-	md.Prose{mkrun(0, " for us.\n")},
+	md.Prose{mkrun(0, " for us.")},
 	md.End{}, // Para
 	md.End{}, // Item
 	md.ItemBlock{Raw: md.Raw{

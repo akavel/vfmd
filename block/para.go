@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
 type ParagraphDetector struct {
@@ -43,9 +44,44 @@ func (p ParagraphDetector) Detect(first, second Line, detectors Detectors) Handl
 
 func (ParagraphDetector) close(block md.ParagraphBlock, ctx Context) (bool, error) {
 	ctx.Emit(block)
-	parseSpans(block.Raw, ctx)
+	parseSpans(trim(block.Raw), ctx)
 	ctx.Emit(md.End{})
 	return false, nil
+}
+
+func trim(region md.Raw) md.Raw {
+	// rtrim
+	for len(region) > 0 {
+		n := len(region)
+		l := bytes.TrimRight(region[n-1].Bytes, utils.Whites)
+		if len(l) == 0 {
+			region = region[:n-1]
+			continue
+		}
+		if len(l) < len(region[n-1].Bytes) {
+			region = append(append(md.Raw{}, region[:n-1]...), md.Run{
+				Line:  region[n-1].Line,
+				Bytes: l,
+			})
+		}
+		break
+	}
+	// ltrim
+	for len(region) > 0 {
+		l := bytes.TrimLeft(region[0].Bytes, utils.Whites)
+		if len(l) == 0 {
+			region = region[1:]
+			continue
+		}
+		if len(l) < len(region[0].Bytes) {
+			region = append(md.Raw{{
+				Line:  region[0].Line,
+				Bytes: l,
+			}}, region[1:]...)
+		}
+		break
+	}
+	return region
 }
 
 // func (b *Paragraph) PostProcess(line Line) {
