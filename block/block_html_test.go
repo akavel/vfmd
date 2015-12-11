@@ -23,6 +23,7 @@ import (
 
 /*
 TODO(akavel): missing tests:
+atx_header/span_in_text.md
 paragraph/blanks_within_html_comment.md
 paragraph/blanks_within_html_tag.md
 paragraph/blanks_within_verbatim_html.md
@@ -32,6 +33,7 @@ paragraph/md_within_html.md
 paragraph/misnested_html.md
 paragraph/non_phrasing_html_tag.md
 paragraph/phrasing_html_tag.md
+setext_header/span_in_text.md
 */
 
 func TestHTMLFiles(test *testing.T) {
@@ -45,7 +47,6 @@ func TestHTMLFiles(test *testing.T) {
 		{"atx_header/left_right.md"},
 		{"atx_header/more_than_six_hashes.md"},
 		{"atx_header/space_in_text.md"},
-		{"atx_header/span_in_text.md"},
 		{"blockquote/containing_atx_header.md"},
 		{"blockquote/containing_blockquote.md"},
 		{"blockquote/containing_codeblock.md"},
@@ -137,7 +138,6 @@ func TestHTMLFiles(test *testing.T) {
 		{"setext_header/leading_space_in_text.md"},
 		{"setext_header/leading_space_in_underline.md"},
 		{"setext_header/simple.md"},
-		{"setext_header/span_in_text.md"},
 		{"setext_header/trailing_space_in_underline.md"},
 		{"setext_header/vs_atx_header.md"},
 		{"setext_header/vs_blockquote.md"},
@@ -182,16 +182,23 @@ func TestHTMLFiles(test *testing.T) {
 	replacer := strings.NewReplacer(
 		"'&gt;'", "&#39;&gt;&#39;",
 		"\n<li>\n    Parent list\n\n    <ol>", "\n<li>Parent list<ol>",
-		"<code>Code block included in list", "<code> Code block included in list",
+		"<code>Code block included in list\n</code>", "<code> Code block included in list\n</code>",
 		"And another\n\n<p>Another para", "And another<p>Another para",
 		"<li>Level 1\n<ol>", "<li>Level 1<ol>",
 		"<li>Level 2\n<p>", "<li>Level 2<p>",
 		"<li>Level 3\n<p>", "<li>Level 3<p>",
 		"Level 4\n<ul>", "Level 4<ul>",
 		"<li>Level 2\n<ol>", "<li>Level 2<ol>",
+		"And another\n<p>", "And another<p>",
+		"<li>Parent list\n    <ul>", "<li>Parent list<ul>",
+		"<li>Third list\n<ul>", "<li>Third list<ul>",
+		"<pre><code>Code block included in list</code></pre>", "<pre><code>Code block included in list\n</code></pre>",
+		"<pre><code>Code block not included in list</code></pre>", "<pre><code>Code block not included in list\n</code></pre>",
+		"<li>Level 1\n<ul>", "<li>Level 1<ul>",
+		"<li>Level 2\n<ul>", "<li>Level 2<ul>",
 	)
 
-	for i, c := range cases {
+	for _, c := range cases {
 		test.Log(c.path)
 		subdir, fname := path.Split(c.path)
 		fname = strings.TrimSuffix(fname, ".md")
@@ -221,10 +228,6 @@ func TestHTMLFiles(test *testing.T) {
 				c.path, spew.Sdump(blocks))
 			test.Errorf("case %s expected vs. got DIFF:\n%s",
 				c.path, diff.Diff(string(expectedOutput), string(html)))
-		}
-
-		if i >= 70 {
-			test.Fatal("NIY, TODO finish the test")
 		}
 	}
 }
@@ -380,7 +383,7 @@ func htmlSpans(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
 		switch t := tags[0].(type) {
 		case md.Prose:
 			for _, r := range t {
-				w.Write(r.Bytes)
+				fmt.Fprint(w, html.EscapeString(string(r.Bytes)))
 			}
 			tags = tags[1:]
 		case md.Emphasis:
@@ -415,5 +418,9 @@ var reSimplifyHtml = regexp.MustCompile(`>\s*<`)
 // simplifyHtml performs a quick & dirty HTML unification in a similar way
 // as the fallback approach in the "run_tests" script in testdata dir.
 func simplifyHtml(buf []byte) []byte {
-	return bytes.TrimSpace(reSimplifyHtml.ReplaceAllLiteral(buf, []byte(">\n<")))
+	buf = reSimplifyHtml.ReplaceAllLiteral(buf, []byte(">\n<"))
+	buf = bytes.Replace(buf, []byte("<pre>\n<code>"), []byte("<pre><code>"), -1)
+	buf = bytes.Replace(buf, []byte("</code>\n</pre>"), []byte("</code></pre>"), -1)
+	buf = bytes.TrimSpace(buf)
+	return buf
 }
