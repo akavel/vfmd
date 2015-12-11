@@ -62,6 +62,7 @@ var newApproach_flatOutput = []md.Tag{
 	md.End{}, // Item
 	md.ItemBlock{Raw: md.Raw{
 		mkrun(1, "* ## Hello, **[new](http://vfmd.org)** _world._\n"),
+		mkrun(2, "![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)"),
 	}},
 	md.AtxHeaderBlock{Level: 2, Raw: md.Raw{
 		mkrun(1, "## Hello, **[new](http://vfmd.org)** _world._\n"),
