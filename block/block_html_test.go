@@ -40,10 +40,6 @@ TODO(akavel): missing tests:
 // {"span_level/automatic_links/url_schemes.md"},
 // {"span_level/automatic_links/url_special_chars.md"},
 // {"span_level/code/vs_html.md"},
-{"span_level/code/well_formed.md"},
-{"span_level/emphasis/emphasis_tag_combinations.md"},
-{"span_level/emphasis/intertwined.md"},
-{"span_level/emphasis/intraword.md"},
 {"span_level/emphasis/nested_homogenous.md"},
 {"span_level/emphasis/opening_and_closing_tags.md"},
 {"span_level/emphasis/simple.md"},
@@ -262,6 +258,10 @@ func TestHTMLFiles(test *testing.T) {
 		{"span_level/code/vs_emph.md"},
 		{"span_level/code/vs_image.md"},
 		{"span_level/code/vs_link.md"},
+		{"span_level/code/well_formed.md"},
+		{"span_level/emphasis/emphasis_tag_combinations.md"},
+		{"span_level/emphasis/intertwined.md"},
+		{"span_level/emphasis/intraword.md"},
 	}
 
 	// Patches to what I believe are bugs in the original testdata, when
@@ -510,11 +510,13 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			fmt.Fprint(w, map[int]string{
 				1: "<em>",
 				2: "<strong>",
+				3: "<strong><em>",
 			}[t.Level])
 			tags, err = htmlSpans(tags[1:], w, opt)
 			fmt.Fprint(w, map[int]string{
 				1: "</em>",
 				2: "</strong>",
+				3: "</em></strong>",
 			}[t.Level])
 		case md.AutomaticLink:
 			fmt.Fprintf(w, `<a href="%s">%s</a>`,
