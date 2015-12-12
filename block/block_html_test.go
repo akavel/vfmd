@@ -40,16 +40,8 @@ TODO(akavel): missing tests:
 // {"span_level/automatic_links/url_schemes.md"},
 // {"span_level/automatic_links/url_special_chars.md"},
 // {"span_level/code/vs_html.md"},
-{"span_level/emphasis/nested_homogenous.md"},
-{"span_level/emphasis/opening_and_closing_tags.md"},
-{"span_level/emphasis/simple.md"},
-{"span_level/emphasis/vs_html.md"},
-{"span_level/emphasis/within_whitespace.md"},
+// {"span_level/emphasis/vs_html.md"},
 // {"span_level/emphasis/with_punctuation.md"},
-{"span_level/image/direct_link.md"},
-{"span_level/image/direct_link_with_2separating_spaces.md"},
-{"span_level/image/direct_link_with_separating_newline.md"},
-{"span_level/image/direct_link_with_separating_space.md"},
 // {"span_level/image/image_title.md"},
 {"span_level/image/incomplete.md"},
 {"span_level/image/link_text_with_newline.md"},
@@ -262,6 +254,14 @@ func TestHTMLFiles(test *testing.T) {
 		{"span_level/emphasis/emphasis_tag_combinations.md"},
 		{"span_level/emphasis/intertwined.md"},
 		{"span_level/emphasis/intraword.md"},
+		{"span_level/emphasis/nested_homogenous.md"},
+		{"span_level/emphasis/opening_and_closing_tags.md"},
+		{"span_level/emphasis/simple.md"},
+		{"span_level/emphasis/within_whitespace.md"},
+		{"span_level/image/direct_link.md"},
+		{"span_level/image/direct_link_with_2separating_spaces.md"},
+		{"span_level/image/direct_link_with_separating_newline.md"},
+		{"span_level/image/direct_link_with_separating_space.md"},
 	}
 
 	// Patches to what I believe are bugs in the original testdata, when
@@ -546,6 +546,20 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			} else {
 				// TODO(akavel): fmt.Fprintf(w, t.RawEnd.String())
 			}
+		case md.Image:
+			alt := ""
+			if len(t.AltText) != 0 {
+				// FIXME(akavel): fully correct escaping
+				alt = fmt.Sprintf(`alt="%s" `, string(t.AltText))
+			}
+			title := t.Title
+			if title != "" {
+				// FIXME(akavel): fully correct escaping
+				title = fmt.Sprintf(`title="%s" `, t.Title)
+			}
+			// FIXME(akavel): fully correct escaping
+			fmt.Fprintf(w, `<img src="%s" %s%s/>`, t.URL, alt, title)
+			tags = tags[1:]
 
 		case md.End:
 			return tags[1:], nil
