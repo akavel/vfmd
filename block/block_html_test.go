@@ -39,9 +39,7 @@ TODO(akavel): missing tests:
 // {"span_level/automatic_links/mail_url_without_angle_brackets.md"},
 // {"span_level/automatic_links/url_schemes.md"},
 // {"span_level/automatic_links/url_special_chars.md"},
-{"span_level/code/vs_html.md"},
-{"span_level/code/vs_image.md"},
-{"span_level/code/vs_link.md"},
+// {"span_level/code/vs_html.md"},
 {"span_level/code/well_formed.md"},
 {"span_level/emphasis/emphasis_tag_combinations.md"},
 {"span_level/emphasis/intertwined.md"},
@@ -262,6 +260,8 @@ func TestHTMLFiles(test *testing.T) {
 		{"span_level/code/end_of_codespan.md"},
 		{"span_level/code/multiline.md"},
 		{"span_level/code/vs_emph.md"},
+		{"span_level/code/vs_image.md"},
+		{"span_level/code/vs_link.md"},
 	}
 
 	// Patches to what I believe are bugs in the original testdata, when
@@ -321,10 +321,13 @@ func TestHTMLFiles(test *testing.T) {
 
 func quickHtml(blocks []md.Tag) []byte {
 	buf := bytes.NewBuffer(nil)
+	opt := htmlOpt{
+		refs: htmlRefs(blocks),
+	}
 	var err error
 	tags := blocks
 	for len(tags) > 0 {
-		tags, err = htmlBlock(tags, buf, 0)
+		tags, err = htmlBlock(tags, buf, opt)
 		if err != nil {
 			i := len(blocks) - len(tags)
 			fmt.Fprintf(os.Stderr, "%s\n%s\n%s\n",
@@ -335,17 +338,44 @@ func quickHtml(blocks []md.Tag) []byte {
 	return buf.Bytes()
 }
 
-func htmlBlock(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
+type htmlLinkInfo struct {
+	URL, Title string
+}
+type htmlOpt struct {
+	refs                            map[string]htmlLinkInfo
+	topPackedForP, bottomPackedForP bool
+	itemEndForP                     int
+}
+
+func htmlRefs(tags []md.Tag) map[string]htmlLinkInfo {
+	m := map[string]htmlLinkInfo{}
+	for _, t := range tags {
+		r, ok := t.(md.ReferenceResolutionBlock)
+		if !ok {
+			continue
+		}
+		// TODO(akavel): make that properly case-insensitive for various languages (Turkish etc.)
+		id := strings.ToLower(r.ReferenceID)
+		_, found := m[id]
+		if found {
+			continue
+		}
+		m[id] = htmlLinkInfo{URL: r.URL, Title: r.Title}
+	}
+	return m
+}
+
+func htmlBlock(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 	var err error
 	switch t := tags[0].(type) {
 	case md.AtxHeaderBlock:
 		fmt.Fprintf(w, "<h%d>", t.Level)
-		tags, err = htmlSpans(tags[1:], w)
+		tags, err = htmlSpans(tags[1:], w, opt)
 		fmt.Fprintf(w, "</h%d>\n", t.Level)
 		return tags, err
 	case md.SetextHeaderBlock:
 		fmt.Fprintf(w, "<h%d>", t.Level)
-		tags, err = htmlSpans(tags[1:], w)
+		tags, err = htmlSpans(tags[1:], w, opt)
 		fmt.Fprintf(w, "</h%d>\n", t.Level)
 		return tags, err
 	case md.NullBlock:
@@ -353,17 +383,17 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
 		return tags[2:], nil
 	case md.QuoteBlock:
 		fmt.Fprintf(w, "<blockquote>\n  ")
-		tags, err = htmlBlocks(tags[1:], w, 0)
+		tags, err = htmlBlocks(tags[1:], w, htmlOpt{refs: opt.refs})
 		fmt.Fprintf(w, "</blockquote>\n")
 		return tags, err
 	case md.ParagraphBlock:
 		n := len(t.Raw)
-		no_p := (opt&1 != 0) ||
-			(opt&2 != 0 && t.Raw[n-1].Line == opt>>2)
+		no_p := opt.topPackedForP ||
+			(opt.bottomPackedForP && t.Raw[n-1].Line == opt.itemEndForP)
 		if !no_p {
 			fmt.Fprintf(w, "<p>")
 		}
-		tags, err = htmlSpans(tags[1:], w)
+		tags, err = htmlSpans(tags[1:], w, opt)
 		if !no_p {
 			fmt.Fprintf(w, "</p>\n")
 		}
@@ -386,12 +416,12 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
 		} else {
 			fmt.Fprintf(w, "<ol>\n")
 		}
-		tags, err = htmlItems(tags[1:], w, t.Raw)
+		tags, err = htmlItems(tags[1:], w, t.Raw, opt)
 		fmt.Fprintf(w, "</ol>\n")
 		return tags, err
 	case md.UnorderedListBlock:
 		fmt.Fprintf(w, "<ul>\n")
-		tags, err = htmlItems(tags[1:], w, t.Raw)
+		tags, err = htmlItems(tags[1:], w, t.Raw, opt)
 		fmt.Fprintf(w, "</ul>\n")
 		return tags, err
 	default:
@@ -403,7 +433,7 @@ func isBlank(line md.Run) bool {
 	return len(bytes.Trim(line.Bytes, " \t\n")) == 0
 }
 
-func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw) ([]md.Tag, error) {
+func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw, opt htmlOpt) ([]md.Tag, error) {
 	var err error
 	for {
 		if (tags[0] == md.End{}) {
@@ -411,29 +441,30 @@ func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw) ([]md.Tag, error
 		}
 
 		t := tags[0].(md.ItemBlock)
-		opt := 0
+		opt := htmlOpt{refs: opt.refs}
 		// top-packed?
 		n, m := len(t.Raw), len(parentRegion)
 		ifirst, ilast := t.Raw[0].Line, t.Raw[n-1].Line
 		lfirst, llast := parentRegion[0].Line, parentRegion[m-1].Line
 		if n == m {
-			opt = 1
+			opt.topPackedForP = true
 		} else if ifirst == lfirst && !isBlank(t.Raw[n-1]) {
-			opt = 1
+			opt.topPackedForP = true
 		} else if ifirst > lfirst && !isBlank(parentRegion[ifirst-lfirst-1]) {
-			opt = 1
+			opt.topPackedForP = true
 		}
 		// bottom-packed?
 		if n == m {
-			opt |= 2
+			opt.bottomPackedForP = true
 		} else if ilast == llast && !isBlank(parentRegion[ifirst-lfirst-1]) {
-			opt |= 2
+			opt.bottomPackedForP = true
 		} else if ilast < llast && !isBlank(t.Raw[n-1]) {
-			opt |= 2
+			opt.bottomPackedForP = true
 		}
+		opt.itemEndForP = t.Raw[n-1].Line
 
 		fmt.Fprintf(w, "<li>")
-		tags, err = htmlBlocks(tags[1:], w, opt|(t.Raw[n-1].Line<<2))
+		tags, err = htmlBlocks(tags[1:], w, opt)
 		fmt.Fprintf(w, "</li>\n")
 		if err != nil {
 			return tags, err
@@ -441,22 +472,22 @@ func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw) ([]md.Tag, error
 	}
 }
 
-func htmlBlocks(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
+func htmlBlocks(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 	var err error
 	for i := 0; len(tags) > 0; i++ {
 		if (tags[0] == md.End{}) {
 			return tags[1:], nil
 		}
-		oopt := opt
+		opt := opt
 		if i != 0 {
 			// top-packedness disables <p> only if 1st element
-			oopt &= ^int(1)
+			opt.topPackedForP = false
 		}
 		if i == 1 {
 			// bottom-packedness doesn't disable <p> for 2nd element
-			oopt &= ^int(2)
+			opt.bottomPackedForP = false
 		}
-		tags, err = htmlBlock(tags, w, oopt)
+		tags, err = htmlBlock(tags, w, opt)
 		if err != nil {
 			return tags, err
 		}
@@ -464,7 +495,7 @@ func htmlBlocks(tags []md.Tag, w io.Writer, opt int) ([]md.Tag, error) {
 	return tags, nil
 }
 
-func htmlSpans(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
+func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 	var err error
 	for {
 		switch t := tags[0].(type) {
@@ -478,7 +509,7 @@ func htmlSpans(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
 				1: "<em>",
 				2: "<strong>",
 			}[t.Level])
-			tags, err = htmlSpans(tags[1:], w)
+			tags, err = htmlSpans(tags[1:], w, opt)
 			fmt.Fprint(w, map[int]string{
 				1: "</em>",
 				2: "</strong>",
@@ -492,6 +523,25 @@ func htmlSpans(tags []md.Tag, w io.Writer) ([]md.Tag, error) {
 			fmt.Fprintf(w, `<code>%s</code>`,
 				html.EscapeString(string(t.Code)))
 			tags = tags[1:]
+		case md.Link:
+			ref := htmlLinkInfo{URL: t.URL, Title: t.Title}
+			found := ref.URL != ""
+			if !found {
+				ref, found = opt.refs[strings.ToLower(t.ReferenceID)]
+			}
+			if found {
+				// FIXME(akavel): fully correct escaping
+				// TODO(akavel): ref.Title
+				fmt.Fprintf(w, `<a href="%s">`, ref.URL)
+			} else {
+				fmt.Fprintf(w, `[`)
+			}
+			tags, err = htmlSpans(tags[1:], w, opt)
+			if found {
+				fmt.Fprintf(w, `</a>`)
+			} else {
+				// TODO(akavel): fmt.Fprintf(w, t.RawEnd.String())
+			}
 
 		case md.End:
 			return tags[1:], nil

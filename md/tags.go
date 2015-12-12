@@ -1,6 +1,9 @@
 package md // import "gopkg.in/akavel/vfmd.v0/md"
 
-type Link struct{ ReferenceID, URL, Title string }
+type Link struct {
+	ReferenceID, URL, Title string
+	RawEnd                  Raw
+}
 type AutomaticLink struct{ URL, Text string }
 type Emphasis struct{ Level int }
 type Code struct{ Code []byte }
@@ -45,6 +48,11 @@ type ItemBlock struct {
 	Raw
 }
 type ParagraphBlock struct {
+	Raw
+}
+type ReferenceResolutionBlock struct {
+	ReferenceID string
+	URL, Title  string
 	Raw
 }
 
