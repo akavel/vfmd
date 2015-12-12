@@ -208,7 +208,7 @@ type Detectors []Detector
 // FIXME(akavel): fill DefaultDetectors
 var DefaultDetectors = Detectors{
 	DetectorFunc(DetectNull),
-	// &ReferenceResolution{},
+	DetectorFunc(DetectReferenceResolution),
 	DetectorFunc(DetectSetextHeader),
 	DetectorFunc(DetectCode),
 	DetectorFunc(DetectAtxHeader),

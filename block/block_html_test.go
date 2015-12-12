@@ -424,6 +424,8 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 		tags, err = htmlItems(tags[1:], w, t.Raw, opt)
 		fmt.Fprintf(w, "</ul>\n")
 		return tags, err
+	case md.ReferenceResolutionBlock:
+		return tags[2:], nil
 	default:
 		return tags, fmt.Errorf("block type %T not supported yet", t)
 	}
