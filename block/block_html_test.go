@@ -44,16 +44,6 @@ TODO(akavel): missing tests:
 // {"span_level/emphasis/vs_html.md"},
 // {"span_level/emphasis/with_punctuation.md"},
 // {"span_level/image/image_title.md"},
-{"span_level/image/multiple_ref_id_definitions.md"},
-{"span_level/image/nested_images.md"},
-{"span_level/image/ref_case_sensitivity.md"},
-{"span_level/image/ref_id_matching.md"},
-{"span_level/image/ref_link.md"},
-{"span_level/image/ref_link_empty.md"},
-{"span_level/image/ref_link_self.md"},
-{"span_level/image/ref_link_with_2separating_spaces.md"},
-{"span_level/image/ref_link_with_separating_newline.md"},
-{"span_level/image/ref_link_with_separating_space.md"},
 {"span_level/image/ref_resolution_within_other_blocks.md"},
 {"span_level/image/square_brackets_in_link_or_ref.md"},
 {"span_level/image/two_consecutive_refs.md"},
@@ -263,6 +253,16 @@ func TestHTMLFiles(test *testing.T) {
 		{"span_level/image/incomplete.md"},
 		{"span_level/image/link_text_with_newline.md"},
 		{"span_level/image/link_with_parenthesis.md"},
+		{"span_level/image/multiple_ref_id_definitions.md"},
+		{"span_level/image/nested_images.md"},
+		{"span_level/image/ref_case_sensitivity.md"},
+		{"span_level/image/ref_id_matching.md"},
+		{"span_level/image/ref_link.md"},
+		{"span_level/image/ref_link_empty.md"},
+		{"span_level/image/ref_link_self.md"},
+		{"span_level/image/ref_link_with_2separating_spaces.md"},
+		{"span_level/image/ref_link_with_separating_newline.md"},
+		{"span_level/image/ref_link_with_separating_space.md"},
 	}
 
 	// Patches to what I believe are bugs in the original testdata, when
@@ -353,6 +353,16 @@ type htmlOpt struct {
 	refs                            map[string]htmlLinkInfo
 	topPackedForP, bottomPackedForP bool
 	itemEndForP                     int
+}
+
+func (opt htmlOpt) fillRef(refID string, ref *htmlLinkInfo) bool {
+	newref, found := opt.refs[strings.ToLower(refID)]
+	if !found {
+		return false
+	}
+	ref.URL = newref.URL
+	ref.Title = newref.Title
+	return true
 }
 
 func htmlRefs(tags []md.Tag) map[string]htmlLinkInfo {
@@ -547,7 +557,7 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			ref := htmlLinkInfo{URL: t.URL, Title: t.Title}
 			found := ref.URL != ""
 			if !found {
-				ref, found = opt.refs[strings.ToLower(t.ReferenceID)]
+				found = opt.fillRef(t.ReferenceID, &ref)
 			}
 			if found {
 				// FIXME(akavel): fully correct escaping
@@ -566,7 +576,7 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			ref := htmlLinkInfo{URL: t.URL, Title: t.Title}
 			found := ref.URL != ""
 			if !found {
-				ref, found = opt.refs[strings.ToLower(t.ReferenceID)]
+				found = opt.fillRef(t.ReferenceID, &ref)
 			}
 			alt := string(t.AltText)
 			if found {

@@ -3,6 +3,7 @@ package block
 import (
 	"bytes"
 	"regexp"
+	"strings"
 
 	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/utils"
@@ -57,6 +58,8 @@ func DetectReferenceResolution(start, second Line, detectors Detectors) Handler 
 		titleContainer = string(refDefinitionTrailingSequence)
 	}
 
+	// NOTE(akavel): below line seems not in the spec, but seems necessary (refDefinitionTrailingSequence always starts with space IIUC).
+	titleContainer = strings.TrimLeft(titleContainer, " ")
 	if m := reRefResolution4.FindStringSubmatch(titleContainer); len(m) != 0 {
 		b.Title = m[1]
 	}
