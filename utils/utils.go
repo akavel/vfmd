@@ -1,6 +1,13 @@
 package utils // import "gopkg.in/akavel/vfmd.v0/utils"
 
-import "strings"
+import (
+	"bytes"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"gopkg.in/akavel/vfmd.v0/md"
+)
 
 // Whites contains all whitespace characters as defined by VFMD specification.
 const Whites = "\x09\x0a\x0c\x0d\x20"
@@ -54,4 +61,63 @@ func OffsetIn(s, span []byte) (int, bool) {
 		return -1, false
 	}
 	return len(bigS) - len(bigSpan), true
+}
+
+func DeEscape(s string) string {
+	buf := bytes.NewBuffer(nil)
+	esc := false
+	for _, c := range []rune(s) {
+		if esc {
+			if !unicode.IsPunct(c) && !unicode.IsSymbol(c) {
+				buf.WriteByte('\\')
+			}
+			buf.WriteRune(c)
+			esc = false
+			continue
+		}
+		if c != '\\' {
+			buf.WriteRune(c)
+			continue
+		}
+		esc = true
+	}
+	if esc {
+		buf.WriteByte('\\')
+	}
+	return buf.String()
+}
+
+func DeEscapeProse(p md.Prose) md.Prose {
+	result := make(md.Prose, 0, len(p))
+	var buf []byte
+runs:
+	for i := 0; i < len(p); i++ {
+		if buf == nil {
+			buf = p[i].Bytes
+		}
+		for j := 0; ; {
+			k := bytes.IndexByte(buf[j:], '\\')
+			if k == -1 {
+				result = append(result, md.Run{
+					Line:  p[i].Line,
+					Bytes: buf,
+				})
+				buf = nil
+				continue runs
+			}
+			j += k
+			r, _ := utf8.DecodeRune(buf[j+1:])
+			if unicode.IsPunct(r) || unicode.IsSymbol(r) {
+				result = append(result, md.Run{
+					Line:  p[i].Line,
+					Bytes: buf[:j],
+				})
+				buf = buf[j+1:]
+				i--
+				continue runs
+			}
+			j++
+		}
+	}
+	return result
 }

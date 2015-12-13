@@ -90,19 +90,20 @@ walk:
 	for _, span := range s.Spans {
 		offset, _ := utils.OffsetIn(buf, span.Pos)
 		if offset > endOffset {
-			tags = append(tags, md.Prose{
+			// FIXME(akavel): for every "  \n" sequence, insert an md.HardBreak tag
+			tags = append(tags, utils.DeEscapeProse(md.Prose{
 				// FIXME(akavel): fix Line in md.Run
 				md.Run{-1, buf[endOffset:offset]},
-			})
+			}))
 		}
 		tags = append(tags, span.Tag)
 		endOffset = offset + len(span.Pos)
 	}
 	if endOffset < len(buf) {
-		tags = append(tags, md.Prose{
+		tags = append(tags, utils.DeEscapeProse(md.Prose{
 			// FIXME(akavel): fix Line in md.Run
 			md.Run{-1, buf[endOffset:]},
-		})
+		}))
 	}
 	return tags
 }

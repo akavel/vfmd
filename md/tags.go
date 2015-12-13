@@ -11,7 +11,8 @@ type Image struct {
 	ReferenceID string
 	URL         string
 	Title       string
-	AltText     []byte
+	AltText     string
+	RawEnd      Raw
 }
 type End struct{}
 

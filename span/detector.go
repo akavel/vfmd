@@ -87,6 +87,9 @@ func closingLinkTag(s *Context) (consumed int) {
 		opening := s.Openings.Peek()
 		s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
 			ReferenceID: utils.Simplify(m[1]),
+			RawEnd: md.Raw{
+				md.Run{-1, m[0]},
+			},
 		})
 		s.Emit(m[0], md.End{})
 		s.Openings.Pop()
@@ -121,16 +124,19 @@ func closingLinkTag(s *Context) (consumed int) {
 			}
 			// emit a link
 			opening := s.Openings.Peek()
+			closing := rest[:len(rest)-len(residual)+len(t[0])]
 			s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
 				URL:   linkURL,
 				Title: title,
+				RawEnd: md.Raw{
+					md.Run{-1, closing},
+				},
 			})
-			closing := rest[:len(rest)-len(residual)+len(t[0])]
 			s.Emit(closing, md.End{})
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
-			return len(rest) - len(residual) + len(t[0])
+			return len(closing)
 		}
 	}
 
@@ -148,6 +154,9 @@ func closingLinkTag(s *Context) (consumed int) {
 	begin := s.Openings.Peek()
 	s.Emit(s.Buf[begin.Pos:][:len(begin.Tag)], md.Link{
 		ReferenceID: utils.Simplify(s.Buf[begin.Pos+len(begin.Tag) : s.Pos]),
+		RawEnd: md.Raw{
+			md.Run{-1, m[0]},
+		},
 	})
 	s.Emit(m[0], md.End{})
 	s.Openings.Pop()
@@ -312,8 +321,11 @@ func DetectImage(s *Context) (consumed int) {
 			refID = utils.Simplify(altText)
 		}
 		s.Emit(tag, md.Image{
-			AltText:     altText,
+			AltText:     utils.DeEscape(string(altText)),
 			ReferenceID: refID,
+			RawEnd: md.Raw{
+				md.Run{-1, r[0]},
+			},
 		})
 		return len(tag)
 	}
@@ -333,7 +345,10 @@ func DetectImage(s *Context) (consumed int) {
 	tag := rest[:len(rest)-len(residual)+len(closing)]
 	s.Emit(tag, md.Image{
 		ReferenceID: utils.Simplify(altText),
-		AltText:     altText,
+		AltText:     utils.DeEscape(string(altText)),
+		RawEnd: md.Raw{
+			md.Run{-1, closing},
+		},
 	})
 	return len(tag)
 }
@@ -397,8 +412,11 @@ func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consum
 	s.Emit(tag, md.Image{
 		// TODO(akavel): keep only raw slices as fields, add methods to return processed strings
 		URL:     utils.DelWhites(string(unprocessedSrc)),
-		Title:   title,
-		AltText: altText,
+		Title:   utils.DeEscape(title),
+		AltText: utils.DeEscape(string(altText)),
+		RawEnd: md.Raw{
+			md.Run{-1, tag[prefix:]},
+		},
 	})
 	return len(tag)
 }

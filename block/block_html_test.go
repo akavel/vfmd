@@ -20,6 +20,7 @@ import (
 	"gopkg.in/akavel/vfmd.v0"
 	. "gopkg.in/akavel/vfmd.v0/block"
 	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
 /*
@@ -44,9 +45,6 @@ TODO(akavel): missing tests:
 // {"span_level/emphasis/vs_html.md"},
 // {"span_level/emphasis/with_punctuation.md"},
 // {"span_level/image/image_title.md"},
-{"span_level/image/ref_resolution_within_other_blocks.md"},
-{"span_level/image/square_brackets_in_link_or_ref.md"},
-{"span_level/image/two_consecutive_refs.md"},
 {"span_level/image/unused_ref.md"},
 {"span_level/image/url_escapes.md"},
 {"span_level/image/url_in_angle_brackets.md"},
@@ -263,6 +261,9 @@ func TestHTMLFiles(test *testing.T) {
 		{"span_level/image/ref_link_with_2separating_spaces.md"},
 		{"span_level/image/ref_link_with_separating_newline.md"},
 		{"span_level/image/ref_link_with_separating_space.md"},
+		{"span_level/image/ref_resolution_within_other_blocks.md"},
+		{"span_level/image/square_brackets_in_link_or_ref.md"},
+		{"span_level/image/two_consecutive_refs.md"},
 	}
 
 	// Patches to what I believe are bugs in the original testdata, when
@@ -570,7 +571,9 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			if found {
 				fmt.Fprintf(w, `</a>`)
 			} else {
-				// TODO(akavel): fmt.Fprintf(w, t.RawEnd.String())
+				for _, r := range t.RawEnd {
+					w.Write(r.Bytes)
+				}
 			}
 		case md.Image:
 			ref := htmlLinkInfo{URL: t.URL, Title: t.Title}
@@ -591,7 +594,11 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 					panic(err)
 				}
 			} else {
-				fmt.Fprintf(w, `![%s]`, t.ReferenceID)
+				fmt.Fprintf(w, `![%s`, alt)
+				rawEnd := utils.DeEscapeProse(md.Prose(t.RawEnd))
+				for _, r := range rawEnd {
+					w.Write(r.Bytes)
+				}
 			}
 			tags = tags[1:]
 
