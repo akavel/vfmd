@@ -61,10 +61,10 @@ func DetectReferenceResolution(start, second Line, detectors Detectors) Handler 
 	// NOTE(akavel): below line seems not in the spec, but seems necessary (refDefinitionTrailingSequence always starts with space IIUC).
 	titleContainer = strings.TrimLeft(titleContainer, " ")
 	if m := reRefResolution4.FindStringSubmatch(titleContainer); len(m) != 0 {
-		b.Title = m[1]
+		b.Title = utils.DeEscape(m[1])
 	}
 	if s := hasQuotedStringPrefix(titleContainer); s != "" {
-		b.Title = s[1 : len(s)-1]
+		b.Title = utils.DeEscape(s[1 : len(s)-1])
 	}
 
 	return HandlerFunc(func(line Line, ctx Context) (bool, error) {

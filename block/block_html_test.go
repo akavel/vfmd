@@ -45,45 +45,8 @@ TODO(akavel): missing tests:
 // {"span_level/emphasis/vs_html.md"},
 // {"span_level/emphasis/with_punctuation.md"},
 // {"span_level/image/image_title.md"},
-{"span_level/image/unused_ref.md"},
-{"span_level/image/url_escapes.md"},
-{"span_level/image/url_in_angle_brackets.md"},
-{"span_level/image/url_special_chars.md"},
-{"span_level/image/url_whitespace.md"},
-{"span_level/image/vs_code.md"},
-{"span_level/image/vs_emph.md"},
-{"span_level/image/vs_html.md"},
-{"span_level/image/within_link.md"},
-{"span_level/link/direct_link.md"},
-{"span_level/link/direct_link_with_2separating_spaces.md"},
-{"span_level/link/direct_link_with_separating_newline.md"},
-{"span_level/link/direct_link_with_separating_space.md"},
-{"span_level/link/incomplete.md"},
-{"span_level/link/link_text_with_newline.md"},
-{"span_level/link/link_title.md"},
-{"span_level/link/link_with_parenthesis.md"},
-{"span_level/link/multiple_ref_id_definitions.md"},
-{"span_level/link/nested_links.md"},
-{"span_level/link/ref_case_sensitivity.md"},
-{"span_level/link/ref_id_matching.md"},
-{"span_level/link/ref_link.md"},
-{"span_level/link/ref_link_empty.md"},
-{"span_level/link/ref_link_self.md"},
-{"span_level/link/ref_link_with_2separating_spaces.md"},
-{"span_level/link/ref_link_with_separating_newline.md"},
-{"span_level/link/ref_link_with_separating_space.md"},
-{"span_level/link/ref_resolution_within_other_blocks.md"},
-{"span_level/link/square_brackets_in_link_or_ref.md"},
-{"span_level/link/two_consecutive_refs.md"},
-{"span_level/link/unused_ref.md"},
-{"span_level/link/url_escapes.md"},
-{"span_level/link/url_in_angle_brackets.md"},
-{"span_level/link/url_special_chars.md"},
-{"span_level/link/url_whitespace.md"},
-{"span_level/link/vs_code.md"},
-{"span_level/link/vs_emph.md"},
-{"span_level/link/vs_html.md"},
-{"span_level/link/vs_image.md"},
+// {"span_level/image/vs_html.md"},
+// {"span_level/link/vs_html.md"},
 */
 
 func TestHTMLFiles(test *testing.T) {
@@ -264,12 +227,50 @@ func TestHTMLFiles(test *testing.T) {
 		{"span_level/image/ref_resolution_within_other_blocks.md"},
 		{"span_level/image/square_brackets_in_link_or_ref.md"},
 		{"span_level/image/two_consecutive_refs.md"},
+		{"span_level/image/unused_ref.md"},
+		{"span_level/image/url_escapes.md"},
+		{"span_level/image/url_in_angle_brackets.md"},
+		{"span_level/image/url_special_chars.md"},
+		{"span_level/image/url_whitespace.md"},
+		{"span_level/image/vs_code.md"},
+		{"span_level/image/vs_emph.md"},
+		{"span_level/image/within_link.md"},
+		{"span_level/link/direct_link.md"},
+		{"span_level/link/direct_link_with_2separating_spaces.md"},
+		{"span_level/link/direct_link_with_separating_newline.md"},
+		{"span_level/link/direct_link_with_separating_space.md"},
+		{"span_level/link/incomplete.md"},
+		{"span_level/link/link_text_with_newline.md"},
+		{"span_level/link/link_title.md"},
+		{"span_level/link/link_with_parenthesis.md"},
+		{"span_level/link/multiple_ref_id_definitions.md"},
+		{"span_level/link/nested_links.md"},
+		{"span_level/link/ref_case_sensitivity.md"},
+		{"span_level/link/ref_id_matching.md"},
+		{"span_level/link/ref_link.md"},
+		{"span_level/link/ref_link_empty.md"},
+		{"span_level/link/ref_link_self.md"},
+		{"span_level/link/ref_link_with_2separating_spaces.md"},
+		{"span_level/link/ref_link_with_separating_newline.md"},
+		{"span_level/link/ref_link_with_separating_space.md"},
+		{"span_level/link/ref_resolution_within_other_blocks.md"},
+		{"span_level/link/square_brackets_in_link_or_ref.md"},
+		{"span_level/link/two_consecutive_refs.md"},
+		{"span_level/link/unused_ref.md"},
+		{"span_level/link/url_escapes.md"},
+		{"span_level/link/url_in_angle_brackets.md"},
+		{"span_level/link/url_special_chars.md"},
+		{"span_level/link/url_whitespace.md"},
+		{"span_level/link/vs_code.md"},
+		{"span_level/link/vs_emph.md"},
+		{"span_level/link/vs_image.md"},
 	}
 
 	// Patches to what I believe are bugs in the original testdata, when
 	// confronted with the spec.
 	replacer := strings.NewReplacer(
 		"'&gt;'", "&#39;&gt;&#39;",
+		"&#x27;", "&#39;",
 		`"/>`, `" />`,
 		// TODO(akavel): consider fixing (?) below line in our code
 		"&quot;", "&#34;",
@@ -277,6 +278,12 @@ func TestHTMLFiles(test *testing.T) {
 		"%5C", "%5c",
 		// TODO(akavel): mitigate this somehow? or not? X|
 		`<img src="url)"`, `<img src="url%29"`,
+		`<img src="url("`, `<img src="url%28"`,
+		`<a href="url)"`, `<a href="url%29"`,
+		`<a href="url("`, `<a href="url%28"`,
+		// TODO(akavel): I assume html/template has this ok, but need to verify at some point
+		`<img src="url*#$%%5E&amp;%5C%7E"`, `<img src="url*#$%25%5e&amp;%5c~"`,
+		`<a href="url*#$%%5E&amp;%5C%7E"`, `<a href="url*#$%25%5e&amp;%5c~"`,
 		"\n<li>\n    Parent list\n\n    <ol>", "\n<li>Parent list<ol>",
 		"<code>Code block included in list\n</code>", "<code> Code block included in list\n</code>",
 		"And another\n\n<p>Another para", "And another<p>Another para",
@@ -522,6 +529,10 @@ var (
 			`{{if not (eq .alt "")}} alt="{{.alt}}"{{end}}` +
 			`{{if not (eq .Title "")}} title="{{.Title}}"{{end}}` +
 			` />`))
+	tmplLink = template.Must(template.New("").Parse(
+		`<a href="{{.URL}}"` +
+			`{{if not (eq .Title "")}} title="{{.Title}}"{{end}}` +
+			`>`))
 )
 
 func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
@@ -562,8 +573,15 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			}
 			if found {
 				// FIXME(akavel): fully correct escaping
-				// TODO(akavel): ref.Title
-				fmt.Fprintf(w, `<a href="%s">`, ref.URL)
+				// FIXME(akavel): do something nice with err
+				// FIXME(akavel): using URL below allows for "javascript:"; provide some way to protect against this (only whitelisted URL schemes?)
+				err := tmplLink.Execute(w, map[string]interface{}{
+					"Title": ref.Title,
+					"URL":   template.URL(ref.URL),
+				})
+				if err != nil {
+					panic(err)
+				}
 			} else {
 				fmt.Fprintf(w, `[`)
 			}
@@ -571,7 +589,8 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			if found {
 				fmt.Fprintf(w, `</a>`)
 			} else {
-				for _, r := range t.RawEnd {
+				rawEnd := utils.DeEscapeProse(md.Prose(t.RawEnd))
+				for _, r := range rawEnd {
 					w.Write(r.Bytes)
 				}
 			}
@@ -585,10 +604,11 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			if found {
 				// FIXME(akavel): fully correct escaping
 				// FIXME(akavel): do something nice with err
+				// FIXME(akavel): using URL below allows for "javascript:"; provide some way to protect against this (only whitelisted URL schemes?)
 				err := tmplImage.Execute(w, map[string]interface{}{
 					"Title": ref.Title,
 					"alt":   alt,
-					"URL":   ref.URL,
+					"URL":   template.URL(ref.URL),
 				})
 				if err != nil {
 					panic(err)

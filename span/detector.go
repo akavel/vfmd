@@ -127,7 +127,7 @@ func closingLinkTag(s *Context) (consumed int) {
 			closing := rest[:len(rest)-len(residual)+len(t[0])]
 			s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
 				URL:   linkURL,
-				Title: title,
+				Title: utils.DeEscape(title),
 				RawEnd: md.Raw{
 					md.Run{-1, closing},
 				},
