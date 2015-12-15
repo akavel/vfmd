@@ -284,6 +284,10 @@ func TestHTMLFiles(test *testing.T) {
 		// TODO(akavel): I assume html/template has this ok, but need to verify at some point
 		`<img src="url*#$%%5E&amp;%5C%7E"`, `<img src="url*#$%25%5e&amp;%5c~"`,
 		`<a href="url*#$%%5E&amp;%5C%7E"`, `<a href="url*#$%25%5e&amp;%5c~"`,
+		// TODO(akavel): or not TODO? HTML entities currently not supported, incl. in URLs
+		`<a href="http://g&ouml;&ouml;gle.com">`, `<a href="http://g&amp;ouml;&amp;ouml;gle.com">`,
+		`<img src="http://g&ouml;&ouml;gle.com"`, `<img src="http://g&amp;ouml;&amp;ouml;gle.com"`,
+		// Various newline/space fixes in the testcases.
 		"\n<li>\n    Parent list\n\n    <ol>", "\n<li>Parent list<ol>",
 		"<code>Code block included in list\n</code>", "<code> Code block included in list\n</code>",
 		"And another\n\n<p>Another para", "And another<p>Another para",
