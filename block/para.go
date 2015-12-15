@@ -8,7 +8,6 @@ import (
 )
 
 type ParagraphDetector struct {
-	// FIXME(akavel): below fields must be set appropriately when creating a ParagraphDetector
 	InQuote bool
 	InList  bool
 }

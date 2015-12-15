@@ -139,7 +139,6 @@ func TestNewApproach(test *testing.T) {
 	if err != nil {
 		test.Fatal(err)
 	}
-	// FIXME(akavel): all Tags should retain field .Raw (type Region) containing injected lines/spans (with trailing newlines where appropriate)
 	expected := newApproach_flatOutput
 	if !reflect.DeepEqual(result, expected) {
 		// TODO(akavel): spew.Dump?

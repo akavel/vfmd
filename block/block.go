@@ -205,7 +205,6 @@ type Detectors []Detector
 
 // DefaultDetectors contains the list of default detectors in order in which
 // they should be normally applied.
-// FIXME(akavel): fill DefaultDetectors
 var DefaultDetectors = Detectors{
 	DetectorFunc(DetectNull),
 	DetectorFunc(DetectReferenceResolution),
