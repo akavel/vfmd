@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/utils"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 )
 
 var reOrderedList = regexp.MustCompile(`^( *([0-9]+)\. +)[^ ]`)
@@ -71,7 +71,7 @@ func DetectOrderedList(start, second Line, detectors Detectors) Handler {
 		m := reOrderedList.FindSubmatch(next.Bytes)
 		if m != nil {
 			text := bytes.TrimLeft(m[1], " ")
-			spaces, _ := utils.OffsetIn(m[1], text)
+			spaces, _ := mdutils.OffsetIn(m[1], text)
 			if spaces >= len(block.Starter.Bytes) {
 				m = nil
 			}

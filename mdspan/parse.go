@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/utils"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 )
 
 type NodeType int
@@ -88,10 +88,10 @@ walk:
 	tags := []md.Tag{}
 	endOffset := 0
 	for _, span := range s.Spans {
-		offset, _ := utils.OffsetIn(buf, span.Pos)
+		offset, _ := mdutils.OffsetIn(buf, span.Pos)
 		if offset > endOffset {
 			// FIXME(akavel): for every "  \n" sequence, insert an md.HardBreak tag
-			tags = append(tags, utils.DeEscapeProse(md.Prose{
+			tags = append(tags, mdutils.DeEscapeProse(md.Prose{
 				// FIXME(akavel): fix Line in md.Run
 				md.Run{-1, buf[endOffset:offset]},
 			}))
@@ -100,7 +100,7 @@ walk:
 		endOffset = offset + len(span.Pos)
 	}
 	if endOffset < len(buf) {
-		tags = append(tags, utils.DeEscapeProse(md.Prose{
+		tags = append(tags, mdutils.DeEscapeProse(md.Prose{
 			// FIXME(akavel): fix Line in md.Run
 			md.Run{-1, buf[endOffset:]},
 		}))

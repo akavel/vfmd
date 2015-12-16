@@ -1,4 +1,4 @@
-package utils
+package mdutils
 
 // TODO(akavel): this struct will be useful when implementing HTML; should be
 // deleted for now, as it's unused and untested.

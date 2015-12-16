@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/utils"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 )
 
 // TODO(akavel): name below regexps better
@@ -27,7 +27,7 @@ func DetectReferenceResolution(start, second Line, detectors Detectors) Handler 
 	}
 	b := md.ReferenceResolutionBlock{}
 	unprocessedReferenceID := m[1]
-	b.ReferenceID = utils.Simplify(unprocessedReferenceID)
+	b.ReferenceID = mdutils.Simplify(unprocessedReferenceID)
 	refValueSequence := m[9] // TODO(akavel): verify if right one
 	m = reRefResolution2.FindSubmatch(refValueSequence)
 	if len(m) == 0 {
@@ -61,10 +61,10 @@ func DetectReferenceResolution(start, second Line, detectors Detectors) Handler 
 	// NOTE(akavel): below line seems not in the spec, but seems necessary (refDefinitionTrailingSequence always starts with space IIUC).
 	titleContainer = strings.TrimLeft(titleContainer, " ")
 	if m := reRefResolution4.FindStringSubmatch(titleContainer); len(m) != 0 {
-		b.Title = utils.DeEscape(m[1])
+		b.Title = mdutils.DeEscape(m[1])
 	}
 	if s := hasQuotedStringPrefix(titleContainer); s != "" {
-		b.Title = utils.DeEscape(s[1 : len(s)-1])
+		b.Title = mdutils.DeEscape(s[1 : len(s)-1])
 	}
 
 	return HandlerFunc(func(line Line, ctx Context) (bool, error) {

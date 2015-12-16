@@ -8,7 +8,7 @@ import (
 	"unicode/utf8"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/utils"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 )
 
 type Detector interface {
@@ -86,7 +86,7 @@ func closingLinkTag(s *Context) (consumed int) {
 		// emit a link
 		opening := s.Openings.Peek()
 		s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
-			ReferenceID: utils.Simplify(m[1]),
+			ReferenceID: mdutils.Simplify(m[1]),
 			RawEnd: md.Raw{
 				md.Run{-1, m[0]},
 			},
@@ -105,7 +105,7 @@ func closingLinkTag(s *Context) (consumed int) {
 		m = reClosingTagWithAngle.FindSubmatch(rest)
 	}
 	if m != nil {
-		linkURL := utils.DelWhites(string(m[1]))
+		linkURL := mdutils.DelWhites(string(m[1]))
 		residual := m[2]
 		title := ""
 		t := reJustClosingParen.FindSubmatch(residual)
@@ -127,7 +127,7 @@ func closingLinkTag(s *Context) (consumed int) {
 			closing := rest[:len(rest)-len(residual)+len(t[0])]
 			s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
 				URL:   linkURL,
-				Title: utils.DeEscape(title),
+				Title: mdutils.DeEscape(title),
 				RawEnd: md.Raw{
 					md.Run{-1, closing},
 				},
@@ -153,7 +153,7 @@ func closingLinkTag(s *Context) (consumed int) {
 	// emit a link
 	begin := s.Openings.Peek()
 	s.Emit(s.Buf[begin.Pos:][:len(begin.Tag)], md.Link{
-		ReferenceID: utils.Simplify(s.Buf[begin.Pos+len(begin.Tag) : s.Pos]),
+		ReferenceID: mdutils.Simplify(s.Buf[begin.Pos+len(begin.Tag) : s.Pos]),
 		RawEnd: md.Raw{
 			md.Run{-1, m[0]},
 		},
@@ -198,7 +198,7 @@ func DetectEmphasis(s *Context) (consumed int) {
 	// left-flanking? if yes, add some openings
 	if flanking < 0 {
 		for _, tag := range tags {
-			pos, _ := utils.OffsetIn(s.Buf, tag)
+			pos, _ := mdutils.OffsetIn(s.Buf, tag)
 			s.Openings.Push(MaybeOpening{
 				Tag: string(tag),
 				Pos: pos,
@@ -287,7 +287,7 @@ func DetectCode(s *Context) (consumed int) {
 		if i >= len(rest) || rest[i] != '`' {
 			// found closing tag!
 			code := rest[len(opening) : i-len(opening)]
-			code = bytes.Trim(code, utils.Whites)
+			code = bytes.Trim(code, mdutils.Whites)
 			s.Emit(rest[:i], md.Code{Code: code})
 			return i
 		}
@@ -314,14 +314,14 @@ func DetectImage(s *Context) (consumed int) {
 	r := reImageRef.FindSubmatch(residual)
 	if r != nil {
 		tag := rest[:len(rest)-len(residual)+len(r[0])]
-		refID := utils.Simplify(r[1])
+		refID := mdutils.Simplify(r[1])
 		// NOTE(akavel): below refID resolution seems not in spec, but expected according to testdata/test/span_level/image{/expected,}/link_text_with_newline.* and makes sense to me as such.
 		// TODO(akavel): send fix for this to the spec
 		if refID == "" {
-			refID = utils.Simplify(altText)
+			refID = mdutils.Simplify(altText)
 		}
 		s.Emit(tag, md.Image{
-			AltText:     utils.DeEscape(string(altText)),
+			AltText:     mdutils.DeEscape(string(altText)),
 			ReferenceID: refID,
 			RawEnd: md.Raw{
 				md.Run{-1, r[0]},
@@ -344,8 +344,8 @@ func DetectImage(s *Context) (consumed int) {
 	}
 	tag := rest[:len(rest)-len(residual)+len(closing)]
 	s.Emit(tag, md.Image{
-		ReferenceID: utils.Simplify(altText),
-		AltText:     utils.DeEscape(string(altText)),
+		ReferenceID: mdutils.Simplify(altText),
+		AltText:     mdutils.DeEscape(string(altText)),
 		RawEnd: md.Raw{
 			md.Run{-1, closing},
 		},
@@ -411,9 +411,9 @@ func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consum
 	tag := rest[:prefix+(len(residual)-len(attrs))+len(a[0])]
 	s.Emit(tag, md.Image{
 		// TODO(akavel): keep only raw slices as fields, add methods to return processed strings
-		URL:     utils.DelWhites(string(unprocessedSrc)),
-		Title:   utils.DeEscape(title),
-		AltText: utils.DeEscape(string(altText)),
+		URL:     mdutils.DelWhites(string(unprocessedSrc)),
+		Title:   mdutils.DeEscape(title),
+		AltText: mdutils.DeEscape(string(altText)),
 		RawEnd: md.Raw{
 			md.Run{-1, tag[prefix:]},
 		},
@@ -439,7 +439,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 		m = reMailtoURLWithinAngle.FindSubmatch(rest)
 	}
 	if m != nil {
-		url := utils.DelWhites(string(m[1]))
+		url := mdutils.DelWhites(string(m[1]))
 		s.Emit(m[0], md.AutomaticLink{
 			URL:  url,
 			Text: url,

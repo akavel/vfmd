@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/utils"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 )
 
 func QuickHTML(w io.Writer, blocks []md.Tag) error {
@@ -299,7 +299,7 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			if found {
 				c.printf(`</a>`)
 			} else {
-				rawEnd := utils.DeEscapeProse(md.Prose(t.RawEnd))
+				rawEnd := mdutils.DeEscapeProse(md.Prose(t.RawEnd))
 				for _, r := range rawEnd {
 					c.write(r.Bytes)
 				}
@@ -323,7 +323,7 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 				}
 			} else {
 				c.printf(`![%s`, alt)
-				rawEnd := utils.DeEscapeProse(md.Prose(t.RawEnd))
+				rawEnd := mdutils.DeEscapeProse(md.Prose(t.RawEnd))
 				for _, r := range rawEnd {
 					c.write(r.Bytes)
 				}

@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/utils"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 )
 
 func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
@@ -23,7 +23,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 		text := bytes.TrimRight(line.Bytes, "\n")
 		text = bytes.Trim(text, "#")
 		if len(text) > 0 {
-			block.Level, _ = utils.OffsetIn(line.Bytes, text)
+			block.Level, _ = mdutils.OffsetIn(line.Bytes, text)
 		} else {
 			block.Level = len(bytes.TrimRight(line.Bytes, "\n"))
 		}
@@ -33,7 +33,7 @@ func DetectAtxHeader(first, second Line, detectors Detectors) Handler {
 
 		spanRegion := md.Raw{md.Run{
 			Line:  line.Line,
-			Bytes: bytes.Trim(text, utils.Whites),
+			Bytes: bytes.Trim(text, mdutils.Whites),
 		}}
 		ctx.Emit(block)
 		parseSpans(spanRegion, ctx)

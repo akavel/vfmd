@@ -1,4 +1,4 @@
-package utils // import "gopkg.in/akavel/vfmd.v0/utils"
+package mdutils // import "gopkg.in/akavel/vfmd.v0/mdutils"
 
 import (
 	"bytes"
