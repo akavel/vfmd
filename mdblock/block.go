@@ -1,4 +1,4 @@
-package block // import "gopkg.in/akavel/vfmd.v0/block"
+package mdblock // import "gopkg.in/akavel/vfmd.v0/mdblock"
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/span"
+	"gopkg.in/akavel/vfmd.v0/mdspan"
 )
 
 // func unstack() {
@@ -37,7 +37,7 @@ const (
 type Context interface {
 	GetMode() Mode
 	GetDetectors() Detectors
-	GetSpanDetectors() []span.Detector
+	GetSpanDetectors() []mdspan.Detector
 	Emit(md.Tag)
 }
 
@@ -45,13 +45,13 @@ type defaultContext struct {
 	mode          Mode
 	tags          []md.Tag
 	detectors     Detectors
-	spanDetectors []span.Detector
+	spanDetectors []mdspan.Detector
 }
 
-func (c *defaultContext) GetMode() Mode                     { return c.mode }
-func (c *defaultContext) GetDetectors() Detectors           { return c.detectors }
-func (c *defaultContext) GetSpanDetectors() []span.Detector { return c.spanDetectors }
-func (c *defaultContext) Emit(tag md.Tag)                   { c.tags = append(c.tags, tag) }
+func (c *defaultContext) GetMode() Mode                       { return c.mode }
+func (c *defaultContext) GetDetectors() Detectors             { return c.detectors }
+func (c *defaultContext) GetSpanDetectors() []mdspan.Detector { return c.spanDetectors }
+func (c *defaultContext) Emit(tag md.Tag)                     { c.tags = append(c.tags, tag) }
 
 type Parser struct {
 	Context
@@ -110,14 +110,14 @@ func (p *Parser) WriteLine(line Line) error {
 }
 
 // Important: r must be pre-processed with vfmd.QuickPrep or vfmd.Preprocessor
-func QuickParse(r io.Reader, mode Mode, detectors Detectors, spanDetectors []span.Detector) ([]md.Tag, error) {
+func QuickParse(r io.Reader, mode Mode, detectors Detectors, spanDetectors []mdspan.Detector) ([]md.Tag, error) {
 	scan := bufio.NewScanner(r)
 	scan.Split(splitKeepingEOLs)
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
 	if spanDetectors == nil {
-		spanDetectors = span.DefaultDetectors
+		spanDetectors = mdspan.DefaultDetectors
 	}
 	context := &defaultContext{
 		mode:          mode,
@@ -269,7 +269,7 @@ func parseSpans(region md.Raw, ctx Context) {
 	for _, run := range region {
 		buf = append(buf, run.Bytes...) // FIXME(akavel): quick & dirty & foul prototyping hack
 	}
-	spans := span.Parse(buf, ctx.GetSpanDetectors())
+	spans := mdspan.Parse(buf, ctx.GetSpanDetectors())
 	for _, span := range spans {
 		ctx.Emit(span)
 	}

@@ -1,4 +1,4 @@
-package block
+package mdblock
 
 import "gopkg.in/akavel/vfmd.v0/md"
 

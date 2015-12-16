@@ -1,4 +1,4 @@
-package span // import "gopkg.in/akavel/vfmd.v0/span"
+package mdspan // import "gopkg.in/akavel/vfmd.v0/mdspan"
 
 import (
 	"bytes"

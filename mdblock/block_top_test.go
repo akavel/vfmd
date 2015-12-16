@@ -1,4 +1,4 @@
-package block_test
+package mdblock
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 	"github.com/kylelemons/godebug/diff"
 
 	"gopkg.in/akavel/vfmd.v0"
-	. "gopkg.in/akavel/vfmd.v0/block"
 	"gopkg.in/akavel/vfmd.v0/md"
 )
 

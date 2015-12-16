@@ -1,9 +1,8 @@
-package block_test
+package mdblock
 
 import (
 	"testing"
 
-	. "gopkg.in/akavel/vfmd.v0/block"
 	"gopkg.in/akavel/vfmd.v0/md"
 )
 

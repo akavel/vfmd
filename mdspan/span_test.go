@@ -1,4 +1,4 @@
-package span
+package mdspan
 
 import (
 	"bytes"

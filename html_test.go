@@ -11,7 +11,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kylelemons/godebug/diff"
 
-	"gopkg.in/akavel/vfmd.v0/block"
+	"gopkg.in/akavel/vfmd.v0/mdblock"
 )
 
 /*
@@ -323,7 +323,7 @@ func TestHTMLFiles(test *testing.T) {
 			continue
 		}
 		prep, _ := QuickPrep(bytes.NewReader(data))
-		blocks, err := block.QuickParse(bytes.NewReader(prep), block.BlocksAndSpans, nil, nil)
+		blocks, err := mdblock.QuickParse(bytes.NewReader(prep), mdblock.BlocksAndSpans, nil, nil)
 		if err != nil {
 			test.Errorf("case %s error: %s", c.path, err)
 			continue
