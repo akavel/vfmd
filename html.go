@@ -165,7 +165,7 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 		return c.tags[2:], nil
 	default:
 		// TODO(akavel): return error's context (e.g. remaining tags?)
-		return tags, fmt.Errorf("block type %T not supported yet", t)
+		return tags, fmt.Errorf("vfmd: block type %T not supported yet", t)
 	}
 }
 
@@ -334,7 +334,7 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			return c.tags[1:], nil
 		default:
 			// TODO(akavel): return error's context (e.g. remaining tags?)
-			return c.tags, fmt.Errorf("span type %T not supported yet", t)
+			return c.tags, fmt.Errorf("vfmd: span type %T not supported yet", t)
 		}
 		if c.err != nil {
 			return c.tags, c.err
