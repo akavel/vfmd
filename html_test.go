@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -344,4 +345,16 @@ func TestHTMLFiles(test *testing.T) {
 				c.path, diff.Diff(string(expectedOutput), string(html)))
 		}
 	}
+}
+
+var reSimplifyHtml = regexp.MustCompile(`>\s*<`)
+
+// simplifyHtml performs a quick & dirty HTML unification in a similar way
+// as the fallback approach in the "run_tests" script in testdata dir.
+func simplifyHtml(buf []byte) []byte {
+	buf = reSimplifyHtml.ReplaceAllLiteral(buf, []byte(">\n<"))
+	buf = bytes.Replace(buf, []byte("<pre>\n<code>"), []byte("<pre><code>"), -1)
+	buf = bytes.Replace(buf, []byte("</code>\n</pre>"), []byte("</code></pre>"), -1)
+	buf = bytes.TrimSpace(buf)
+	return buf
 }
