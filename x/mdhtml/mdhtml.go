@@ -31,6 +31,13 @@ func QuickRender(w io.Writer, blocks []md.Tag) error {
 	return nil
 }
 
+type Spaner interface {
+	Span(Context, Opt) ([]md.Tag, error)
+}
+type Blocker interface {
+	Block(Context, Opt) ([]md.Tag, error)
+}
+
 func chkmoved(oldtags, newtags []md.Tag) error {
 	if len(oldtags) == 0 || len(newtags) == 0 {
 		return nil
@@ -82,47 +89,47 @@ func htmlRefs(tags []md.Tag) map[string]htmlLinkInfo {
 type Context struct {
 	W    io.Writer
 	Tags []md.Tag
-	err  error
+	Err  error
 }
 
 func (c *Context) Printf(format string, args ...interface{}) {
-	if c.err != nil {
+	if c.Err != nil {
 		return
 	}
-	_, c.err = fmt.Fprintf(c.W, format, args...)
+	_, c.Err = fmt.Fprintf(c.W, format, args...)
 }
 func (c *Context) Spans(tags []md.Tag, opt Opt) {
-	if c.err != nil {
+	if c.Err != nil {
 		return
 	}
-	c.Tags, c.err = htmlSpans(tags, c.W, opt)
-	if c.err == nil {
-		c.err = chkmoved(tags, c.Tags)
+	c.Tags, c.Err = htmlSpans(tags, c.W, opt)
+	if c.Err == nil {
+		c.Err = chkmoved(tags, c.Tags)
 	}
 }
 func (c *Context) Blocks(tags []md.Tag, opt Opt) {
-	if c.err != nil {
+	if c.Err != nil {
 		return
 	}
-	c.Tags, c.err = htmlBlocks(tags, c.W, opt)
-	if c.err == nil {
-		c.err = chkmoved(tags, c.Tags)
+	c.Tags, c.Err = htmlBlocks(tags, c.W, opt)
+	if c.Err == nil {
+		c.Err = chkmoved(tags, c.Tags)
 	}
 }
 func (c *Context) items(tags []md.Tag, parentRegion md.Raw, opt Opt) {
-	if c.err != nil {
+	if c.Err != nil {
 		return
 	}
-	c.Tags, c.err = htmlItems(tags, c.W, parentRegion, opt)
-	if c.err == nil {
-		c.err = chkmoved(tags, c.Tags)
+	c.Tags, c.Err = htmlItems(tags, c.W, parentRegion, opt)
+	if c.Err == nil {
+		c.Err = chkmoved(tags, c.Tags)
 	}
 }
 func (c *Context) write(buf []byte) {
-	if c.err != nil {
+	if c.Err != nil {
 		return
 	}
-	_, c.err = c.W.Write(buf)
+	_, c.Err = c.W.Write(buf)
 }
 
 func htmlBlock(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
@@ -132,21 +139,21 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 		c.Printf("<h%d>", t.Level)
 		c.Spans(tags[1:], opt)
 		c.Printf("</h%d>\n", t.Level)
-		return c.Tags, c.err
+		return c.Tags, c.Err
 	case md.SetextHeaderBlock:
 		c.Printf("<h%d>", t.Level)
 		c.Spans(tags[1:], opt)
 		c.Printf("</h%d>\n", t.Level)
-		return c.Tags, c.err
+		return c.Tags, c.Err
 	case md.NullBlock:
 		// TODO(akavel): don't print the empty line?
 		c.Printf("\n")
-		return c.Tags[2:], c.err
+		return c.Tags[2:], c.Err
 	case md.QuoteBlock:
 		c.Printf("<blockquote>\n  ")
 		c.Blocks(tags[1:], Opt{refs: opt.refs})
 		c.Printf("</blockquote>\n")
-		return c.Tags, c.err
+		return c.Tags, c.Err
 	case md.ParagraphBlock:
 		n := len(t.Raw)
 		no_p := opt.topPackedForP ||
@@ -158,17 +165,17 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 		if !no_p {
 			c.Printf("</p>\n")
 		}
-		return c.Tags, c.err
+		return c.Tags, c.Err
 	case md.CodeBlock:
 		c.Printf("<pre><code>")
 		for _, r := range t.Prose {
 			c.Printf("%s", html.EscapeString(string(r.Bytes)))
 		}
 		c.Printf("</code></pre>\n")
-		return c.Tags[2:], c.err
+		return c.Tags[2:], c.Err
 	case md.HorizontalRuleBlock:
 		c.Printf("<hr />\n")
-		return c.Tags[2:], c.err
+		return c.Tags[2:], c.Err
 	case md.OrderedListBlock:
 		var i int
 		fmt.Sscanf(string(t.Starter.Bytes), "%d", &i)
@@ -179,17 +186,21 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 		}
 		c.items(tags[1:], t.Raw, opt)
 		c.Printf("</ol>\n")
-		return c.Tags, c.err
+		return c.Tags, c.Err
 	case md.UnorderedListBlock:
 		c.Printf("<ul>\n")
 		c.items(tags[1:], t.Raw, opt)
 		c.Printf("</ul>\n")
-		return c.Tags, c.err
+		return c.Tags, c.Err
 	case md.ReferenceResolutionBlock:
 		return c.Tags[2:], nil
 	default:
-		// TODO(akavel): return error's context (e.g. remaining tags?)
-		return tags, fmt.Errorf("vfmd: block type %T not supported yet", t)
+		b, ok := t.(Blocker)
+		if !ok {
+			// TODO(akavel): return error's context (e.g. remaining tags?)
+			return tags, fmt.Errorf("vfmd: block type %T not supported yet", t)
+		}
+		return b.Block(c, opt)
 	}
 }
 
@@ -230,8 +241,8 @@ func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw, opt Opt) ([]md.T
 		c.Printf("<li>")
 		c.Blocks(c.Tags[1:], opt)
 		c.Printf("</li>\n")
-		if c.err != nil {
-			return c.Tags, c.err
+		if c.Err != nil {
+			return c.Tags, c.Err
 		}
 	}
 }
@@ -314,8 +325,8 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 			if found {
 				// FIXME(akavel): fully correct escaping
 				// FIXME(akavel): using URL below allows for "javascript:"; provide some way to protect against this (only whitelisted URL schemes?)
-				if c.err == nil {
-					c.err = tmplLink.Execute(w, map[string]interface{}{
+				if c.Err == nil {
+					c.Err = tmplLink.Execute(w, map[string]interface{}{
 						"Title": ref.Title,
 						"URL":   template.URL(ref.URL),
 					})
@@ -342,8 +353,8 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 			if found {
 				// FIXME(akavel): fully correct escaping
 				// FIXME(akavel): using URL below allows for "javascript:"; provide some way to protect against this (only whitelisted URL schemes?)
-				if c.err == nil {
-					c.err = tmplImage.Execute(w, map[string]interface{}{
+				if c.Err == nil {
+					c.Err = tmplImage.Execute(w, map[string]interface{}{
 						"Title": ref.Title,
 						"alt":   alt,
 						"URL":   template.URL(ref.URL),
@@ -359,14 +370,18 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 			c.Tags = c.Tags[2:]
 
 		default:
-			// TODO(akavel): return error's context (e.g. remaining tags?)
-			return c.Tags, fmt.Errorf("vfmd: span type %T not supported yet", t)
+			s, ok := t.(Spaner)
+			if !ok {
+				// TODO(akavel): return error's context (e.g. remaining tags?)
+				return c.Tags, fmt.Errorf("vfmd: span type %T not supported, missing Span method", t)
+			}
+			c.Tags, c.Err = s.Span(c, opt)
 		}
-		if c.err == nil {
-			c.err = chkmoved(oldtags, c.Tags)
+		if c.Err == nil {
+			c.Err = chkmoved(oldtags, c.Tags)
 		}
-		if c.err != nil {
-			return c.Tags, c.err
+		if c.Err != nil {
+			return c.Tags, c.Err
 		}
 	}
 }

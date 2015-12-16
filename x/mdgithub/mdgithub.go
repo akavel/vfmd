@@ -11,6 +11,7 @@ import (
 
 	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/mdspan"
+	"gopkg.in/akavel/vfmd.v0/x/mdhtml"
 )
 
 type StrikeThrough struct{}
@@ -64,4 +65,11 @@ func (StrikeThrough) Detect(ctx *mdspan.Context) (consumed int) {
 	ctx.Emit(ctx.Buf[o.Pos:][:2], StrikeThrough{}, false)
 	ctx.Emit(ctx.Buf[ctx.Pos:][:2], md.End{}, false)
 	return 2
+}
+
+func (s StrikeThrough) Span(ctx mdhtml.Context, opt mdhtml.Opt) ([]md.Tag, error) {
+	ctx.Printf("<del>")
+	ctx.Spans(ctx.Tags[1:], opt)
+	ctx.Printf("</del>")
+	return ctx.Tags, ctx.Err
 }
