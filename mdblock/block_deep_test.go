@@ -49,14 +49,14 @@ var newApproach_flatOutput = []md.Tag{
 	md.ParagraphBlock{Raw: md.Raw{
 		mkrun(0, "some text **specifically *interesting*** for us.\n"),
 	}},
-	md.Prose{mkrun(0, "some text ")},
+	md.Prose{mkrun(-1, "some text ")},
 	md.Emphasis{Level: 2},
-	md.Prose{mkrun(0, "specifically ")},
+	md.Prose{mkrun(-1, "specifically ")},
 	md.Emphasis{Level: 1},
-	md.Prose{mkrun(0, "interesting")},
+	md.Prose{mkrun(-1, "interesting")},
 	md.End{}, // Emph
 	md.End{}, // Emph
-	md.Prose{mkrun(0, " for us.")},
+	md.Prose{mkrun(-1, " for us.")},
 	md.End{}, // Para
 	md.End{}, // Item
 	md.ItemBlock{Raw: md.Raw{
@@ -66,21 +66,27 @@ var newApproach_flatOutput = []md.Tag{
 	md.AtxHeaderBlock{Level: 2, Raw: md.Raw{
 		mkrun(1, "## Hello, **[new](http://vfmd.org)** _world._\n"),
 	}},
-	md.Prose{mkrun(1, "Hello, ")},
+	md.Prose{mkrun(-1, "Hello, ")},
 	md.Emphasis{Level: 2},
-	md.Link{URL: "http://vfmd.org"},
-	md.Prose{mkrun(1, "new")},
+	md.Link{
+		URL:    "http://vfmd.org",
+		RawEnd: md.Raw{mkrun(-1, "](http://vfmd.org)")},
+	},
+	md.Prose{mkrun(-1, "new")},
 	md.End{}, // Link
 	md.End{}, // Emph
-	md.Prose{mkrun(1, " ")},
+	md.Prose{mkrun(-1, " ")},
 	md.Emphasis{Level: 1},
-	md.Prose{mkrun(1, "world.")},
+	md.Prose{mkrun(-1, "world.")},
 	md.End{}, // Emph
 	md.End{}, // Atx
 	md.ParagraphBlock{Raw: md.Raw{
 		mkrun(2, "![](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)"),
 	}},
-	md.Image{URL: "https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png"},
+	md.Image{
+		URL:    "https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png",
+		RawEnd: md.Raw{mkrun(-1, "](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)")},
+	},
 	// no End, Image is self-closing!
 	md.End{}, // Para
 	md.End{}, // Item
