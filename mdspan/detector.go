@@ -71,6 +71,7 @@ var (
 )
 
 func closingLinkTag(s *Context) (consumed int) {
+	// TODO(akavel): refactor to use s.PopTo (or not, for efficiency?)
 	if s.Openings.NullTopmostTagged("[") {
 		return 1 // consume the ']'
 	}
@@ -213,6 +214,7 @@ func DetectEmphasis(s *Context) (consumed int) {
 }
 
 func closingEmphasisTags(s *Context, tags [][]byte) {
+	// TODO(akavel): refactor to use s.PopTo
 	for len(tags) > 0 {
 		// find topmost opening of matching emphasis type
 		tag := tags[0]

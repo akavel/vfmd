@@ -40,6 +40,18 @@ func (s *OpeningsStack) Pop() {
 		(*s) = (*s)[:len(*s)-1]
 	}
 }
+func (s *OpeningsStack) PopTo(f func(*MaybeOpening) bool) (MaybeOpening, bool) {
+	for i := len(*s) - 1; i >= 0; i-- {
+		if !f(&(*s)[i]) {
+			continue
+		}
+		// found, pop and return
+		o := (*s)[i]
+		(*s) = (*s)[:i]
+		return o, true
+	}
+	return MaybeOpening{Pos: -1}, false
+}
 
 // deleteLinks cancels all unclosed links
 func (s *OpeningsStack) deleteLinks() {
