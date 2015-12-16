@@ -48,7 +48,7 @@ additional design goals and some more specific characteristics listed below:
   feature for some use cases, like desktop editors or comment systems);
 - __*Does not* support inline HTML entities__ (like `&amp;` etc.) ― Unicode should
   make up for that;
-- __FIXME:__ the QuickHTML renderer does not currently filter URLs in links to
+- __TODO:__ the QuickHTML renderer does not currently filter URLs in links to
   protect against e.g. JavaScript "bookmarklet" attacks;
 - __FIXME:__ detect md.HardBreak tag for lines ending with `"  \n"`;
 - __FIXME:__ godoc
