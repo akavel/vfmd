@@ -329,8 +329,13 @@ func TestHTMLFiles(test *testing.T) {
 			continue
 		}
 
-		html := QuickHTML(blocks)
-		html = simplifyHtml(html)
+		buf := bytes.NewBuffer(nil)
+		err = QuickHTML(buf, blocks)
+		if err != nil {
+			test.Error(err)
+			continue
+		}
+		html := simplifyHtml(buf.Bytes())
 		expectedOutput = []byte(replacer.Replace(string(simplifyHtml(expectedOutput))))
 		if !bytes.Equal(html, expectedOutput) {
 			test.Errorf("case %s blocks:\n%s",

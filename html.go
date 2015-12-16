@@ -6,33 +6,26 @@ import (
 	"html"
 	"html/template"
 	"io"
-	"os"
 	"regexp"
 	"strings"
-
-	"github.com/davecgh/go-spew/spew"
 
 	"gopkg.in/akavel/vfmd.v0/md"
 	"gopkg.in/akavel/vfmd.v0/utils"
 )
 
-func QuickHTML(blocks []md.Tag) []byte {
-	buf := bytes.NewBuffer(nil)
+func QuickHTML(w io.Writer, blocks []md.Tag) error {
 	opt := htmlOpt{
 		refs: htmlRefs(blocks),
 	}
 	var err error
 	tags := blocks
 	for len(tags) > 0 {
-		tags, err = htmlBlock(tags, buf, opt)
+		tags, err = htmlBlock(tags, w, opt)
 		if err != nil {
-			i := len(blocks) - len(tags)
-			fmt.Fprintf(os.Stderr, "%s\n%s\n%s\n",
-				spew.Sdump(blocks[:i]), err, spew.Sdump(blocks[i:]))
-			panic(err)
+			return err
 		}
 	}
-	return buf.Bytes()
+	return nil
 }
 
 type htmlLinkInfo struct {
@@ -72,68 +65,106 @@ func htmlRefs(tags []md.Tag) map[string]htmlLinkInfo {
 	return m
 }
 
+type htmlContext struct {
+	w    io.Writer
+	tags []md.Tag
+	err  error
+}
+
+func (c *htmlContext) printf(format string, args ...interface{}) {
+	if c.err != nil {
+		return
+	}
+	_, c.err = fmt.Fprintf(c.w, format, args...)
+}
+func (c *htmlContext) spans(tags []md.Tag, opt htmlOpt) {
+	if c.err != nil {
+		return
+	}
+	c.tags, c.err = htmlSpans(tags, c.w, opt)
+}
+func (c *htmlContext) blocks(tags []md.Tag, opt htmlOpt) {
+	if c.err != nil {
+		return
+	}
+	c.tags, c.err = htmlBlocks(tags, c.w, opt)
+}
+func (c *htmlContext) items(tags []md.Tag, parentRegion md.Raw, opt htmlOpt) {
+	if c.err != nil {
+		return
+	}
+	c.tags, c.err = htmlItems(tags, c.w, parentRegion, opt)
+}
+func (c *htmlContext) write(buf []byte) {
+	if c.err != nil {
+		return
+	}
+	_, c.err = c.w.Write(buf)
+}
+
 func htmlBlock(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
-	var err error
+	c := htmlContext{w: w, tags: tags}
 	switch t := tags[0].(type) {
 	case md.AtxHeaderBlock:
-		fmt.Fprintf(w, "<h%d>", t.Level)
-		tags, err = htmlSpans(tags[1:], w, opt)
-		fmt.Fprintf(w, "</h%d>\n", t.Level)
-		return tags, err
+		c.printf("<h%d>", t.Level)
+		c.spans(tags[1:], opt)
+		c.printf("</h%d>\n", t.Level)
+		return c.tags, c.err
 	case md.SetextHeaderBlock:
-		fmt.Fprintf(w, "<h%d>", t.Level)
-		tags, err = htmlSpans(tags[1:], w, opt)
-		fmt.Fprintf(w, "</h%d>\n", t.Level)
-		return tags, err
+		c.printf("<h%d>", t.Level)
+		c.spans(tags[1:], opt)
+		c.printf("</h%d>\n", t.Level)
+		return c.tags, c.err
 	case md.NullBlock:
-		fmt.Fprintln(w)
-		return tags[2:], nil
+		c.printf("\n")
+		return c.tags[2:], c.err
 	case md.QuoteBlock:
-		fmt.Fprintf(w, "<blockquote>\n  ")
-		tags, err = htmlBlocks(tags[1:], w, htmlOpt{refs: opt.refs})
-		fmt.Fprintf(w, "</blockquote>\n")
-		return tags, err
+		c.printf("<blockquote>\n  ")
+		c.blocks(tags[1:], htmlOpt{refs: opt.refs})
+		c.printf("</blockquote>\n")
+		return c.tags, c.err
 	case md.ParagraphBlock:
 		n := len(t.Raw)
 		no_p := opt.topPackedForP ||
 			(opt.bottomPackedForP && t.Raw[n-1].Line == opt.itemEndForP)
 		if !no_p {
-			fmt.Fprintf(w, "<p>")
+			c.printf("<p>")
 		}
-		tags, err = htmlSpans(tags[1:], w, opt)
+		c.spans(tags[1:], opt)
 		if !no_p {
-			fmt.Fprintf(w, "</p>\n")
+			c.printf("</p>\n")
 		}
-		return tags, err
+		return c.tags, c.err
 	case md.CodeBlock:
-		fmt.Fprintf(w, "<pre><code>")
+		c.printf("<pre><code>")
 		for _, r := range t.Prose {
-			fmt.Fprint(w, html.EscapeString(string(r.Bytes)))
+			c.printf("%s", html.EscapeString(string(r.Bytes)))
 		}
-		fmt.Fprintf(w, "</code></pre>\n")
-		return tags[2:], nil
+		c.printf("</code></pre>\n")
+		return c.tags[2:], c.err
 	case md.HorizontalRuleBlock:
-		fmt.Fprintf(w, "<hr />\n")
-		return tags[2:], nil
+		c.printf("<hr />\n")
+		return c.tags[2:], c.err
 	case md.OrderedListBlock:
 		var i int
 		fmt.Sscanf(string(t.Starter.Bytes), "%d", &i)
 		if i != 1 {
-			fmt.Fprintf(w, "<ol start=\"%d\">\n", i)
+			c.printf("<ol start=\"%d\">\n", i)
 		} else {
-			fmt.Fprintf(w, "<ol>\n")
+			c.printf("<ol>\n")
 		}
-		tags, err = htmlItems(tags[1:], w, t.Raw, opt)
-		fmt.Fprintf(w, "</ol>\n")
-		return tags, err
+		c.items(tags[1:], t.Raw, opt)
+		c.printf("</ol>\n")
+		return c.tags, c.err
 	case md.UnorderedListBlock:
-		fmt.Fprintf(w, "<ul>\n")
-		tags, err = htmlItems(tags[1:], w, t.Raw, opt)
-		fmt.Fprintf(w, "</ul>\n")
-		return tags, err
+		c.printf("<ul>\n")
+		c.items(tags[1:], t.Raw, opt)
+		c.printf("</ul>\n")
+		return c.tags, c.err
 	case md.ReferenceResolutionBlock:
-		return tags[2:], nil
+		return c.tags[2:], nil
 	default:
+		// TODO(akavel): return error's context (e.g. remaining tags?)
 		return tags, fmt.Errorf("block type %T not supported yet", t)
 	}
 }
@@ -143,13 +174,13 @@ func isBlank(line md.Run) bool {
 }
 
 func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw, opt htmlOpt) ([]md.Tag, error) {
-	var err error
+	c := htmlContext{w: w, tags: tags}
 	for {
-		if (tags[0] == md.End{}) {
-			return tags[1:], nil
+		if (c.tags[0] == md.End{}) {
+			return c.tags[1:], nil
 		}
 
-		t := tags[0].(md.ItemBlock)
+		t := c.tags[0].(md.ItemBlock)
 		opt := htmlOpt{refs: opt.refs}
 		// top-packed?
 		n, m := len(t.Raw), len(parentRegion)
@@ -172,11 +203,11 @@ func htmlItems(tags []md.Tag, w io.Writer, parentRegion md.Raw, opt htmlOpt) ([]
 		}
 		opt.itemEndForP = t.Raw[n-1].Line
 
-		fmt.Fprintf(w, "<li>")
-		tags, err = htmlBlocks(tags[1:], w, opt)
-		fmt.Fprintf(w, "</li>\n")
-		if err != nil {
-			return tags, err
+		c.printf("<li>")
+		c.blocks(c.tags[1:], opt)
+		c.printf("</li>\n")
+		if c.err != nil {
+			return c.tags, c.err
 		}
 	}
 }
@@ -205,47 +236,47 @@ func htmlBlocks(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 }
 
 var (
-	tmplImage = template.Must(template.New("").Parse(
+	tmplImage = template.Must(template.New("vfmd.<img>").Parse(
 		`<img src="{{.URL}}"` +
 			`{{if not (eq .alt "")}} alt="{{.alt}}"{{end}}` +
 			`{{if not (eq .Title "")}} title="{{.Title}}"{{end}}` +
 			` />`))
-	tmplLink = template.Must(template.New("").Parse(
+	tmplLink = template.Must(template.New("vfmd.<a href>").Parse(
 		`<a href="{{.URL}}"` +
 			`{{if not (eq .Title "")}} title="{{.Title}}"{{end}}` +
 			`>`))
 )
 
 func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
-	var err error
+	c := htmlContext{w: w, tags: tags}
 	for {
-		switch t := tags[0].(type) {
+		switch t := c.tags[0].(type) {
 		case md.Prose:
 			for _, r := range t {
-				fmt.Fprint(w, html.EscapeString(string(r.Bytes)))
+				c.printf("%s", html.EscapeString(string(r.Bytes)))
 			}
-			tags = tags[1:]
+			c.tags = c.tags[1:]
 		case md.Emphasis:
-			fmt.Fprint(w, map[int]string{
+			c.printf("%s", map[int]string{
 				1: "<em>",
 				2: "<strong>",
 				3: "<strong><em>",
 			}[t.Level])
-			tags, err = htmlSpans(tags[1:], w, opt)
-			fmt.Fprint(w, map[int]string{
+			c.spans(c.tags[1:], opt)
+			c.printf("%s", map[int]string{
 				1: "</em>",
 				2: "</strong>",
 				3: "</em></strong>",
 			}[t.Level])
 		case md.AutomaticLink:
-			fmt.Fprintf(w, `<a href="%s">%s</a>`,
+			c.printf(`<a href="%s">%s</a>`,
 				// FIXME(akavel): fully correct escaping
 				t.URL, html.EscapeString(t.Text))
-			tags = tags[1:]
+			c.tags = c.tags[1:]
 		case md.Code:
-			fmt.Fprintf(w, `<code>%s</code>`,
+			c.printf(`<code>%s</code>`,
 				html.EscapeString(string(t.Code)))
-			tags = tags[1:]
+			c.tags = c.tags[1:]
 		case md.Link:
 			ref := htmlLinkInfo{URL: t.URL, Title: t.Title}
 			found := ref.URL != ""
@@ -254,25 +285,23 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			}
 			if found {
 				// FIXME(akavel): fully correct escaping
-				// FIXME(akavel): do something nice with err
 				// FIXME(akavel): using URL below allows for "javascript:"; provide some way to protect against this (only whitelisted URL schemes?)
-				err := tmplLink.Execute(w, map[string]interface{}{
-					"Title": ref.Title,
-					"URL":   template.URL(ref.URL),
-				})
-				if err != nil {
-					panic(err)
+				if c.err == nil {
+					c.err = tmplLink.Execute(w, map[string]interface{}{
+						"Title": ref.Title,
+						"URL":   template.URL(ref.URL),
+					})
 				}
 			} else {
-				fmt.Fprintf(w, `[`)
+				c.printf(`[`)
 			}
-			tags, err = htmlSpans(tags[1:], w, opt)
+			c.spans(c.tags[1:], opt)
 			if found {
-				fmt.Fprintf(w, `</a>`)
+				c.printf(`</a>`)
 			} else {
 				rawEnd := utils.DeEscapeProse(md.Prose(t.RawEnd))
 				for _, r := range rawEnd {
-					w.Write(r.Bytes)
+					c.write(r.Bytes)
 				}
 			}
 		case md.Image:
@@ -284,32 +313,31 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			alt := string(t.AltText)
 			if found {
 				// FIXME(akavel): fully correct escaping
-				// FIXME(akavel): do something nice with err
 				// FIXME(akavel): using URL below allows for "javascript:"; provide some way to protect against this (only whitelisted URL schemes?)
-				err := tmplImage.Execute(w, map[string]interface{}{
-					"Title": ref.Title,
-					"alt":   alt,
-					"URL":   template.URL(ref.URL),
-				})
-				if err != nil {
-					panic(err)
+				if c.err == nil {
+					c.err = tmplImage.Execute(w, map[string]interface{}{
+						"Title": ref.Title,
+						"alt":   alt,
+						"URL":   template.URL(ref.URL),
+					})
 				}
 			} else {
-				fmt.Fprintf(w, `![%s`, alt)
+				c.printf(`![%s`, alt)
 				rawEnd := utils.DeEscapeProse(md.Prose(t.RawEnd))
 				for _, r := range rawEnd {
-					w.Write(r.Bytes)
+					c.write(r.Bytes)
 				}
 			}
-			tags = tags[1:]
+			c.tags = c.tags[1:]
 
 		case md.End:
-			return tags[1:], nil
+			return c.tags[1:], nil
 		default:
-			return tags, fmt.Errorf("span type %T not supported yet", t)
+			// TODO(akavel): return error's context (e.g. remaining tags?)
+			return c.tags, fmt.Errorf("span type %T not supported yet", t)
 		}
-		if err != nil {
-			return tags, err
+		if c.err != nil {
+			return c.tags, c.err
 		}
 	}
 }
