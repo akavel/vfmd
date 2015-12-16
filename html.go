@@ -17,15 +17,30 @@ func QuickHTML(w io.Writer, blocks []md.Tag) error {
 	opt := htmlOpt{
 		refs: htmlRefs(blocks),
 	}
-	var err error
 	tags := blocks
 	for len(tags) > 0 {
-		tags, err = htmlBlock(tags, w, opt)
+		newtags, err := htmlBlock(tags, w, opt)
 		if err != nil {
 			return err
 		}
+		err = chkmoved(tags, newtags)
+		if err != nil {
+			return err
+		}
+		tags = newtags
 	}
 	return nil
+}
+
+func chkmoved(oldtags, newtags []md.Tag) error {
+	if len(oldtags) == 0 || len(newtags) == 0 {
+		return nil
+	}
+	if &oldtags[0] != &newtags[0] {
+		return nil
+	}
+	return fmt.Errorf("vfmd: parsing failed to move over %T (%d tags remaining)",
+		newtags[0], len(newtags))
 }
 
 type htmlLinkInfo struct {
@@ -82,18 +97,27 @@ func (c *htmlContext) spans(tags []md.Tag, opt htmlOpt) {
 		return
 	}
 	c.tags, c.err = htmlSpans(tags, c.w, opt)
+	if c.err == nil {
+		c.err = chkmoved(tags, c.tags)
+	}
 }
 func (c *htmlContext) blocks(tags []md.Tag, opt htmlOpt) {
 	if c.err != nil {
 		return
 	}
 	c.tags, c.err = htmlBlocks(tags, c.w, opt)
+	if c.err == nil {
+		c.err = chkmoved(tags, c.tags)
+	}
 }
 func (c *htmlContext) items(tags []md.Tag, parentRegion md.Raw, opt htmlOpt) {
 	if c.err != nil {
 		return
 	}
 	c.tags, c.err = htmlItems(tags, c.w, parentRegion, opt)
+	if c.err == nil {
+		c.err = chkmoved(tags, c.tags)
+	}
 }
 func (c *htmlContext) write(buf []byte) {
 	if c.err != nil {
@@ -250,7 +274,11 @@ var (
 func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 	c := htmlContext{w: w, tags: tags}
 	for {
+		oldtags := c.tags
 		switch t := c.tags[0].(type) {
+		case md.End:
+			return c.tags[1:], nil
+
 		case md.Prose:
 			for _, r := range t {
 				c.printf("%s", html.EscapeString(string(r.Bytes)))
@@ -330,11 +358,12 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			}
 			c.tags = c.tags[1:]
 
-		case md.End:
-			return c.tags[1:], nil
 		default:
 			// TODO(akavel): return error's context (e.g. remaining tags?)
 			return c.tags, fmt.Errorf("vfmd: span type %T not supported yet", t)
+		}
+		if c.err == nil {
+			c.err = chkmoved(oldtags, c.tags)
 		}
 		if c.err != nil {
 			return c.tags, c.err
