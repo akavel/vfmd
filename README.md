@@ -51,8 +51,6 @@ additional design goals and some more specific characteristics listed below:
 - __FIXME:__ the QuickHTML renderer does not currently filter URLs in links to
   protect against e.g. JavaScript "bookmarklet" attacks;
 - __FIXME:__ detect md.HardBreak tag for lines ending with `"  \n"`;
-- __FIXME:__ make sure all tags (esp. md.Image) are paired with an md.End,
-  with exception of md.Prose;
 - __FIXME:__ godoc
 - __FIXME:__ example in README
 - __FIXME:__ make QuickHTML extensible (by implementing some interface?)

@@ -300,11 +300,11 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 			c.printf(`<a href="%s">%s</a>`,
 				// FIXME(akavel): fully correct escaping
 				t.URL, html.EscapeString(t.Text))
-			c.tags = c.tags[1:]
+			c.tags = c.tags[2:]
 		case md.Code:
 			c.printf(`<code>%s</code>`,
 				html.EscapeString(string(t.Code)))
-			c.tags = c.tags[1:]
+			c.tags = c.tags[2:]
 		case md.Link:
 			ref := htmlLinkInfo{URL: t.URL, Title: t.Title}
 			found := ref.URL != ""
@@ -356,7 +356,7 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt htmlOpt) ([]md.Tag, error) {
 					c.write(r.Bytes)
 				}
 			}
-			c.tags = c.tags[1:]
+			c.tags = c.tags[2:]
 
 		default:
 			// TODO(akavel): return error's context (e.g. remaining tags?)

@@ -87,7 +87,7 @@ var newApproach_flatOutput = []md.Tag{
 		URL:    "https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png",
 		RawEnd: md.Raw{mkrun(-1, "](https://upload.wikimedia.org/wikipedia/commons/1/12/Wikipedia.png)")},
 	},
-	// no End, Image is self-closing!
+	md.End{}, // Image
 	md.End{}, // Para
 	md.End{}, // Item
 	md.End{}, // List

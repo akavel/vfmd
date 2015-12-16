@@ -90,8 +90,8 @@ func closingLinkTag(s *Context) (consumed int) {
 			RawEnd: md.Raw{
 				md.Run{-1, m[0]},
 			},
-		})
-		s.Emit(m[0], md.End{})
+		}, false)
+		s.Emit(m[0], md.End{}, false)
 		s.Openings.Pop()
 		// cancel all unclosed links
 		s.Openings.deleteLinks()
@@ -131,8 +131,8 @@ func closingLinkTag(s *Context) (consumed int) {
 				RawEnd: md.Raw{
 					md.Run{-1, closing},
 				},
-			})
-			s.Emit(closing, md.End{})
+			}, false)
+			s.Emit(closing, md.End{}, false)
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
@@ -157,8 +157,8 @@ func closingLinkTag(s *Context) (consumed int) {
 		RawEnd: md.Raw{
 			md.Run{-1, m[0]},
 		},
-	})
-	s.Emit(m[0], md.End{})
+	}, false)
+	s.Emit(m[0], md.End{}, false)
 	s.Openings.Pop()
 	// cancel all unclosed links
 	s.Openings.deleteLinks()
@@ -238,14 +238,14 @@ func matchEmphasisTag(s *Context, tag []byte) []byte {
 	top := s.Openings.Peek()
 	if len(top.Tag) > len(tag) {
 		n := len(tag)
-		s.Emit(s.Buf[top.Pos:][len(top.Tag)-n:len(top.Tag)], md.Emphasis{Level: n})
-		s.Emit(tag, md.End{})
+		s.Emit(s.Buf[top.Pos:][len(top.Tag)-n:len(top.Tag)], md.Emphasis{Level: n}, false)
+		s.Emit(tag, md.End{}, false)
 		top.Tag = top.Tag[:len(top.Tag)-n]
 		return nil
 	} else { // len(top.Tag) <= len(tag)
 		n := len(top.Tag)
-		s.Emit(s.Buf[top.Pos:][:len(top.Tag)], md.Emphasis{Level: n})
-		s.Emit(tag[:n], md.End{})
+		s.Emit(s.Buf[top.Pos:][:len(top.Tag)], md.Emphasis{Level: n}, false)
+		s.Emit(tag[:n], md.End{}, false)
 		s.Openings.Pop()
 		return tag[n:]
 	}
@@ -288,7 +288,7 @@ func DetectCode(s *Context) (consumed int) {
 			// found closing tag!
 			code := rest[len(opening) : i-len(opening)]
 			code = bytes.Trim(code, mdutils.Whites)
-			s.Emit(rest[:i], md.Code{Code: code})
+			s.Emit(rest[:i], md.Code{Code: code}, true)
 			return i
 		}
 		for i < len(rest) && rest[i] == '`' {
@@ -326,7 +326,7 @@ func DetectImage(s *Context) (consumed int) {
 			RawEnd: md.Raw{
 				md.Run{-1, r[0]},
 			},
-		})
+		}, true)
 		return len(tag)
 	}
 
@@ -349,7 +349,7 @@ func DetectImage(s *Context) (consumed int) {
 		RawEnd: md.Raw{
 			md.Run{-1, closing},
 		},
-	})
+	}, true)
 	return len(tag)
 }
 
@@ -417,7 +417,7 @@ func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consum
 		RawEnd: md.Raw{
 			md.Run{-1, tag[prefix:]},
 		},
-	})
+	}, true)
 	return len(tag)
 }
 
@@ -443,7 +443,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 		s.Emit(m[0], md.AutomaticLink{
 			URL:  url,
 			Text: url,
-		})
+		}, true)
 		return len(m[0])
 	}
 
@@ -453,7 +453,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 		s.Emit(m[0], md.AutomaticLink{
 			URL:  "mailto:" + string(m[1]),
 			Text: string(m[1]),
-		})
+		}, true)
 		return len(m[0])
 	}
 
@@ -481,7 +481,7 @@ func DetectAutomaticLink(s *Context) (consumed int) {
 		s.Emit(tag, md.AutomaticLink{
 			URL:  string(tag),
 			Text: string(tag),
-		})
+		}, true)
 		return len(tag)
 	}
 	return 0

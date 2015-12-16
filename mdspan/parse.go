@@ -54,8 +54,9 @@ func (s *OpeningsStack) deleteLinks() {
 
 type Span struct {
 	// Pos is a subslice of the original input buffer
-	Pos []byte
-	Tag md.Tag
+	Pos       []byte
+	Tag       md.Tag
+	SelfClose bool
 }
 
 type Context struct {
@@ -97,6 +98,9 @@ walk:
 			}))
 		}
 		tags = append(tags, span.Tag)
+		if span.SelfClose {
+			tags = append(tags, md.End{})
+		}
 		endOffset = offset + len(span.Pos)
 	}
 	if endOffset < len(buf) {
@@ -122,6 +126,6 @@ func (s sortedSpans) Less(i, j int) bool {
 	return len(iext) > len(jext)
 }
 
-func (s *Context) Emit(slice []byte, tag interface{}) {
-	s.Spans = append(s.Spans, Span{slice, tag})
+func (s *Context) Emit(slice []byte, tag interface{}, selfClose bool) {
+	s.Spans = append(s.Spans, Span{slice, tag, selfClose})
 }
