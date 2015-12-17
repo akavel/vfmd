@@ -1,4 +1,4 @@
-package mdutils // import "gopkg.in/akavel/vfmd.v0/mdutils"
+package mdutils // import "gopkg.in/akavel/vfmd.v1/mdutils"
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v1/md"
 )
 
 // Whites contains all whitespace characters as defined by VFMD specification.

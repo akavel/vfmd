@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/akavel/vfmd.v0"
-	"gopkg.in/akavel/vfmd.v0/mdblock"
-	"gopkg.in/akavel/vfmd.v0/mdspan"
-	"gopkg.in/akavel/vfmd.v0/x/mdgithub"
+	"gopkg.in/akavel/vfmd.v1"
+	"gopkg.in/akavel/vfmd.v1/mdblock"
+	"gopkg.in/akavel/vfmd.v1/mdspan"
+	"gopkg.in/akavel/vfmd.v1/x/mdgithub"
 )
 
 func main() {

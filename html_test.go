@@ -12,7 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kylelemons/godebug/diff"
 
-	"gopkg.in/akavel/vfmd.v0/mdblock"
+	"gopkg.in/akavel/vfmd.v1/mdblock"
 )
 
 /*

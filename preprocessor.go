@@ -1,4 +1,4 @@
-package vfmd // import "gopkg.in/akavel/vfmd.v0"
+package vfmd // import "gopkg.in/akavel/vfmd.v1"
 
 import (
 	"bufio"

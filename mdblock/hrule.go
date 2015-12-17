@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"regexp"
 
-	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v1/md"
 )
 
 var reHorizontalRule = regexp.MustCompile(`^ *((\* *\* *\* *[\* ]*)|(\- *\- *\- *[\- ]*)|(_ *_ *_ *[_ ]*))$`)

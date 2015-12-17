@@ -3,7 +3,7 @@ package mdblock
 import (
 	"bytes"
 
-	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v1/md"
 )
 
 func trimQuote(line []byte) []byte {

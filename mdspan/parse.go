@@ -3,8 +3,8 @@ package mdspan
 import (
 	"sort"
 
-	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/mdutils"
+	"gopkg.in/akavel/vfmd.v1/md"
+	"gopkg.in/akavel/vfmd.v1/mdutils"
 )
 
 type NodeType int

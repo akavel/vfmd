@@ -41,11 +41,11 @@ additional design goals and some more specific characteristics listed below:
 - **Extensible syntax** (thanks to the vfmd spec) ― both for block- and
   span-level markup;
     - As an example, subpackage
-      [x/mdgithub](https://godoc.org/gopkg.in/akavel/vfmd.v0/x/mdgithub)
+      [x/mdgithub](https://godoc.org/gopkg.in/akavel/vfmd.v1/x/mdgithub)
       provides some extensions from [GitHub-flavored
       Markdown](https://help.github.com/articles/github-flavored-markdown/):
       strikethrough with `~~` and fenced code blocks with triple backtick. The
-      [cmd/vfmd](https://godoc.org/gopkg.in/akavel/vfmd.v0/cmd/vfmd) sample
+      [cmd/vfmd](https://godoc.org/gopkg.in/akavel/vfmd.v1/cmd/vfmd) sample
       application shows how to enable those (when executed with `--github`
       flag).
     - __TODO:__ add tables support from GH-flavored MD too.

@@ -1,4 +1,4 @@
-package md // import "gopkg.in/akavel/vfmd.v0/md"
+package md // import "gopkg.in/akavel/vfmd.v1/md"
 
 type Link struct {
 	ReferenceID, URL, Title string

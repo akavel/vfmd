@@ -9,9 +9,9 @@ import (
 	"bytes"
 	"unicode"
 
-	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/mdspan"
-	"gopkg.in/akavel/vfmd.v0/x/mdhtml"
+	"gopkg.in/akavel/vfmd.v1/md"
+	"gopkg.in/akavel/vfmd.v1/mdspan"
+	"gopkg.in/akavel/vfmd.v1/x/mdhtml"
 )
 
 type StrikeThrough struct{}

@@ -1,4 +1,4 @@
-package mdspan // import "gopkg.in/akavel/vfmd.v0/mdspan"
+package mdspan // import "gopkg.in/akavel/vfmd.v1/mdspan"
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/mdutils"
+	"gopkg.in/akavel/vfmd.v1/md"
+	"gopkg.in/akavel/vfmd.v1/mdutils"
 )
 
 type Detector interface {

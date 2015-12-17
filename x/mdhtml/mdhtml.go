@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/mdutils"
+	"gopkg.in/akavel/vfmd.v1/md"
+	"gopkg.in/akavel/vfmd.v1/mdutils"
 )
 
 func QuickRender(w io.Writer, blocks []md.Tag) error {

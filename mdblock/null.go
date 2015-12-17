@@ -1,6 +1,6 @@
 package mdblock
 
-import "gopkg.in/akavel/vfmd.v0/md"
+import "gopkg.in/akavel/vfmd.v1/md"
 
 func DetectNull(first, second Line, detectors Detectors) Handler {
 	if !first.isBlank() {

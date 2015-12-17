@@ -3,7 +3,7 @@ package mdblock
 import (
 	"testing"
 
-	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v1/md"
 )
 
 func TestRefResolution(test *testing.T) {

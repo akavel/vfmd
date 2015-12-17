@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"regexp"
 
-	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/mdutils"
+	"gopkg.in/akavel/vfmd.v1/md"
+	"gopkg.in/akavel/vfmd.v1/mdutils"
 )
 
 var reOrderedList = regexp.MustCompile(`^( *([0-9]+)\. +)[^ ]`)

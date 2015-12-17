@@ -1,4 +1,4 @@
-package mdblock // import "gopkg.in/akavel/vfmd.v0/mdblock"
+package mdblock // import "gopkg.in/akavel/vfmd.v1/mdblock"
 
 import (
 	"bufio"
@@ -7,8 +7,8 @@ import (
 	"io"
 	"strings"
 
-	"gopkg.in/akavel/vfmd.v0/md"
-	"gopkg.in/akavel/vfmd.v0/mdspan"
+	"gopkg.in/akavel/vfmd.v1/md"
+	"gopkg.in/akavel/vfmd.v1/mdspan"
 )
 
 // func unstack() {
