@@ -40,9 +40,15 @@ additional design goals and some more specific characteristics listed below:
 
 - **Extensible syntax** (thanks to the vfmd spec) ― both for block- and
   span-level markup;
-    - __TODO:__ provide Github-flavored Markdown extensions, to showcase the
-      extensibility (and maybe even some more: `---` for em-dash? some markup
-      for `<a name="..." />` anchors? LaTeX environment markup?);
+    - As an example, subpackage
+      [x/mdgithub](https://godoc.org/gopkg.in/akavel/vfmd.v0/x/mdgithub)
+      provides some extensions from [GitHub-flavored
+      Markdown](https://help.github.com/articles/github-flavored-markdown/):
+      strikethrough with `~~` and fenced code blocks with triple backtick. The
+      [cmd/vfmd](https://godoc.org/gopkg.in/akavel/vfmd.v0/cmd/vfmd) sample
+      application shows how to enable those (when executed with `--github`
+      flag).
+    - __TODO:__ add tables support from GH-flavored MD too.
 - **Quite well-tested** (thanks to the vfmd testsuite);
 - __*Does not* support inline HTML__ (at least currently; this is arguably a
   feature for some use cases, like desktop editors or comment systems);
@@ -53,6 +59,9 @@ additional design goals and some more specific characteristics listed below:
 - __FIXME:__ detect md.HardBreak tag for lines ending with `"  \n"`;
 - __FIXME:__ godoc
 - __FIXME:__ example in README
-- __FIXME:__ make QuickHTML extensible (by implementing some interface?)
+- __FIXME:__ add tests for GitHub-flavored Markdown extensions.
+- __FIXME:__ true Region information in spans (vfmd.v2?)
+- __TODO:__ make DefaultDetectors comparable?
+- __TODO:__ add SmartyPants extensions (also, `<a name="..." />` anchors if not there);
 
 

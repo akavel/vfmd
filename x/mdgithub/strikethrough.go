@@ -67,7 +67,7 @@ func (StrikeThrough) Detect(ctx *mdspan.Context) (consumed int) {
 	return 2
 }
 
-func (s StrikeThrough) Span(ctx mdhtml.Context, opt mdhtml.Opt) ([]md.Tag, error) {
+func (s StrikeThrough) HTMLSpan(ctx mdhtml.Context, opt mdhtml.Opt) ([]md.Tag, error) {
 	ctx.Printf("<del>")
 	ctx.Spans(ctx.Tags[1:], opt)
 	ctx.Printf("</del>")

@@ -32,10 +32,10 @@ func QuickRender(w io.Writer, blocks []md.Tag) error {
 }
 
 type Spaner interface {
-	Span(Context, Opt) ([]md.Tag, error)
+	HTMLSpan(Context, Opt) ([]md.Tag, error)
 }
 type Blocker interface {
-	Block(Context, Opt) ([]md.Tag, error)
+	HTMLBlock(Context, Opt) ([]md.Tag, error)
 }
 
 func chkmoved(oldtags, newtags []md.Tag) error {
@@ -200,7 +200,7 @@ func htmlBlock(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 			// TODO(akavel): return error's context (e.g. remaining tags?)
 			return tags, fmt.Errorf("vfmd: block type %T not supported yet", t)
 		}
-		return b.Block(c, opt)
+		return b.HTMLBlock(c, opt)
 	}
 }
 
@@ -373,9 +373,9 @@ func htmlSpans(tags []md.Tag, w io.Writer, opt Opt) ([]md.Tag, error) {
 			s, ok := t.(Spaner)
 			if !ok {
 				// TODO(akavel): return error's context (e.g. remaining tags?)
-				return c.Tags, fmt.Errorf("vfmd: span type %T not supported, missing Span method", t)
+				return c.Tags, fmt.Errorf("vfmd: span type %T not supported, missing HTMLSpan method", t)
 			}
-			c.Tags, c.Err = s.Span(c, opt)
+			c.Tags, c.Err = s.HTMLSpan(c, opt)
 		}
 		if c.Err == nil {
 			c.Err = chkmoved(oldtags, c.Tags)

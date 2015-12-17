@@ -49,6 +49,9 @@ func run() error {
 	var blockDet []mdblock.Detector
 	var spanDet []mdspan.Detector
 	if *github {
+		blockDet = append(blockDet, mdblock.DefaultDetectors[:2]...)
+		blockDet = append(blockDet, mdgithub.FencedCodeBlock{})
+		blockDet = append(blockDet, mdblock.DefaultDetectors[2:]...)
 		spanDet = append(spanDet, mdspan.DefaultDetectors[:2]...)
 		spanDet = append(spanDet, mdgithub.StrikeThrough{})
 		spanDet = append(spanDet, mdspan.DefaultDetectors[2:]...)
