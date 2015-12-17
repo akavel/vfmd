@@ -59,9 +59,10 @@ additional design goals and some more specific characteristics listed below:
 - __FIXME:__ detect md.HardBreak tag for lines ending with `"  \n"`;
 - __FIXME:__ godoc
 - __FIXME:__ example in README
-- __FIXME:__ add tests for GitHub-flavored Markdown extensions.
+- __FIXME:__ add tests for GitHub-flavored Markdown extensions;
 - __FIXME:__ true Region information in spans (vfmd.v2?)
 - __TODO:__ make DefaultDetectors comparable?
 - __TODO:__ add SmartyPants extensions (also, `<a name="..." />` anchors if not there);
+- __TODO:__ add [tests from Blackfriday](https://github.com/russross/blackfriday/tree/master/testdata) too;
 
 
