@@ -15,7 +15,7 @@ func Copy(r md.Region) md.Region {
 
 func FindSubmatch(r md.Region, p *regexp.Regexp) []md.Region {
 	// FIXME(akavel): verify if below func returns byte offsets, or rune indexes
-	rr := regionReader(r)
+	rr := regionReader{r: r}
 	idx := p.FindReaderSubmatchIndex(bufio.NewReader(&rr))
 	if idx == nil {
 		return nil
@@ -34,29 +34,34 @@ func FindSubmatch(r md.Region, p *regexp.Regexp) []md.Region {
 	return regions
 }
 
-type regionReader md.Region
+type regionReader struct {
+	r  md.Region
+	in int
+}
 
 func (r *regionReader) Read(buf []byte) (int, error) {
 Retry:
-	if len(*r) == 0 {
+	if len(r.r) == 0 {
 		return 0, io.EOF
 	}
-	run := &(*r)[0]
-	if len(run.Bytes) == 0 {
-		*r = (*r)[1:]
+	run := r.r[0].Bytes[r.in:]
+	if len(run) == 0 {
+		r.r = r.r[1:]
+		r.in = 0
 		goto Retry
 	}
-	n := copy(buf, run.Bytes)
-	if n < len(run.Bytes) {
-		run.Bytes = run.Bytes[n:]
+	n := copy(buf, run)
+	if n < len(run) {
+		r.in += n
 	} else {
-		*r = (*r)[1:]
+		r.r = r.r[1:]
+		r.in = 0
 	}
 	return n, nil
 }
 
 func String(r md.Region) string {
-	rr := regionReader(Copy(r))
+	rr := regionReader{r: r}
 	buf, err := ioutil.ReadAll(&rr)
 	if err != nil {
 		panic(err.Error())

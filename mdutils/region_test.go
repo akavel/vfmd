@@ -46,7 +46,7 @@ func TestRegionReader(test *testing.T) {
 	}
 	for _, c := range cases {
 		r := Copy(c.r)
-		rr := regionReader(r)
+		rr := regionReader{r: r}
 		all, err := ioutil.ReadAll(&rr)
 		if err != nil {
 			test.Errorf("case %q error: %v", c.expected, err)
