@@ -3,6 +3,7 @@ package mdutils
 import (
 	"bufio"
 	"io"
+	"io/ioutil"
 	"regexp"
 
 	"gopkg.in/akavel/vfmd.v0/md"
@@ -54,6 +55,15 @@ Retry:
 	return n, nil
 }
 
+func String(r md.Region) string {
+	rr := regionReader(Copy(r))
+	buf, err := ioutil.ReadAll(&rr)
+	if err != nil {
+		panic(err.Error())
+	}
+	return string(buf)
+}
+
 func Skip(r *md.Region, n int) {
 	if n < 0 {
 		panic("mdutils.Skip negative n")
@@ -86,4 +96,12 @@ func Limit(r *md.Region, n int) {
 		}
 		n -= len(run.Bytes)
 	}
+}
+
+func Len(r md.Region) int {
+	n := 0
+	for _, run := range r {
+		n += len(run.Bytes)
+	}
+	return n
 }
