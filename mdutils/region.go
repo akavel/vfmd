@@ -84,5 +84,6 @@ func Limit(r *md.Region, n int) {
 			*r = (*r)[:i+1]
 			return
 		}
+		n -= len(run.Bytes)
 	}
 }

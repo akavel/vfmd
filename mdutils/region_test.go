@@ -75,6 +75,23 @@ func TestSkip(test *testing.T) {
 	}
 }
 
+func TestLimit(test *testing.T) {
+	r := Copy(r1)
+	Limit(&r, 10)
+	expected := md.Region{
+		{0, buf1[:3]},
+		{0, buf1[3:10]},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		test.Fatalf("want:\n%#v\ngot:\n%#v", expected, r)
+	}
+	for i := range r {
+		if !sameArray(r[i].Bytes, expected[i].Bytes) {
+			test.Errorf("r[%d].Bytes not same as expected", i)
+		}
+	}
+}
+
 func sameArray(a, b []byte) bool {
 	return &a[:cap(a)][cap(a)-1] == &b[:cap(b)][cap(b)-1]
 }
