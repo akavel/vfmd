@@ -65,37 +65,49 @@ func (s *OpeningsStack) deleteLinks() {
 }
 
 type Span struct {
-	// Pos is a subslice of the original input buffer
-	Pos       []byte
+	// Pos is a Region of the original input buffer
+	Pos       md.Region
 	Tag       md.Tag
 	SelfClose bool
 }
 
 type Context struct {
-	Buf      []byte
-	Pos      int
-	Openings OpeningsStack
-	Spans    []Span
+	Prefix, Suffix md.Region
+	Openings       OpeningsStack
+	Spans          []Span
 }
 
-func Parse(buf []byte, detectors []Detector) []md.Tag {
+func Parse(r md.Region, detectors []Detector) []md.Tag {
 	if detectors == nil {
 		detectors = DefaultDetectors
 	}
-	s := Context{Buf: buf}
+	s := Context{
+		Prefix: md.Region{},
+		Suffix: Copy(r),
+	}
 walk:
-	for s.Pos < len(s.Buf) {
+	for len(s.Suffix) > 0 {
+		if len(s.Suffix[0]) == 0 {
+			s.Suffix = s.Suffix[1:]
+			continue
+		}
+		consumed := 0
 		for _, d := range detectors {
-			consumed := d.Detect(&s)
+			consumed = d.Detect(&s)
 			if consumed > 0 {
 				// fmt.Printf("DBG %T consumed %v at %v\t[%q]\n",
 				// 	d, consumed, s.Pos, string(s.Buf[s.Pos:s.Pos+consumed]))
 				// FIXME(akavel): if new spans emitted, verify no errors on span.OffsetIn(buf)
-				s.Pos += consumed
-				continue walk
+				break
 			}
 		}
-		s.Pos++
+		if consumed == 0 {
+			consumed = 1
+		}
+		_, err := mdutils.Move(&s.Prefix, &s.Suffix, consumed)
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 	sort.Sort(sortedSpans(s.Spans))
 	tags := []md.Tag{}
