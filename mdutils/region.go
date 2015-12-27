@@ -5,6 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"unicode"
+	"unicode/utf8"
 
 	"gopkg.in/akavel/vfmd.v0/md"
 )
@@ -109,4 +111,54 @@ func Len(r md.Region) int {
 		n += len(run.Bytes)
 	}
 	return n
+}
+
+func DecodeRune(r md.Region) (ch rune, size int) {
+	rr := bufio.NewReader(&regionReader{r: r})
+	ch, size, err := rr.ReadRune()
+	if err != nil {
+		return utf8.RuneError, 0
+	}
+	if ch == unicode.ReplacementChar {
+		return utf8.RuneError, 1
+	}
+	return ch, size
+}
+
+func DecodeLastRune(r md.Region) (ch rune, size int) {
+	rr := regionReverser{r: r}
+	buf := [utf8.UTFMax]byte{}
+	for i := len(buf) - 1; i >= 0; i-- {
+		b, err := rr.ReadByte()
+		if err != nil {
+			return utf8.RuneError, 1
+		}
+		buf[i] = b
+		ch, size = utf8.DecodeRune(buf[i:])
+		if ch != utf8.RuneError {
+			return ch, size
+		}
+	}
+	return utf8.RuneError, 1
+}
+
+type regionReverser struct {
+	r      md.Region
+	suffix int
+}
+
+func (r *regionReverser) ReadByte() (byte, error) {
+Retry:
+	if len(r.r) == 0 {
+		return 0, io.EOF
+	}
+	n := len(r.r)
+	run := r.r[n-1].Bytes
+	if len(run) == r.suffix {
+		r.r = r.r[:n-1]
+		r.suffix = 0
+		goto Retry
+	}
+	r.suffix++
+	return run[len(run)-r.suffix], nil
 }

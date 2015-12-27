@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
+	"unicode/utf8"
 
 	"gopkg.in/akavel/vfmd.v0/md"
 )
@@ -94,4 +95,22 @@ func TestLimit(test *testing.T) {
 
 func sameArray(a, b []byte) bool {
 	return &a[:cap(a)][cap(a)-1] == &b[:cap(b)][cap(b)-1]
+}
+
+func TestDecodeLastRune(test *testing.T) {
+	buf := []byte("Ala ma kota, a kot ma Alę")
+	r := md.Region{
+		{0, buf[:3]},
+		{0, buf[3:]},
+	}
+	ch, size := DecodeLastRune(r)
+	wantch, wantsize := utf8.DecodeLastRune(buf)
+	if ch != wantch {
+		test.Errorf("ch want: % 02X got: % 02X", wantch, ch)
+	}
+	if size != wantsize {
+		test.Errorf("size want: %d got: %d", wantsize, size)
+	}
+	test.Logf("in: % 02X", buf)
+	test.Logf("ę = rune % 02X = bytes % 02X", rune('ę'), []byte("ę"))
 }
