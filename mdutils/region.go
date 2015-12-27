@@ -162,3 +162,43 @@ Retry:
 	r.suffix++
 	return run[len(run)-r.suffix], nil
 }
+
+func Move(dst, src *md.Region, n int) (int, error) {
+	for i := 0; i < n; {
+		if len(*src) == 0 {
+			return i, io.ErrUnexpectedEOF
+		}
+		srcRun := &(*src)[0]
+		move := md.Run{Line: srcRun.Line}
+		if n-i < len(srcRun.Bytes) {
+			move.Bytes = srcRun.Bytes[:n-i]
+			srcRun.Bytes = srcRun.Bytes[n-i:]
+			i += n - i
+		} else {
+			move.Bytes = srcRun.Bytes
+			*src = (*src)[1:]
+			i += len(move.Bytes)
+		}
+
+		// If we succeed through all below checks, we'll extend
+		// .Bytes of the last Run in r, instead of appending a new
+		// Run
+		if len(*dst) == 0 {
+			*dst = append(*dst, move)
+			continue
+		}
+		dstRun := &(*dst)[len(*dst)-1]
+		if dstRun.Line != move.Line {
+			*dst = append(*dst, move)
+			continue
+		}
+		dstCap := dstRun.Bytes[:cap(dstRun.Bytes)]
+		off, ok := OffsetIn(dstCap, move.Bytes)
+		if !ok || off != len(dstRun.Bytes) {
+			*dst = append(*dst, move)
+			continue
+		}
+		dstRun.Bytes = dstCap[:len(dstRun.Bytes)+len(move.Bytes)]
+	}
+	return n, nil
+}

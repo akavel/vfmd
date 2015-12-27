@@ -114,3 +114,29 @@ func TestDecodeLastRune(test *testing.T) {
 	test.Logf("in: % 02X", buf)
 	test.Logf("ę = rune % 02X = bytes % 02X", rune('ę'), []byte("ę"))
 }
+
+func TestMove(test *testing.T) {
+	dst := md.Region{{0, buf1[:3]}}
+	src := md.Region{{0, buf1[3:]}}
+	n, err := Move(&dst, &src, 10)
+	expDst := md.Region{{0, buf1[:13]}}
+	expSrc := md.Region{{0, buf1[13:]}}
+	if n != 10 {
+		test.Errorf("n want 10, got %d", n)
+	}
+	if err != nil {
+		test.Errorf("err: %v", err)
+	}
+	if !reflect.DeepEqual(dst, expDst) {
+		test.Errorf("dst want:\n%v\ngot:\n%v", expDst, dst)
+	}
+	if !reflect.DeepEqual(src, expSrc) {
+		test.Errorf("src want:\n%v\ngot:\n%v", expSrc, src)
+	}
+	if !sameArray(dst[0].Bytes, expDst[0].Bytes) {
+		test.Errorf("dst[0] not same array")
+	}
+	if !sameArray(src[0].Bytes, expSrc[0].Bytes) {
+		test.Errorf("src[0] not same array")
+	}
+}
