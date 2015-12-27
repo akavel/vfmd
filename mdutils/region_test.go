@@ -56,3 +56,25 @@ func TestRegionReader(test *testing.T) {
 		}
 	}
 }
+
+func TestSkip(test *testing.T) {
+	r := Copy(r1)
+	Skip(&r, 10)
+	expected := md.Region{
+		{0, buf1[10:]},
+		{1, buf2[:6]},
+		{1, buf2[6:]},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		test.Fatalf("want:\n%#v\ngot:\n%#v", expected, r)
+	}
+	for i := range r {
+		if !sameArray(r[i].Bytes, expected[i].Bytes) {
+			test.Errorf("r[%d].Bytes not same as expected", i)
+		}
+	}
+}
+
+func sameArray(a, b []byte) bool {
+	return &a[:cap(a)][cap(a)-1] == &b[:cap(b)][cap(b)-1]
+}
