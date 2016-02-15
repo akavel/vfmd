@@ -12,7 +12,7 @@ type NodeType int
 type OpeningsStack []MaybeOpening
 type MaybeOpening struct {
 	Tag string
-	Pos int
+	Pos md.Region
 	// TODO(akavel): HTMLTag
 }
 
@@ -150,6 +150,6 @@ func (s sortedSpans) Less(i, j int) bool {
 	return len(iext) > len(jext)
 }
 
-func (s *Context) Emit(slice []byte, tag interface{}, selfClose bool) {
-	s.Spans = append(s.Spans, Span{slice, tag, selfClose})
+func (s *Context) Emit(r md.Region, tag interface{}, selfClose bool) {
+	s.Spans = append(s.Spans, Span{r, tag, selfClose})
 }

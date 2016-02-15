@@ -30,8 +30,7 @@ var DefaultDetectors = []Detector{
 }
 
 func DetectEscapedChar(s *Context) (consumed int) {
-	rest := s.Buf[s.Pos:]
-	if len(rest) >= 2 && rest[0] == '\\' {
+	if mdutils.HasPrefix(s.Suffix, []byte{'\\'}) && mdutils.Len(s.Suffix) >= 2 {
 		return 2
 	} else {
 		return 0
@@ -40,17 +39,16 @@ func DetectEscapedChar(s *Context) (consumed int) {
 
 func DetectLink(s *Context) (consumed int) {
 	// [#procedure-for-identifying-link-tags]
-	c := s.Buf[s.Pos]
-	if c != '[' && c != ']' {
-		return 0
-	}
 	// "opening link tag"?
-	if c == '[' {
+	if mdutils.HasPrefix(c.Suffix, []byte{'['}) {
 		s.Openings.Push(MaybeOpening{
 			Tag: "[",
-			Pos: s.Pos,
+			Pos: copyReg(s.Suffix, 0, 1),
 		})
 		return 1
+	}
+	if !mdutils.HasPrefix(c.Suffix, []byte{']'}) {
+		return 0
 	}
 	// "closing link tag", c==']'
 	return closingLinkTag(s)
@@ -75,10 +73,9 @@ func closingLinkTag(s *Context) (consumed int) {
 	if s.Openings.NullTopmostTagged("[") {
 		return 1 // consume the ']'
 	}
-	rest := s.Buf[s.Pos:]
 
 	// e.g.: "] [ref id]" ?
-	m := reClosingTagRef.FindSubmatch(rest)
+	m := mdutils.FindSubmatch(s.Suffix, reClosingTagRef)
 	if m != nil {
 		// cancel all unclosed spans inside the link
 		for s.Openings.Peek().Tag != "[" {
@@ -86,38 +83,36 @@ func closingLinkTag(s *Context) (consumed int) {
 		}
 		// emit a link
 		opening := s.Openings.Peek()
-		s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
+		s.Emit(opening.Pos, md.Link{
 			ReferenceID: mdutils.Simplify(m[1]),
-			RawEnd: md.Raw{
-				md.Run{-1, m[0]},
-			},
+			RawEnd:      md.Raw(m[0]),
 		}, false)
 		s.Emit(m[0], md.End{}, false)
 		s.Openings.Pop()
 		// cancel all unclosed links
 		s.Openings.deleteLinks()
-		return len(m[0])
+		return mdutils.Len(m[0])
 	}
 
 	// e.g.: "] (http://www.example.net"... ?
-	m = reClosingTagWithoutAngle.FindSubmatch(rest)
+	m = mdutils.FindSubmatch(s.Suffix, reClosingTagWithoutAngle)
 	if m == nil {
 		// e.g.: "] ( <http://example.net/?q=)>"... ?
-		m = reClosingTagWithAngle.FindSubmatch(rest)
+		m = mdutils.FindSubmatch(s.Suffix, reClosingTagWithAngle)
 	}
 	if m != nil {
-		linkURL := mdutils.DelWhites(string(m[1]))
+		linkURL := mdutils.DelWhites(mdutils.String(m[1]))
 		residual := m[2]
 		title := ""
-		t := reJustClosingParen.FindSubmatch(residual)
+		t := mdutils.FindSubmatch(residual, reJustClosingParen)
 		if t == nil {
-			t = reTitleAndClosingParen.FindSubmatch(residual)
+			t = mdutils.FindSubmatch(residual, reTitleAndClosingParen)
 		}
 		if t != nil {
 			if len(t) > 1 {
-				attribs := t[1]
+				attribs := mdutils.String(t[1])
 				unquoted := attribs[1 : len(attribs)-1]
-				title = strings.Replace(string(unquoted), "\u000a", "", -1)
+				title = strings.Replace(unquoted, "\u000a", "", -1)
 			}
 			// cancel all unclosed spans inside the link
 			for s.Openings.Peek().Tag != "[" {
@@ -125,27 +120,26 @@ func closingLinkTag(s *Context) (consumed int) {
 			}
 			// emit a link
 			opening := s.Openings.Peek()
-			closing := rest[:len(rest)-len(residual)+len(t[0])]
-			s.Emit(s.Buf[opening.Pos:][:len(opening.Tag)], md.Link{
-				URL:   linkURL,
-				Title: mdutils.DeEscape(title),
-				RawEnd: md.Raw{
-					md.Run{-1, closing},
-				},
+			closingReg := copyReg(s.Suffix, 0,
+				mdutils.Len(s.Suffix)-mdutils.Len(residual)+mdutils.Len(t[0]))
+			s.Emit(opening.Pos, md.Link{
+				URL:    linkURL,
+				Title:  mdutils.DeEscape(title),
+				RawEnd: md.Raw(closingReg),
 			}, false)
-			s.Emit(closing, md.End{}, false)
+			s.Emit(closingReg, md.End{}, false)
 			s.Openings.Pop()
 			// cancel all unclosed links
 			s.Openings.deleteLinks()
-			return len(closing)
+			return mdutils.Len(closingReg)
 		}
 	}
 
 	// e.g.: "] []" ?
-	m = reEmptyRef.FindSubmatch(rest)
+	m = mdutils.FindSubmatch(rest, reEmptyRef)
 	if m == nil {
 		// just: "]"
-		m = [][]byte{rest[:1]}
+		m = copyReg(s.Suffix, 0, 1)
 	}
 	// cancel all unclosed spans inside the link
 	for s.Openings.Peek().Tag != "[" {
@@ -153,47 +147,48 @@ func closingLinkTag(s *Context) (consumed int) {
 	}
 	// emit a link
 	begin := s.Openings.Peek()
-	s.Emit(s.Buf[begin.Pos:][:len(begin.Tag)], md.Link{
-		ReferenceID: mdutils.Simplify(s.Buf[begin.Pos+len(begin.Tag) : s.Pos]),
-		RawEnd: md.Raw{
-			md.Run{-1, m[0]},
-		},
+	refIDReg := mdutils.Copy(s.Prefix)
+	// TODO(akavel): mdutils.Skip(&refIDReg, begin.Pos+len(begin.Tag))
+	s.Emit(begin.Pos, md.Link{
+		// TODO(akavel): ReferenceID: mdutils.SimplifyReg(refIDReg),
+		RawEnd: md.Raw(m[0]),
 	}, false)
 	s.Emit(m[0], md.End{}, false)
 	s.Openings.Pop()
 	// cancel all unclosed links
 	s.Openings.deleteLinks()
-	return len(m[0])
+	return mdutils.Len(m[0])
 }
 
+var reEmphasis = regexp.MustCompile(`^([_*]+)(.*)$`)
+
 func DetectEmphasis(s *Context) (consumed int) {
-	rest := s.Buf[s.Pos:]
-	if !isEmph(rest[0]) {
+	m := mdutils.FindSubmatch(s.Suffix, reEmphasis)
+	if m == nil {
 		return 0
 	}
-	// find substring composed solely of '*' and '_'
-	i := 1
-	for i < len(rest) && isEmph(rest[i]) {
-		i++
-	}
-	indicator := rest[:i]
+	indicator := m[1]
 	// "right-fringe-mark"
-	r, _ := utf8.DecodeRune(rest[len(indicator):])
+	r, _ := mdutils.DecodeRune(m[2])
 	rightFringe := emphasisFringeRank(r)
-	r, _ = utf8.DecodeLastRune(s.Buf[:s.Pos])
+	r, _ = mdutils.DecodeLastRune(s.Prefix)
 	leftFringe := emphasisFringeRank(r)
 	// <0 means "left-flanking", >0 "right-flanking", 0 "non-flanking"
 	flanking := leftFringe - rightFringe
 	if flanking == 0 {
-		return len(indicator)
+		return mdutils.Len(indicator)
 	}
 	// split into "emphasis-tag-strings" - subslices of the same char
-	tags := [][]byte{}
-	prev := 0
-	for curr := 1; curr <= len(indicator); curr++ {
-		if curr == len(indicator) || indicator[curr] != indicator[prev] {
-			tags = append(tags, indicator[prev:curr])
-			prev = curr
+	tags := []md.Region{}
+	{
+		prev, remaining := rune(0), mdutils.Copy(indicator)
+		for !mdutils.Empty(remaining) {
+			r, _ := mdutils.DecodeRune(remaining)
+			if r != prev {
+				tags = append(tags, md.Region{})
+			}
+			prev = r
+			mdutils.Move(&tags[len(tags)-1], &remaining)
 		}
 	}
 	// left-flanking? if yes, add some openings
@@ -201,25 +196,29 @@ func DetectEmphasis(s *Context) (consumed int) {
 		for _, tag := range tags {
 			pos, _ := mdutils.OffsetIn(s.Buf, tag)
 			s.Openings.Push(MaybeOpening{
-				Tag: string(tag),
-				Pos: pos,
+				Tag: mdutils.String(tag),
+				Pos: tag,
 			})
 		}
-		return len(indicator)
+		return mdutils.Len(indicator)
 	}
 
 	// right-flanking; maybe a closing tag
 	closingEmphasisTags(s, tags)
-	return len(indicator)
+	return mdutils.Len(indicator)
 }
 
-func closingEmphasisTags(s *Context, tags [][]byte) {
+func closingEmphasisTags(s *Context, tags []md.Region) {
 	// TODO(akavel): refactor to use s.PopTo
 	for len(tags) > 0 {
 		// find topmost opening of matching emphasis type
 		tag := tags[0]
 		i := len(s.Openings) - 1
-		for i >= 0 && !strings.HasPrefix(s.Openings[i].Tag, string(tag[:1])) {
+		for i >= 0 {
+			r, _ := mdutils.DecodeRune(tag)
+			if strings.HasPrefix(s.Openings[i].Tag, string(r)) {
+				break
+			}
 			i--
 		}
 		// no opening node of this type, try next tag
@@ -231,29 +230,32 @@ func closingEmphasisTags(s *Context, tags [][]byte) {
 		s.Openings = s.Openings[:i+1]
 		// "procedure for matching emphasis tag strings"
 		tags[0] = matchEmphasisTag(s, tag)
-		if len(tags[0]) == 0 {
+		if mdutils.Empty(tags[0]) {
 			tags = tags[1:]
 		}
 	}
 }
-func matchEmphasisTag(s *Context, tag []byte) []byte {
+func matchEmphasisTag(s *Context, tag md.Region) md.Region {
 	top := s.Openings.Peek()
-	if len(top.Tag) > len(tag) {
-		n := len(tag)
-		s.Emit(s.Buf[top.Pos:][len(top.Tag)-n:len(top.Tag)], md.Emphasis{Level: n}, false)
+	if len(top.Tag) > mdutils.Len(tag) {
+		n := mdutils.Len(tag)
+		prefix, suffix := md.Region{}, top.Pos
+		mdutils.Move(&prefix, &suffix, len(top.Tag)-n)
+		top.Pos = prefix
+		top.Tag = mdutils.String(prefix)
+		s.Emit(suffix, md.Emphasis{Level: n}, false)
 		s.Emit(tag, md.End{}, false)
-		top.Tag = top.Tag[:len(top.Tag)-n]
 		return nil
 	} else { // len(top.Tag) <= len(tag)
 		n := len(top.Tag)
-		s.Emit(s.Buf[top.Pos:][:len(top.Tag)], md.Emphasis{Level: n}, false)
-		s.Emit(tag[:n], md.End{}, false)
+		prefix, suffix := md.Region{}, tag
+		mdutils.Move(&prefix, &suffix, n)
+		s.Emit(top.Pos, md.Emphasis{Level: n}, false)
+		s.Emit(prefix, md.End{}, false)
 		s.Openings.Pop()
-		return tag[n:]
+		return suffix
 	}
 }
-
-func isEmph(c byte) bool { return c == '*' || c == '_' }
 
 func emphasisFringeRank(r rune) int {
 	switch {
@@ -269,36 +271,22 @@ func emphasisFringeRank(r rune) int {
 	}
 }
 
+var reCode = regexp.MustCompile("^(`+)(.*)$")
+
 func DetectCode(s *Context) (consumed int) {
-	rest := s.Buf[s.Pos:]
-	if rest[0] != '`' {
+	m := mdutils.FindSubmatch(s.Suffix, reCode)
+	if m == nil {
 		return 0
 	}
-	i := 1
-	for i < len(rest) && rest[i] == '`' {
-		i++
-	}
-	opening := rest[:i]
+	opening := m[1]
 	// try to find a sequence of '`' with length exactly equal to 'opening'
-	for {
-		pos := bytes.Index(rest[i:], opening)
-		if pos == -1 {
-			return len(opening)
-		}
-		i = i + pos + len(opening)
-		if i >= len(rest) || rest[i] != '`' {
-			// found closing tag!
-			code := rest[len(opening) : i-len(opening)]
-			code = bytes.Trim(code, mdutils.Whites)
-			s.Emit(rest[:i], md.Code{Code: code}, true)
-			return i
-		}
-		for i < len(rest) && rest[i] == '`' {
-			// too many '`' character to match the opening; consume
-			// them as code contents and search again further
-			i++
-		}
+	re := regexp.MustCompile("(.*?(" + mdutils.String(opening) + "))([^`]|$)")
+	m = mdutils.FindSubmatch(m[2], re)
+	if m == nil {
+		return mdutils.Len(opening)
 	}
+	// TODO(akavel): s.Emit(..., md.Code{...}, true)
+	return mdutils.Len(opening) + mdutils.Len(m[1])
 }
 
 func DetectImage(s *Context) (consumed int) {
@@ -507,4 +495,13 @@ func isWordSep(r rune) bool {
 }
 func isSpeculativeURLEnd(r rune) bool {
 	return r != '\u002f' && isWordSep(r)
+}
+
+// equivalent of concat(r[*].Bytes)[off:][:n]
+func copyReg(r md.Region, off, n int) md.Region {
+	// TODO(akavel): optimize
+	r = mdutils.Copy(r)
+	mdutils.Skip(&r, off)
+	mdutils.Limit(&r, n)
+	return r
 }

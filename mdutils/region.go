@@ -2,6 +2,7 @@ package mdutils
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -201,4 +202,27 @@ func Move(dst, src *md.Region, n int) (int, error) {
 		dstRun.Bytes = dstCap[:len(dstRun.Bytes)+len(move.Bytes)]
 	}
 	return n, nil
+}
+
+func HasPrefix(r Region, prefix []byte) bool {
+	for len(prefix) > 0 {
+		if len(r) == 0 {
+			return false
+		}
+		run := r[0].Bytes
+		if len(prefix) <= len(run) {
+			return bytes.HasPrefix(run, prefix)
+		}
+		if !bytes.HasPrefix(prefix, run) {
+			return false
+		}
+		prefix = prefix[len(run):]
+		r = r[1:]
+	}
+	return true
+}
+
+func SimplifyReg(r md.Region) string {
+	buf, _ := ioutil.ReadAll(&regionReader{r: r})
+	return Simplify(buf)
 }
