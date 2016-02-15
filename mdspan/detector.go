@@ -1,7 +1,6 @@
 package mdspan // import "gopkg.in/akavel/vfmd.v0/mdspan"
 
 import (
-	"bytes"
 	"regexp"
 	"strings"
 	"unicode"
@@ -40,14 +39,14 @@ func DetectEscapedChar(s *Context) (consumed int) {
 func DetectLink(s *Context) (consumed int) {
 	// [#procedure-for-identifying-link-tags]
 	// "opening link tag"?
-	if mdutils.HasPrefix(c.Suffix, []byte{'['}) {
+	if mdutils.HasPrefix(s.Suffix, []byte{'['}) {
 		s.Openings.Push(MaybeOpening{
 			Tag: "[",
 			Pos: copyReg(s.Suffix, 0, 1),
 		})
 		return 1
 	}
-	if !mdutils.HasPrefix(c.Suffix, []byte{']'}) {
+	if !mdutils.HasPrefix(s.Suffix, []byte{']'}) {
 		return 0
 	}
 	// "closing link tag", c==']'
@@ -84,7 +83,7 @@ func closingLinkTag(s *Context) (consumed int) {
 		// emit a link
 		opening := s.Openings.Peek()
 		s.Emit(opening.Pos, md.Link{
-			ReferenceID: mdutils.Simplify(m[1]),
+			ReferenceID: mdutils.SimplifyReg(m[1]),
 			RawEnd:      md.Raw(m[0]),
 		}, false)
 		s.Emit(m[0], md.End{}, false)
@@ -136,10 +135,10 @@ func closingLinkTag(s *Context) (consumed int) {
 	}
 
 	// e.g.: "] []" ?
-	m = mdutils.FindSubmatch(rest, reEmptyRef)
+	m = mdutils.FindSubmatch(s.Suffix, reEmptyRef)
 	if m == nil {
 		// just: "]"
-		m = copyReg(s.Suffix, 0, 1)
+		m = []md.Region{copyReg(s.Suffix, 0, 1)}
 	}
 	// cancel all unclosed spans inside the link
 	for s.Openings.Peek().Tag != "[" {
@@ -147,7 +146,7 @@ func closingLinkTag(s *Context) (consumed int) {
 	}
 	// emit a link
 	begin := s.Openings.Peek()
-	refIDReg := mdutils.Copy(s.Prefix)
+	// TODO(akavel): refIDReg := mdutils.Copy(s.Prefix)
 	// TODO(akavel): mdutils.Skip(&refIDReg, begin.Pos+len(begin.Tag))
 	s.Emit(begin.Pos, md.Link{
 		// TODO(akavel): ReferenceID: mdutils.SimplifyReg(refIDReg),
@@ -183,18 +182,17 @@ func DetectEmphasis(s *Context) (consumed int) {
 	{
 		prev, remaining := rune(0), mdutils.Copy(indicator)
 		for !mdutils.Empty(remaining) {
-			r, _ := mdutils.DecodeRune(remaining)
+			r, sz := mdutils.DecodeRune(remaining)
 			if r != prev {
 				tags = append(tags, md.Region{})
 			}
 			prev = r
-			mdutils.Move(&tags[len(tags)-1], &remaining)
+			mdutils.Move(&tags[len(tags)-1], &remaining, sz)
 		}
 	}
 	// left-flanking? if yes, add some openings
 	if flanking < 0 {
 		for _, tag := range tags {
-			pos, _ := mdutils.OffsetIn(s.Buf, tag)
 			s.Openings.Push(MaybeOpening{
 				Tag: mdutils.String(tag),
 				Pos: tag,
@@ -290,57 +288,56 @@ func DetectCode(s *Context) (consumed int) {
 }
 
 func DetectImage(s *Context) (consumed int) {
-	rest := s.Buf[s.Pos:]
-	if !bytes.HasPrefix(rest, []byte(`![`)) {
+	if !mdutils.HasPrefix(s.Suffix, []byte(`![`)) {
 		return 0
 	}
-	m := reImageTagStarter.FindSubmatch(rest)
+	m := mdutils.FindSubmatch(s.Suffix, reImageTagStarter)
 	if m == nil {
 		return 2
 	}
 	altText, residual := m[1], m[3]
 
 	// e.g.: "] [ref id]" ?
-	r := reImageRef.FindSubmatch(residual)
+	r := mdutils.FindSubmatch(residual, reImageRef)
 	if r != nil {
-		tag := rest[:len(rest)-len(residual)+len(r[0])]
-		refID := mdutils.Simplify(r[1])
+		// FIXME(akavel): optimize below 2 lines
+		tag := mdutils.Copy(s.Suffix)
+		mdutils.Limit(&tag, mdutils.Len(s.Suffix)-mdutils.Len(residual)+mdutils.Len(r[0]))
+		refID := mdutils.SimplifyReg(r[1])
 		// NOTE(akavel): below refID resolution seems not in spec, but expected according to testdata/test/span_level/image{/expected,}/link_text_with_newline.* and makes sense to me as such.
 		// TODO(akavel): send fix for this to the spec
 		if refID == "" {
-			refID = mdutils.Simplify(altText)
+			refID = mdutils.SimplifyReg(altText)
 		}
 		s.Emit(tag, md.Image{
-			AltText:     mdutils.DeEscape(string(altText)),
+			AltText:     mdutils.DeEscape(mdutils.String(altText)),
 			ReferenceID: refID,
-			RawEnd: md.Raw{
-				md.Run{-1, r[0]},
-			},
+			RawEnd:      md.Raw(r[0]),
 		}, true)
-		return len(tag)
+		return mdutils.Len(tag)
 	}
 
 	// e.g.: "] ("...
-	consumed = imageParen(s, altText, len(rest)-len(residual), residual)
+	consumed = imageParen(s, altText, mdutils.Len(s.Suffix)-mdutils.Len(residual), residual)
 	if consumed > 0 {
 		return consumed
 	}
 
 	// "neither of the above conditions"
 	closing := residual[:1]
-	r = reImageEmptyRef.FindSubmatch(residual)
+	r = mdutils.FindSubmatch(residual, reImageEmptyRef)
 	if r != nil {
 		closing = r[0]
 	}
-	tag := rest[:len(rest)-len(residual)+len(closing)]
+	// FIXME(akavel): optimize below 2 lines
+	tag := mdutils.Copy(s.Suffix)
+	mdutils.Limit(&tag, mdutils.Len(s.Suffix)-mdutils.Len(residual)+mdutils.Len(closing))
 	s.Emit(tag, md.Image{
-		ReferenceID: mdutils.Simplify(altText),
-		AltText:     mdutils.DeEscape(string(altText)),
-		RawEnd: md.Raw{
-			md.Run{-1, closing},
-		},
+		ReferenceID: mdutils.SimplifyReg(altText),
+		AltText:     mdutils.DeEscape(mdutils.String(altText)),
+		RawEnd:      md.Raw(closing),
 	}, true)
-	return len(tag)
+	return mdutils.Len(tag)
 }
 
 var (
@@ -362,18 +359,18 @@ var (
 	reImageEmptyRef = regexp.MustCompile(`^(\]\s*\[\s*\])`)
 )
 
-func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consumed int) {
+func imageParen(s *Context, altText md.Region, prefix int, residual md.Region) (consumed int) {
 	// fmt.Println("imageParen @", s.Pos, string(s.Buf[s.Pos:s.Pos+prefix]))
 	// e.g.: "] ("
-	if !reImageParen.Match(residual) {
+	if !mdutils.Match(residual, reImageParen) {
 		// fmt.Println("no ](")
 		return 0
 	}
 	// fmt.Println("yes ](")
 
-	r := reImageURLWithoutAngle.FindSubmatch(residual)
+	r := mdutils.FindSubmatch(residual, reImageURLWithoutAngle)
 	if r == nil {
-		r = reImageURLWithAngle.FindSubmatch(residual)
+		r = mdutils.FindSubmatch(residual, reImageURLWithAngle)
 	}
 	if r == nil {
 		// fmt.Println("no imgurl")
@@ -382,9 +379,9 @@ func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consum
 	// fmt.Println("yes imgurl")
 	unprocessedSrc, attrs := r[1], r[2]
 
-	a := reImageAttrParen.FindSubmatch(attrs)
+	a := mdutils.FindSubmatch(attrs, reImageAttrParen)
 	if a == nil {
-		a = reImageAttrTitle.FindSubmatch(attrs)
+		a = mdutils.FindSubmatch(attrs, reImageAttrTitle)
 	}
 	if a == nil {
 		// fmt.Println("no imgattr")
@@ -393,86 +390,82 @@ func imageParen(s *Context, altText []byte, prefix int, residual []byte) (consum
 	// fmt.Println("yes imgattr")
 	title := ""
 	if len(a) >= 2 {
-		unprocessedTitle := a[1][1 : len(a[1])-1]
-		title = strings.Replace(string(unprocessedTitle), "\x0a", "", -1)
+		raw := mdutils.String(a[1])
+		unprocessedTitle := raw[1 : len(raw)-1]
+		title = strings.Replace(unprocessedTitle, "\x0a", "", -1)
 	}
 
-	rest := s.Buf[s.Pos:]
-	tag := rest[:prefix+(len(residual)-len(attrs))+len(a[0])]
+	tag := mdutils.Copy(s.Suffix)
+	mdutils.Limit(&tag, prefix+(mdutils.Len(residual)-mdutils.Len(attrs))+mdutils.Len(a[0]))
+	rawEnd := mdutils.Copy(tag)
+	mdutils.Skip(&rawEnd, prefix)
 	s.Emit(tag, md.Image{
 		// TODO(akavel): keep only raw slices as fields, add methods to return processed strings
-		URL:     mdutils.DelWhites(string(unprocessedSrc)),
+		URL:     mdutils.DelWhites(mdutils.String(unprocessedSrc)),
 		Title:   mdutils.DeEscape(title),
-		AltText: mdutils.DeEscape(string(altText)),
-		RawEnd: md.Raw{
-			md.Run{-1, tag[prefix:]},
-		},
+		AltText: mdutils.DeEscape(mdutils.String(altText)),
+		RawEnd:  md.Raw(rawEnd),
 	}, true)
-	return len(tag)
+	return mdutils.Len(tag)
 }
 
 func DetectAutomaticLink(s *Context) (consumed int) {
-	rest := s.Buf[s.Pos:]
-	if s.Pos > 0 && rest[0] != '<' {
-		r, _ := utf8.DecodeLastRune(s.Buf[:s.Pos])
+	if !mdutils.Empty(s.Prefix) && !mdutils.HasPrefix(s.Suffix, []byte{'<'}) {
+		r, _ := mdutils.DecodeLastRune(s.Prefix)
 		if r == utf8.RuneError || !isWordSep(r) {
 			return 0
 		}
 	}
 	// "potential-auto-link-start-position"
-	// fmt.Printf("potential autolink start at %d: %-15q...\n",
-	// 	s.Pos, string(rest))
 	// e.g. "<http://example.net>"
-	m := reURLWithinAngle.FindSubmatch(rest)
+	m := mdutils.FindSubmatch(s.Suffix, reURLWithinAngle)
 	// e.g. "<mailto:someone@example.net?subject=Hi+there>"
 	if m == nil {
-		m = reMailtoURLWithinAngle.FindSubmatch(rest)
+		m = mdutils.FindSubmatch(s.Suffix, reMailtoURLWithinAngle)
 	}
 	if m != nil {
-		url := mdutils.DelWhites(string(m[1]))
+		url := mdutils.DelWhites(mdutils.String(m[1]))
 		s.Emit(m[0], md.AutomaticLink{
 			URL:  url,
 			Text: url,
 		}, true)
-		return len(m[0])
+		return mdutils.Len(m[0])
 	}
 
 	// e.g.: "<someone@example.net>"
-	m = reMailWithinAngle.FindSubmatch(rest)
+	m = mdutils.FindSubmatch(s.Suffix, reMailWithinAngle)
 	if m != nil {
 		s.Emit(m[0], md.AutomaticLink{
-			URL:  "mailto:" + string(m[1]),
-			Text: string(m[1]),
+			URL:  "mailto:" + mdutils.String(m[1]),
+			Text: mdutils.String(m[1]),
 		}, true)
-		return len(m[0])
+		return mdutils.Len(m[0])
 	}
 
 	// e.g.: "http://example.net"
-	m = reURLWithoutAngle.FindSubmatch(rest)
+	m = mdutils.FindSubmatch(s.Suffix, reURLWithoutAngle)
 	if m == nil {
-		m = reMailtoURLWithoutAngle.FindSubmatch(rest)
+		m = mdutils.FindSubmatch(s.Suffix, reMailtoURLWithoutAngle)
 	}
 	if m != nil {
-		// fmt.Printf("matched url w/o angle at %d: %s\n",
-		// 	s.Pos, string(m[0]))
 		scheme := m[1]
-		tag := m[0]
+		tag := mdutils.Copy(m[0])
 		// remove any trailing "speculative-url-end" characters
-		for len(tag) > 0 {
-			r, n := utf8.DecodeLastRune(tag)
+		for mdutils.Len(tag) > 0 {
+			r, n := mdutils.DecodeLastRune(tag)
 			if !isSpeculativeURLEnd(r) {
 				break
 			}
-			tag = tag[:len(tag)-n]
+			mdutils.Limit(&tag, mdutils.Len(tag)-n)
 		}
-		if len(tag) <= len(scheme) {
-			return len(scheme)
+		if mdutils.Len(tag) <= mdutils.Len(scheme) {
+			return mdutils.Len(scheme)
 		}
 		s.Emit(tag, md.AutomaticLink{
-			URL:  string(tag),
-			Text: string(tag),
+			URL:  mdutils.String(tag),
+			Text: mdutils.String(tag),
 		}, true)
-		return len(tag)
+		return mdutils.Len(tag)
 	}
 	return 0
 }

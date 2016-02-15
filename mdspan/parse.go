@@ -50,7 +50,7 @@ func (s *OpeningsStack) PopTo(f func(*MaybeOpening) bool) (MaybeOpening, bool) {
 		(*s) = (*s)[:i]
 		return o, true
 	}
-	return MaybeOpening{Pos: -1}, false
+	return MaybeOpening{}, false
 }
 
 // deleteLinks cancels all unclosed links
@@ -83,11 +83,10 @@ func Parse(r md.Region, detectors []Detector) []md.Tag {
 	}
 	s := Context{
 		Prefix: md.Region{},
-		Suffix: Copy(r),
+		Suffix: mdutils.Copy(r),
 	}
-walk:
 	for len(s.Suffix) > 0 {
-		if len(s.Suffix[0]) == 0 {
+		if len(s.Suffix[0].Bytes) == 0 {
 			s.Suffix = s.Suffix[1:]
 			continue
 		}
@@ -110,6 +109,8 @@ walk:
 		}
 	}
 	sort.Sort(sortedSpans(s.Spans))
+	/* TODO(akavel): upgrade below block to use md.Region
+	// Mark all characters between Spans as md.Prose
 	tags := []md.Tag{}
 	endOffset := 0
 	for _, span := range s.Spans {
@@ -134,6 +135,12 @@ walk:
 		}))
 	}
 	return tags
+	*/
+	tags := []md.Tag{}
+	for _, span := range s.Spans {
+		tags = append(tags, span.Tag)
+	}
+	return tags
 }
 
 type sortedSpans []Span
@@ -144,8 +151,9 @@ func (s sortedSpans) Less(i, j int) bool {
 	iext, jext := s[i].Pos, s[j].Pos
 	iext, jext = iext[:cap(iext)], jext[:cap(jext)]
 	if &iext[cap(iext)-1] != &jext[cap(jext)-1] {
-		// TODO(akavel): panic
-		return false
+		panic("vfmd: internal error: underlying buffers differ in sortedSpans.Less")
+		// // TODO(akavel): panic
+		// return false
 	}
 	return len(iext) > len(jext)
 }

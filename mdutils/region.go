@@ -37,6 +37,11 @@ func FindSubmatch(r md.Region, p *regexp.Regexp) []md.Region {
 	return regions
 }
 
+func Match(r md.Region, p *regexp.Regexp) bool {
+	// FIXME(akavel): verify if this func works as expected of regexp.Match
+	return len(FindSubmatch(r, p)) > 0
+}
+
 type regionReader struct {
 	r  md.Region
 	in int
@@ -112,6 +117,15 @@ func Len(r md.Region) int {
 		n += len(run.Bytes)
 	}
 	return n
+}
+
+func Empty(r md.Region) bool {
+	for _, run := range r {
+		if len(run.Bytes) > 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func DecodeRune(r md.Region) (ch rune, size int) {
@@ -204,7 +218,7 @@ func Move(dst, src *md.Region, n int) (int, error) {
 	return n, nil
 }
 
-func HasPrefix(r Region, prefix []byte) bool {
+func HasPrefix(r md.Region, prefix []byte) bool {
 	for len(prefix) > 0 {
 		if len(r) == 0 {
 			return false

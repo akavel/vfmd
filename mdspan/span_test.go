@@ -883,8 +883,9 @@ func TestSpan(test *testing.T) {
 	for _, c := range cases {
 		fmt.Printf("\ncase %s\n", c.fname)
 		tags := []md.Tag{}
-		for _, b := range c.blocks {
-			tags = append(tags, Parse(b, nil)...)
+		for i, b := range c.blocks {
+			region := md.Region{md.Run{i, b}}
+			tags = append(tags, Parse(region, nil)...)
 		}
 		spans := []md.Tag{}
 		for _, t := range tags {
