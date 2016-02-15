@@ -23,14 +23,22 @@ func FindSubmatch(r md.Region, p *regexp.Regexp) []md.Region {
 	if idx == nil {
 		return nil
 	}
-	r = Copy(r)
 	regions := make([]md.Region, 0, len(idx)/2)
-	skipped := 0
+	r2, skipped := Copy(r), 0
 	for i := 0; i < len(idx); i += 2 {
+		if idx[i] == -1 {
+			regions = append(regions, nil)
+			continue
+		}
+		// // TODO(akavel): make sure below block is tested
+		// if idx[i] < skipped {
+		// 	// reset back to offset 0
+		// 	r2, skipped = Copy(r), 0
+		// }
 		begin, end := idx[i]-skipped, idx[i+1]-skipped
-		Skip(&r, begin)
+		Skip(&r2, begin)
 		skipped += begin
-		newr := Copy(r)
+		newr := Copy(r2)
 		Limit(&newr, end-begin)
 		regions = append(regions, newr)
 	}
