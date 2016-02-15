@@ -148,7 +148,12 @@ type sortedSpans []Span
 func (s sortedSpans) Len() int      { return len(s) }
 func (s sortedSpans) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s sortedSpans) Less(i, j int) bool {
-	iext, jext := s[i].Pos, s[j].Pos
+	ireg, jreg := s[i].Pos, s[j].Pos
+	if ireg[0].Line != jreg[0].Line {
+		return ireg[0].Line < jreg[0].Line
+	}
+	// If both regions start in the same line, underlying buffer should be the same
+	iext, jext := ireg[0].Bytes, jreg[0].Bytes
 	iext, jext = iext[:cap(iext)], jext[:cap(jext)]
 	if &iext[cap(iext)-1] != &jext[cap(jext)-1] {
 		panic("vfmd: internal error: underlying buffers differ in sortedSpans.Less")
