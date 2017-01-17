@@ -284,7 +284,14 @@ func DetectCode(s *Context) (consumed int) {
 		return mdutils.Len(opening)
 	}
 	// TODO(akavel): s.Emit(..., md.Code{...}, true)
-	return mdutils.Len(opening) + mdutils.Len(m[1])
+	var (
+		nopen = mdutils.Len(opening)
+		n     = nopen + mdutils.Len(m[1])
+		all   = mdutils.CopyN(s.Suffix, n)
+		code  = mdutils.String(all)[nopen : n-nopen]
+	)
+	s.Emit(all, md.Code{Code: []byte(code)}, true)
+	return n
 }
 
 func DetectImage(s *Context) (consumed int) {

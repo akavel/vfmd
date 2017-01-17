@@ -16,6 +16,13 @@ func Copy(r md.Region) md.Region {
 	return append(md.Region(nil), r...)
 }
 
+func CopyN(r md.Region, n int) md.Region {
+	// TODO(akavel): optimize
+	r = Copy(r)
+	Limit(&r, n)
+	return r
+}
+
 func FindSubmatch(r md.Region, p *regexp.Regexp) []md.Region {
 	// FIXME(akavel): verify if below func returns byte offsets, or rune indexes
 	rr := regionReader{r: r}

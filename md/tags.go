@@ -6,6 +6,8 @@ type Link struct {
 }
 type AutomaticLink struct{ URL, Text string }
 type Emphasis struct{ Level int }
+
+// TODO(akavel): fix Code.Code field to be string?
 type Code struct{ Code []byte }
 type Image struct {
 	ReferenceID string
