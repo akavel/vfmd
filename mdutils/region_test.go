@@ -3,8 +3,12 @@ package mdutils
 import (
 	"io/ioutil"
 	"reflect"
+	"regexp"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/kylelemons/godebug/diff"
 
 	"gopkg.in/akavel/vfmd.v0/md"
 )
@@ -20,6 +24,20 @@ var (
 	}
 )
 
+func reg(lines_strings ...interface{}) md.Region {
+	result := md.Region{}
+	run := md.Run{}
+	for i, x := range lines_strings {
+		if i&1 == 0 {
+			run.Line = x.(int)
+		} else {
+			run.Bytes = []byte(x.(string))
+			result = append(result, run)
+		}
+	}
+	return result
+}
+
 func TestCopy(test *testing.T) {
 	r := r1
 	c := Copy(r)
@@ -34,6 +52,40 @@ func TestCopy(test *testing.T) {
 		// Runs in the Region must be different objects
 		if &r[i] == &c[i] {
 			test.Errorf("&r[%d] is the same for c", i)
+		}
+	}
+}
+
+func TestFindSubmatch(test *testing.T) {
+	type regs []md.Region
+	cases := []struct {
+		regexp   string
+		r        md.Region
+		expected regs
+	}{
+		{
+			"^(`+)(.*)$",
+			reg(0, "`<>`:"),
+			regs{
+				reg(0, "`<>`:"),
+				reg(0, "`"),
+				reg(0, "<>`:"),
+			},
+		},
+	}
+	for _, c := range cases {
+		p, err := regexp.Compile(c.regexp)
+		if err != nil {
+			test.Errorf("case %q error: %s",
+				c.regexp, err)
+			continue
+		}
+		result := FindSubmatch(c.r, p)
+		want := []md.Region(c.expected)
+		if !reflect.DeepEqual(want, result) {
+			test.Errorf("case %q expected vs. got DIFF:\n%s",
+				c.regexp, diff.Diff(spew.Sdump(want), spew.Sdump(result)))
+			continue
 		}
 	}
 }
