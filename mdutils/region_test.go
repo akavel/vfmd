@@ -72,6 +72,13 @@ func TestFindSubmatch(test *testing.T) {
 				reg(0, "<>`:"),
 			},
 		},
+		{
+			"`",
+			reg(0, "foo\n", 1, "ba`rr\n"),
+			regs{
+				reg(1, "`"),
+			},
+		},
 	}
 	for _, c := range cases {
 		p, err := regexp.Compile(c.regexp)

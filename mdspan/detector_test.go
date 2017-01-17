@@ -56,6 +56,27 @@ func TestDetectCode(test *testing.T) {
 			},
 			18,
 		},
+		{
+			Context{
+				Suffix: reg(
+					0, "`code span\n",
+					1, "can span multiple\n",
+					2, "lines`\n"),
+				Spans: []Span{
+					{
+						Pos: reg(
+							0, "`code span\n",
+							1, "can span multiple\n",
+							2, "lines`"),
+						Tag: md.Code{Code: []byte("code span\n" +
+							"can span multiple\n" +
+							"lines")},
+						SelfClose: true,
+					},
+				},
+			},
+			35,
+		},
 	}
 	for _, c := range cases {
 		var (
