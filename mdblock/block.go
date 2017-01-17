@@ -265,11 +265,7 @@ func parseSpans(region md.Raw, ctx Context) {
 		return
 	}
 	// FIXME(akavel): parse the spans correctly w.r.t. region Run boundaries and collect proper Run.Line values
-	buf := []byte{}
-	for _, run := range region {
-		buf = append(buf, run.Bytes...) // FIXME(akavel): quick & dirty & foul prototyping hack
-	}
-	spans := mdspan.Parse(buf, ctx.GetSpanDetectors())
+	spans := mdspan.Parse(md.Region(region), ctx.GetSpanDetectors())
 	for _, span := range spans {
 		ctx.Emit(span)
 	}

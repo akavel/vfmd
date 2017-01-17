@@ -139,6 +139,9 @@ func Parse(r md.Region, detectors []Detector) []md.Tag {
 	tags := []md.Tag{}
 	for _, span := range s.Spans {
 		tags = append(tags, span.Tag)
+		if span.SelfClose {
+			tags = append(tags, md.End{})
+		}
 	}
 	return tags
 }
