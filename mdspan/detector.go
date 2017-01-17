@@ -278,7 +278,7 @@ func DetectCode(s *Context) (consumed int) {
 	}
 	opening := m[1]
 	// try to find a sequence of '`' with length exactly equal to 'opening'
-	re := regexp.MustCompile("(.*?(" + mdutils.String(opening) + "))([^`]|$)")
+	re := regexp.MustCompile("(.*?[^`](" + mdutils.String(opening) + "))([^`]|$)")
 	m = mdutils.FindSubmatch(m[2], re)
 	if m == nil {
 		return mdutils.Len(opening)

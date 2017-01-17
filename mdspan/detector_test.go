@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"gopkg.in/akavel/vfmd.v0/md"
+	"gopkg.in/akavel/vfmd.v0/mdutils"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/kylelemons/godebug/diff"
@@ -26,16 +27,10 @@ func reg(lines_strings ...interface{}) md.Region {
 
 func TestDetectCode(test *testing.T) {
 	cases := []struct {
-		comment  string
-		context  Context
 		expected Context
 		consumed int
 	}{
 		{
-			"`<>`:",
-			Context{
-				Suffix: reg(0, "`<>`:"),
-			},
 			Context{
 				Suffix: reg(0, "`<>`:"),
 				Spans: []Span{
@@ -48,15 +43,32 @@ func TestDetectCode(test *testing.T) {
 			},
 			4,
 		},
+		{
+			Context{
+				Suffix: reg(0, "`code span`` ends`"),
+				Spans: []Span{
+					{
+						Pos:       reg(0, "`code span`` ends`"),
+						Tag:       md.Code{Code: []byte("code span`` ends")},
+						SelfClose: true,
+					},
+				},
+			},
+			18,
+		},
 	}
 	for _, c := range cases {
-		consumed := DetectCode(&c.context)
+		var (
+			context = Context{Suffix: mdutils.Copy(c.expected.Suffix)}
+			comment = mdutils.String(c.expected.Suffix)
+		)
+		consumed := DetectCode(&context)
 		if consumed != c.consumed {
-			test.Errorf("case %q: consumed want %d have %d", c.comment, c.consumed, consumed)
+			test.Errorf("case %q: consumed want %d have %d", comment, c.consumed, consumed)
 		}
-		if !reflect.DeepEqual(c.expected, c.context) {
+		if !reflect.DeepEqual(c.expected, context) {
 			test.Errorf("case %q Context want vs have DIFF:\n%s",
-				c.comment, diff.Diff(spew.Sdump(c.expected), spew.Sdump(c.context)))
+				comment, diff.Diff(spew.Sdump(c.expected), spew.Sdump(context)))
 		}
 	}
 }
