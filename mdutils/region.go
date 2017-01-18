@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"unicode"
 	"unicode/utf8"
+	"unsafe"
 
 	"gopkg.in/akavel/vfmd.v0/md"
 )
@@ -124,6 +125,41 @@ func Limit(r *md.Region, n int) {
 		}
 		n -= len(run.Bytes)
 	}
+}
+
+// FIXME(akavel): not 100% safe, see https://github.com/golang/go/issues/12445
+func inset(a, b []byte) (int, bool) {
+	if &a[0] == &b[0] {
+		return 0, true
+	}
+	offset := uintptr(unsafe.Pointer(&b[0])) - uintptr(unsafe.Pointer(&a[0]))
+	if offset > uintptr(len(a)) {
+		return 0, false
+	}
+	return int(offset), true
+}
+
+// LimitAt cuts tail off the end of specified region r.
+// TODO(akavel): what to do if tail is not in r?
+// TODO(akavel): handle len(tail)==0 - e.g. panic
+func LimitAt(r *md.Region, tail md.Region) {
+	cut := tail[0].Bytes
+	for i, run := range *r {
+		// FIXME(akavel): do we allow 0-length runs in regions?
+		offset, ok := inset(run.Bytes, cut)
+		if !ok {
+			continue
+		}
+		if offset == 0 {
+			*r = (*r)[:i]
+			return
+		} else {
+			(*r)[i].Bytes = (*r)[i].Bytes[:offset]
+			*r = (*r)[:i+1]
+			return
+		}
+	}
+	panic("LimitAt: tail not found in r")
 }
 
 func Len(r md.Region) int {

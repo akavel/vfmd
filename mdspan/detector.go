@@ -42,7 +42,7 @@ func DetectLink(s *Context) (consumed int) {
 	if mdutils.HasPrefix(s.Suffix, []byte{'['}) {
 		s.Openings.Push(MaybeOpening{
 			Tag: "[",
-			Pos: copyReg(s.Suffix, 0, 1),
+			Pos: mdutils.Copy(s.Suffix),
 		})
 		return 1
 	}
@@ -82,7 +82,8 @@ func closingLinkTag(s *Context) (consumed int) {
 		}
 		// emit a link
 		opening := s.Openings.Peek()
-		s.Emit(opening.Pos, md.Link{
+		openingReg := copyReg(opening.Pos, 0, len(opening.Tag))
+		s.Emit(openingReg, md.Link{
 			ReferenceID: mdutils.SimplifyReg(m[1]),
 			RawEnd:      md.Raw(m[0]),
 		}, false)
@@ -119,9 +120,10 @@ func closingLinkTag(s *Context) (consumed int) {
 			}
 			// emit a link
 			opening := s.Openings.Peek()
+			openingReg := copyReg(opening.Pos, 0, len(opening.Tag))
 			closingReg := copyReg(s.Suffix, 0,
 				mdutils.Len(s.Suffix)-mdutils.Len(residual)+mdutils.Len(t[0]))
-			s.Emit(opening.Pos, md.Link{
+			s.Emit(openingReg, md.Link{
 				URL:    linkURL,
 				Title:  mdutils.DeEscape(title),
 				RawEnd: md.Raw(closingReg),
@@ -148,9 +150,13 @@ func closingLinkTag(s *Context) (consumed int) {
 	begin := s.Openings.Peek()
 	// TODO(akavel): refIDReg := mdutils.Copy(s.Prefix)
 	// TODO(akavel): mdutils.Skip(&refIDReg, begin.Pos+len(begin.Tag))
-	s.Emit(begin.Pos, md.Link{
-		// TODO(akavel): ReferenceID: mdutils.SimplifyReg(refIDReg),
-		RawEnd: md.Raw(m[0]),
+	openingReg := copyReg(begin.Pos, 0, len(begin.Tag))
+	refIDReg := begin.Pos
+	mdutils.LimitAt(&refIDReg, s.Suffix)
+	mdutils.Skip(&refIDReg, len(begin.Tag))
+	s.Emit(openingReg, md.Link{
+		ReferenceID: mdutils.SimplifyReg(refIDReg),
+		RawEnd:      md.Raw(m[0]),
 	}, false)
 	s.Emit(m[0], md.End{}, false)
 	s.Openings.Pop()
