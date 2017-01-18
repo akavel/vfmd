@@ -342,10 +342,12 @@ func DetectImage(s *Context) (consumed int) {
 	}
 
 	// "neither of the above conditions"
-	closing := residual[:1]
+	var closing md.Region
 	r = mdutils.FindSubmatch(residual, reImageEmptyRef)
 	if r != nil {
 		closing = r[0]
+	} else {
+		closing = copyReg(residual, 0, 1)
 	}
 	// FIXME(akavel): optimize below 2 lines
 	tag := mdutils.Copy(s.Suffix)
