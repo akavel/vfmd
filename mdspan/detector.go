@@ -300,6 +300,7 @@ func DetectCode(s *Context) (consumed int) {
 		all   = mdutils.CopyN(s.Suffix, n)
 		code  = mdutils.String(all)[nopen : n-nopen]
 	)
+	code = strings.Trim(code, mdutils.Whites)
 	s.Emit(all, md.Code{Code: []byte(code)}, true)
 	return n
 }
