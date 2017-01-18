@@ -245,7 +245,7 @@ func TestSpan(test *testing.T) {
 			md.End{},
 			md.Code{bb("containing code")},
 			md.End{},
-			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{6, bb("]")}}},
+			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{12, bb("]")}}},
 			md.End{},
 			md.Code{bb("containing code")},
 			md.End{},
@@ -256,7 +256,7 @@ func TestSpan(test *testing.T) {
 			md.End{},
 			md.Code{bb("code ![intertwined")},
 			md.End{},
-			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{11, bb("]")}}},
+			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{22, bb("]")}}},
 			md.End{},
 			md.Code{bb("intertwined with][ref] image")},
 			md.End{},
@@ -273,16 +273,16 @@ func TestSpan(test *testing.T) {
 			md.Code{bb("code containing [ref]")},
 			md.End{},
 
-			md.Link{URL: "url", RawEnd: md.Raw{{5, bb("](url)")}}},
+			md.Link{URL: "url", RawEnd: md.Raw{{10, bb("](url)")}}},
 			md.Code{bb("containing code")},
 			md.End{},
 
 			md.End{},
-			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{6, bb("][ref]")}}},
+			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{12, bb("][ref]")}}},
 			md.Code{bb("containing code")},
 			md.End{},
 			md.End{},
-			md.Link{ReferenceID: "link `containing code`", RawEnd: md.Raw{{7, bb("]")}}},
+			md.Link{ReferenceID: "link `containing code`", RawEnd: md.Raw{{14, bb("]")}}},
 			md.Code{bb("containing code")},
 			md.End{},
 			md.End{},
@@ -293,7 +293,7 @@ func TestSpan(test *testing.T) {
 			md.End{},
 			md.Code{bb("code [intertwined")},
 			md.End{},
-			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{11, bb("]")}}},
+			md.Link{ReferenceID: "ref", RawEnd: md.Raw{{22, bb("]")}}},
 			md.End{},
 			md.Code{bb("intertwined with][ref] link")},
 			md.End{},
@@ -360,19 +360,19 @@ func TestSpan(test *testing.T) {
 			// NOTE(akavel): link below not expected in testdata
 			// because it's not defined below; but we leave this to
 			// user.
-			md.Link{ReferenceID: "_", RawEnd: md.Raw{{4, bb("]")}}},
+			md.Link{ReferenceID: "_", RawEnd: md.Raw{{8, bb("]")}}},
 			md.End{},
 			emB("_"), emE("_"), emB("_"), emE("_"),
 			// NOTE(akavel): link below not expected in testdata
 			// because it's not defined below; but we leave this to
 			// user.
-			md.Link{ReferenceID: "_", RawEnd: md.Raw{{5, bb("]")}}},
+			md.Link{ReferenceID: "_", RawEnd: md.Raw{{10, bb("]")}}},
 			md.End{},
 		}),
 		lines("image/direct_link.md", spans{
 			md.Image{AltText: "image", URL: "url", RawEnd: md.Raw{{0, bb("](url)")}}},
 			md.End{},
-			md.Image{AltText: "image", URL: "url", Title: "title", RawEnd: md.Raw{{1, bb(`](url "title")`)}}},
+			md.Image{AltText: "image", URL: "url", Title: "title", RawEnd: md.Raw{{2, bb(`](url "title")`)}}},
 			md.End{},
 		}),
 		lines("image/direct_link_with_2separating_spaces.md", spans{
@@ -885,9 +885,15 @@ func TestSpan(test *testing.T) {
 	for _, c := range cases {
 		fmt.Printf("\ncase %s\n", c.fname)
 		tags := []md.Tag{}
-		for i, b := range c.blocks {
-			region := md.Region{md.Run{i, b}}
+		nline := 0
+		for _, b := range c.blocks {
+			region := md.Region{}
+			for _, line := range bytes.SplitAfter(b, bb("\n")) {
+				region = append(region, md.Run{nline, line})
+				nline++
+			}
 			tags = append(tags, Parse(region, nil)...)
+			nline++
 		}
 		spans := []md.Tag{}
 		for _, t := range tags {
