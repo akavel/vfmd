@@ -133,7 +133,7 @@ func inset(a, b []byte) (int, bool) {
 		return 0, true
 	}
 	offset := uintptr(unsafe.Pointer(&b[0])) - uintptr(unsafe.Pointer(&a[0]))
-	if offset > uintptr(len(a)) {
+	if offset >= uintptr(len(a)) {
 		return 0, false
 	}
 	return int(offset), true
@@ -181,7 +181,7 @@ func SplitAt(r *md.Region, tail md.Region) (r1, r2 md.Region) {
 				Bytes: run.Bytes[:offset],
 			})
 			r2 = (*r)[i:]
-			r2[i].Bytes = r2[i].Bytes[offset:]
+			r2[0].Bytes = r2[0].Bytes[offset:]
 			(*r) = r1
 			return
 		}
