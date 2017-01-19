@@ -162,6 +162,33 @@ func LimitAt(r *md.Region, tail md.Region) {
 	panic("LimitAt: tail not found in r")
 }
 
+func SplitAt(r *md.Region, tail md.Region) (r1, r2 md.Region) {
+	cut := tail[0].Bytes
+	for i, run := range *r {
+		// FIXME(akavel): do we allow 0-length runs in regions?
+		offset, ok := inset(run.Bytes, cut)
+		if !ok {
+			continue
+		}
+		if offset == 0 {
+			r1 = (*r)[:i]
+			r2 = (*r)[i:]
+			*r = r1
+			return
+		} else {
+			r1 = append((*r)[:i:i], md.Run{
+				Line:  run.Line,
+				Bytes: run.Bytes[:offset],
+			})
+			r2 = (*r)[i:]
+			r2[i].Bytes = r2[i].Bytes[offset:]
+			(*r) = r1
+			return
+		}
+	}
+	panic("LimitAt: tail not found in r")
+}
+
 func Len(r md.Region) int {
 	n := 0
 	for _, run := range r {

@@ -109,39 +109,23 @@ func Parse(r md.Region, detectors []Detector) []md.Tag {
 		}
 	}
 	sort.Sort(sortedSpans(s.Spans))
-	/* TODO(akavel): upgrade below block to use md.Region
 	// Mark all characters between Spans as md.Prose
 	tags := []md.Tag{}
-	endOffset := 0
 	for _, span := range s.Spans {
-		offset, _ := mdutils.OffsetIn(buf, span.Pos)
-		if offset > endOffset {
+		prose, rest := mdutils.SplitAt(&r, span.Pos)
+		if len(prose) > 0 {
 			// FIXME(akavel): for every "  \n" sequence, insert an md.HardBreak tag
-			tags = append(tags, mdutils.DeEscapeProse(md.Prose{
-				// FIXME(akavel): fix Line in md.Run
-				md.Run{-1, buf[endOffset:offset]},
-			}))
+			tags = append(tags, mdutils.DeEscapeProse(md.Prose(prose)))
 		}
 		tags = append(tags, span.Tag)
 		if span.SelfClose {
 			tags = append(tags, md.End{})
 		}
-		endOffset = offset + len(span.Pos)
+		r = rest
+		mdutils.Skip(&r, mdutils.Len(span.Pos))
 	}
-	if endOffset < len(buf) {
-		tags = append(tags, mdutils.DeEscapeProse(md.Prose{
-			// FIXME(akavel): fix Line in md.Run
-			md.Run{-1, buf[endOffset:]},
-		}))
-	}
-	return tags
-	*/
-	tags := []md.Tag{}
-	for _, span := range s.Spans {
-		tags = append(tags, span.Tag)
-		if span.SelfClose {
-			tags = append(tags, md.End{})
-		}
+	if len(r) > 0 {
+		tags = append(tags, mdutils.DeEscapeProse(md.Prose(r)))
 	}
 	return tags
 }
